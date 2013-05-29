@@ -1,0 +1,1 @@
+hbmk2 -inc testes.prg .\source\*.prg -otesteNfe.exe -prgflag=__sem_curl -lhbwin -lhbct -lhbhpdf -llibhpdf -lhbzebra -lpng > error.log 2>&1

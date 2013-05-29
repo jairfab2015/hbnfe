@@ -1,0 +1,8 @@
+{win}incpaths=include
+{bcc}libpaths=lib \hwguihb\lib
+{msvc}libpaths=lib \hwguivc\lib
+{mingw}libpaths=lib \hwguigcc\lib
+
+{win}gt=gtgui
+{dos}libs=hwgui procmisc hbxml hbct hbtipssl hbssl ssleay32 libeay32 hbwin xhb hbhpdf libpng hbmysql libmysql hbwin hbnf
+{win}libs=hwgui procmisc hbct hbwin xhb hbhpdf libhpdf png hbmysql libmysql hbnf hbtip hbmemio hbcomm hbzebra hbmxml mxml
