@@ -1,0 +1,45 @@
+hbNFe Rotinas e a fazeres
+-------------------------
+
+Descrição                        Harbour xHarbour A Fazer
+-------------------------------- ------- -------- -------------------------------
+Classe hbNFe
+  Metodos
+    escolheCertificado              100%     100%
+    UAC                             100%        ? Testar // não consegui obter resultados possitivo com windows 7 + xHarbour, por enquanto estou usando um .BAT para executar a tarefa
+    pegaObjetoCertificado           100%     100%
+    pegaCNCertificado               100%     100%
+    pegaPropriedadesCertificado     100%     100%
+    pegaTag                         100%     100%
+Classe hbNFeStatus                  100%     100%
+Classe hbNFeValida                  100%     100%
+Classe hbNFeConsulta                100%     100%
+Classe hbNFeConsultaCadastro        100%     100%
+Classe hbNFeAssina                  100%     100%
+Classe hbNFeCancela                 100%     100% 
+Classe hbNFeInutiliza               100%     100%
+Classe hbNFeRecepcaoLote            100%     100%
+Classe hbNFeRetornoRecepcao         100%     100%
+Classe hbNFeIniToXML                100%     100%
+Classe hbDanfe                      100%     100% Usamos uma fonte code128 formato afm pfb para substituir o hb_zebra no xharbour
+Classe hbNFeCreator                 100%     100%
+Classe hbNFeCCe                     100%     100%
+Classe hbNFeManifestacao	      0%     100%
+Classe hbNFeEvento                    0%     100% ( Cancelamento 100% testado em xHarbour, se alguém poder testar com Harbour, seria uma boa )
+
+Classe HBNFeSaiMG                     0%       0%  // registro de saida via Web-service para o estado de MG, que é uma confirmação pós NFE
+Classe hbNFeDanfeCCe                  0%     100%  // impressão com FAST 
+Classe HBNFeTxtToXML                  0%       0%  // ler o TXT do emissor gratuito e gerar o XML Compatibilidade com TXT do sefaz de São Paulo                          
+
+Classe para hbCTe	              0%       0%  // em desenvolvimento( em teste com xHarbour já )	
+Classe hbNFs                          0%       0%
+
+Criar uma LIB do projeto              0%       0%
+Deixar compativel com Linux           0%       0%
+
+
+xHarbour de testes xharbour-1.20.01.bin.w32.bcc32.5.51
+problema da assinatura no xharbour sanada pelo Wilson da Castelo Porto Software, 
+que descobriu que com uma versao antiga da win32ole funcionava, ele fez um fork
+da win32ole e mudamos os nomes das functions e classes para não dar problema de
+conflito.
