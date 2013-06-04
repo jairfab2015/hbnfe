@@ -160,13 +160,13 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
 
        TRY
          #ifdef __XHARBOUR__
-            oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+            oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
          #else
-            oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+            oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
          #endif
        CATCH
           aRetorno['OK']       := .F.
-          aRetorno['MsgErro']  := 'Nao consegui carregar MSXML2.DOMDocument.5.0'
+          aRetorno['MsgErro']  := 'Nao consegui carregar ' + _MSXML2_DOMDocument
           RETURN(aRetorno)
        END
        oDOMDoc:async = .F.
@@ -176,13 +176,13 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
     
        TRY
          #ifdef __XHARBOUR__
-            xmldsig := xhb_CreateObject( "MSXML2.MXDigitalSignature.5.0" )
+            xmldsig := xhb_CreateObject( _MSXML2_MXDigitalSignature )
          #else
-            xmldsig := win_oleCreateObject( "MSXML2.MXDigitalSignature.5.0")
+            xmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
          #endif
        CATCH
           aRetorno['OK']       := .F.
-          aRetorno['MsgErro']  := 'Nao consegui carregar MSXML2.MXDigitalSignature.5.0'
+          aRetorno['MsgErro']  := 'Nao consegui carregar ' + _MSXML2_MXDigitalSignature
           RETURN(aRetorno)
        END
 
@@ -252,6 +252,7 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
        xmldsig:store := oStoreMem
     
        //---> Dados necessários para gerar a assinatura
+       
        TRY
           eType := oCert:PrivateKey:ProviderType
           sProvider := oCert:PrivateKey:ProviderName
@@ -260,9 +261,8 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-          RETURN(aRetorno)
+          RETURN(aRetorno)          
        END
-
        IF (dsigKey = nil)
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP.'
@@ -314,6 +314,7 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
           ENDIF
        ENDIF
    ENDIF
+
    TRY
       IF ::lMemFile = .T.
          aRetorno['XMLAssinado'] := XMLAssinado

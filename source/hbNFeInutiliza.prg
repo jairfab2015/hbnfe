@@ -96,10 +96,11 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
       aRetorno['MsgErro']  := 'Problema ao gravar pedido de inutilização '+::ohbNFe:pastaEnvRes+"\"+FIDInutilizacao+"-ped-inu.xml"
       RETURN(aRetorno)
    END
-
    cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 
    cUrlWS := ::ohbNFe:getURLWS(_INUTILIZACAO)
+   
+   
   IF ::ohbNFe:nSOAP = HBNFE_CURL
      aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
                  'SOAPAction: "NfeInutilizacao2"',;
@@ -135,12 +136,13 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
 
        curl_easy_cleanup(oCurl)
        curl_global_cleanup()
+   
      #endif
   ELSE // MSXML
      #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
      #else
-        oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
      #endif
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
@@ -148,10 +150,13 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
   
      #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
      #else
-        oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
      #endif
+     
+
+     
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
      oDOMDoc:resolveExternals := .F.
@@ -167,6 +172,8 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
         aRetorno['MsgErro']  := cMSgErro
         RETURN(aRetorno)
      ENDIF
+     
+
      TRY
         oServerWS:send(oDOMDoc:xml)
      CATCH oError
@@ -184,6 +191,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
         millisec(500)
      ENDDO
      cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
+     
    ENDIF
    MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+FIDInutilizacao+"-inu.xml",cXMLResp,.F.)
    MEMOWRIT(::ohbNFe:pastaInutilizacao+"\"+FIDInutilizacao+"-inu.xml",cXMLResp,.F.)

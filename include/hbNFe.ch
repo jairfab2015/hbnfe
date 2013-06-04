@@ -18,6 +18,10 @@
 #define _DOWNLOADNFE          11
 #define _RECPEVENTO           12
 
+#define _MSXML2_DOMDocument          'MSXML2.DOMDocument.5.0'
+#define _MSXML2_MXDigitalSignature   'MSXML2.MXDigitalSignature.5.0'
+#define _MSXML2_XMLSchemaCache       'MSXML2.XMLSchemaCache.5.0'
+#define _MSXML2_ServerXMLHTTP        'MSXML2.ServerXMLHTTP.5.0'
 
 #define _LOGO_ESQUERDA        1
 #define _LOGO_DIREITA         2

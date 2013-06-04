@@ -70,11 +70,11 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
         ENDIF
      ENDIF
   ENDIF
-
+  
   #ifdef __XHARBOUR__
-     oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+     oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
   #else
-     oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
   #endif
   oDOMDoc:async = .F.
   oDOMDoc:resolveExternals := .F.
@@ -91,11 +91,11 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
      aRetorno['MsgErro']  := cMsgErro
      RETURN(aRetorno)
   ENDIF
-
+  
   #ifdef __XHARBOUR__
-     oSchema := xhb_CreateObject( "MSXML2.XMLSchemaCache.5.0" )
+     oSchema := xhb_CreateObject( _MSXML2_XMLSchemaCache )
   #else
-     oSchema := win_oleCreateObject( "MSXML2.XMLSchemaCache.5.0")
+     oSchema := win_oleCreateObject( _MSXML2_XMLSchemaCache )
   #endif
 
   IF EMPTY(cPastaSchemas)
@@ -122,6 +122,7 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
      aRetorno['MsgErro']  := 'Schema não encontrado '+cSchemaFilename
      RETURN(aRetorno)
   ENDIF
+  
   TRY
      oSchema:add( "http://www.portalfiscal.inf.br/nfe", cSchemaFilename )
   CATCH oError
@@ -151,4 +152,5 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
   ParseError := nil
   oSchema := nil
   aRetorno['OK'] := .T.
+
 RETURN(aRetorno)

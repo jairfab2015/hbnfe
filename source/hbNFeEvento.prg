@@ -77,9 +77,20 @@ IF ::nTipoEvento=_RECPEVENTO
    ENDIF
 ENDIF
 
-cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
-
-cUrlWS := ::ohbNFe:getURLWS( IF(::nTipoEvento=_RECPEVENTO,_RECPEVENTO,_EVENTO))
+TRY
+   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
+CATCH
+   aRetorno['OK']       := .F.
+   aRetorno['MsgErro']  := 'Não foi possível carregar as informação do certicado digital'
+   RETURN(aRetorno)
+END   
+TRY
+   cUrlWS := ::ohbNFe:getURLWS( IF(::nTipoEvento=_RECPEVENTO,_RECPEVENTO,_EVENTO))
+CATCH
+   aRetorno['OK']       := .F.
+   aRetorno['MsgErro']  := 'Não foi possível carregar o link do webservice de eventos'
+   RETURN(aRetorno)
+END   
 if cUrlWS = nil
     cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
                 "Serviço solicitado : EVENTO"
@@ -87,11 +98,12 @@ if cUrlWS = nil
     aRetorno['MsgErro']  := cMsgErro
     RETURN(aRetorno)
 endif
+
 TRY
    #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
    #else
-      oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
    #endif
 CATCH
    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
@@ -101,11 +113,17 @@ CATCH
    RETURN(aRetorno)
 END
 
-oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
-oServerWS:open("POST", cUrlWS, .F.)
-oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
-oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
 
+TRY
+   oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
+   oServerWS:open("POST", cUrlWS, .F.)
+   oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
+   oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
+CATCH
+   aRetorno['OK']       := .F.
+   aRetorno['MsgErro']  := 'Não foi possível iniciar comunicação com webserviçe do SEFAZ '
+   RETURN(aRetorno)
+END
 cCondUso := 'A Carta de Correcao e disciplinada pelo paragrafo 1o-A do art. 7o do Convenio S/N, '+;
             'de 15 de dezembro de 1970 e pode ser utilizada para regularizacao de erro ocorrido na '+;
             'emissao de documento fiscal, desde que o erro nao esteja relacionado com: '+;
@@ -146,12 +164,18 @@ FOR nI = 1 TO ::nEvento
                     '</infEvento>' +;
                   '</evento>'
 
-  oAssina := hbNFeAssina()
-  oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe
-  oAssina:cXMLFile := cXMLDadosMsg2
-  oAssina:lMemFile := .T.
-  aRetornoAss := oAssina:execute()
-  oAssina := Nil
+   TRY
+      oAssina := hbNFeAssina()
+      oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe
+      oAssina:cXMLFile := cXMLDadosMsg2
+      oAssina:lMemFile := .T.
+      aRetornoAss := oAssina:execute()
+      oAssina := Nil
+   CATCH
+      aRetorno['OK']       := .F.
+      aRetorno['MsgErro']  := 'Não foi possível assinar o o documento XML do evento.'
+      RETURN(aRetorno)
+   END
 
   IF aRetornoAss['OK'] == .F.
      aRetorno['OK']       := .F.
@@ -165,11 +189,17 @@ cXMLDadosMsg += +'</envEvento>'
 
 MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-evento.xml",cXMLDadosMsg,.F.)
 
-oValida := hbNFeValida()
-oValida:ohbNFe := ::ohbNfe // Objeto hbNFe
-oValida:cXML := cXMLDadosMsg // Arquivo XML ou ConteudoXML
-aRetornoVal := oValida:execute()
-oValida := Nil
+TRY
+   oValida := hbNFeValida()
+   oValida:ohbNFe := ::ohbNfe // Objeto hbNFe
+   oValida:cXML := cXMLDadosMsg // Arquivo XML ou ConteudoXML
+   aRetornoVal := oValida:execute()
+   oValida := Nil
+CATCH
+   aRetorno['OK']       := .F.
+   aRetorno['MsgErro']  := 'Não foi possível validar o evento.'
+   RETURN(aRetorno)
+END   
 IF aRetornoVal['OK'] == .F.
    aRetorno['OK'] := .F.
    aRetorno['MsgErro'] := 'Valida: '+aRetornoVal['MsgErro']
@@ -200,17 +230,23 @@ CATCH
    aRetorno['MsgErro']  := 'Problema ao gravar pedido de evento '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-evento.xml"
    RETURN(aRetorno)
 END
-
-#ifdef __XHARBOUR__
-   oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
-#else
-   oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
-#endif
-oDOMDoc:async = .F.
-oDOMDoc:validateOnParse  = .T.
-oDOMDoc:resolveExternals := .F.
-oDOMDoc:preserveWhiteSpace = .T.
-oDOMDoc:LoadXML(cXML)
+TRY
+   #ifdef __XHARBOUR__
+      oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+   #else
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+   #endif
+   oDOMDoc:async = .F.
+   oDOMDoc:validateOnParse  = .T.
+   oDOMDoc:resolveExternals := .F.
+   oDOMDoc:preserveWhiteSpace = .T.
+   oDOMDoc:LoadXML(cXML)
+CATCH
+   aRetorno['OK']       := .F.
+   aRetorno['MsgErro']  := 'Não foi possível validar o documento de evento'
+   RETURN(aRetorno)
+END
+   
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
    cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
                " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
@@ -221,6 +257,7 @@ IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
    aRetorno['MsgErro']  := cMsgErro
    RETURN(aRetorno)
 ENDIF
+
 TRY
    oServerWS:send(oDOMDoc:xml)
 CATCH oError
@@ -234,16 +271,18 @@ CATCH oError
   aRetorno['MsgErro']  := cMsgErro
   RETURN(aRetorno)
 END
+
 DO WHILE oServerWS:readyState <> 4
    millisec(500)
 ENDDO
+
 cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 
 TRY   
    MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-reps-evento.xml",cXMLResp,.F.)   
 CATCH
 END   
-   
+  
    
 IF VAL(oFuncoes:pegaTag(cXMLResp, "cStat"))<>128
    aRetorno['OK']       := .F.
@@ -305,7 +344,7 @@ cXMLResp := '<?xml version="1.0" encoding="UTF-8" ?>' +;
                 '<evento ' +;
                   oFuncoes:pegaTag(cXMLDadosMsg, 'evento') +;
                 '</evento>' +;
-                  '<retEvent ' +;
+                  '<retEvento ' +;
                     cXMLResp4 +;
                 '</retEvento>' +;
               '</ProcEventoNFe>'

@@ -119,9 +119,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      #endif
   ELSE // MSXML
      #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
      #else
-        oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
      #endif
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
@@ -129,9 +129,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
   
      #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
      #else
-        oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
      #endif
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.

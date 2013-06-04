@@ -41,11 +41,6 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
    ENDIF
 
   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
-  IF EMPTY( cCN )
-     aRetorno['OK']       := .F.
-     aRetorno['MsgErro']  := 'CAPICOM não registrado ou Certificado não encontrado'
-     RETURN(aRetorno)
-  ENDIF
 
   cXMLDadosMsg := '<consStatServ xmlns="http://www.portalfiscal.inf.br/nfe" versao="2.00">' +;
                     '<tpAmb>'+::tpAmb+'</tpAmb>' +;
@@ -124,9 +119,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
   ELSE // MSXML
 
       #ifdef __XHARBOUR__
-         oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+         oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
       #else
-         oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+         oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
       #endif
 
       IF oServerWS = Nil
@@ -140,16 +135,15 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
       oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
 
-
       #ifdef __XHARBOUR__
-         oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+         oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
       #else
-         oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+         oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
       #endif
 
       IF oDOMDoc = Nil
          aRetorno['OK'] := .F.
-         aRetorno['MsgErro'] := 'Não foi encontrado MSXML2 5.0'
+         aRetorno['MsgErro'] := 'Não foi encontrado ' +_MSXML2_DOMDocument
          RETURN(aRetorno)
       ENDIF
 
@@ -158,6 +152,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       oDOMDoc:resolveExternals := .F.
       oDOMDoc:preserveWhiteSpace = .T.
       oDOMDoc:LoadXML(cXML)
+
       IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
          cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine()+;
                      " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine()+;
@@ -186,7 +181,6 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       ENDDO
     
       //cXMLResp := oFuncoes:pegaTag( HB_ANSITOOEM(oServerWS:responseText), 'retConsStatServ' )
-      //não pode haver esse tipo de conversão em respostas UTF8
       cXMLResp := oFuncoes:pegaTag( oServerWS:responseText , 'retConsStatServ' )
   ENDIF
   TRY

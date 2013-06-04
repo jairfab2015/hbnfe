@@ -810,6 +810,8 @@ While oChild!=Nil
       ::AdicionaIPI( oChild )
    ELSEIF cNAME=='ISSQN'
       ::AdicionaISSQN( oChild )
+   ELSEIF cNAME<>'PIS' .AND. cNAME<>'COFINS'
+      ::PutValue( cName, oChild:cData )
    ENDIF
 
    oChild:=oChild:oNEXT
@@ -1090,6 +1092,7 @@ METHOD CriaTabelasTemporarias()
    AADD(aEstru,{'ISSVISSQN'  , 'N' ,15  , 2 } )
    AADD(aEstru,{'ISCMUNCFG'  , 'N' ,7  , 0 } )
    //AADD(aEstru,{'OBSCONT'  , 'M' ,10  , 0 } )
+   AADD(aEstru,{'vTotTrib'  , 'N' ,15  , 2 } )
 
    dbCreate(cTemp , aEstru  , 'DBFCDX' )
 

@@ -56,27 +56,28 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
 
    cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 
-   cUrlWS := ::ohbNFe:getURLWS(_CCE)
-    if cUrlWS = nil
-        cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
-                    "Serviço solicitado : CCe"
-        aRetorno['OK']       := .F.
-        aRetorno['MsgErro']  := cMsgErro
-        RETURN(aRetorno)
-    endif
-    TRY
+   cUrlWS := ::ohbNFe:getURLWS(_EVENTO)
+   if cUrlWS = nil
+       cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+                   "Serviço solicitado : CCe"
+       aRetorno['OK']       := .F.
+       aRetorno['MsgErro']  := cMsgErro
+       RETURN(aRetorno)
+   endif
+   TRY
       #ifdef __XHARBOUR__
-         oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+         oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
       #else
-         oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+         oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
       #endif
-    CATCH
+   CATCH
       cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
                   "Serviço solicitado : CCe"
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMsgErro
       RETURN(aRetorno)
    END
+
    oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
    oServerWS:open("POST", cUrlWS, .F.)
    oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
@@ -113,6 +114,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                          '</detEvento>' +;
                        '</infEvento>' +;
                      '</evento>'
+
      oAssina := hbNFeAssina()
      oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe
      oAssina:cXMLFile := cXMLDadosMsg2
@@ -169,9 +171,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    END
 
    #ifdef __XHARBOUR__
-      oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+      oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
    #else
-      oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
    #endif
    oDOMDoc:async = .F.
    oDOMDoc:validateOnParse  = .T.
@@ -206,8 +208,8 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    ENDDO
    cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 *   ? cXMLResp
-
-   IF VAL(oFuncoes:pegaTag(cXMLResp, "cStat"))<>128 // SE NÃO FOR LOTE PROCESSADO
+   
+   IF VAL(oFuncoes:pegaTag(cXMLResp, "cStat"))<>128
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := oFuncoes:pegaTag(cXMLResp, "cStat")+'-'+oFuncoes:pegaTag(cXMLResp, "xMotivo")
      RETURN(aRetorno)
@@ -220,10 +222,10 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       aRetorno['cStat']    := oFuncoes:pegaTag(cXMLResp, "cStat")
       aRetorno['xMotivo']  := oFuncoes:pegaTag(cXMLResp, "xMotivo")
    ENDIF
-
+   
    cXMLResp2 := oFuncoes:pegaTag( cXMLResp, 'retEnvEvento' )
    cXMLResp4 := oFuncoes:pegaTag( cXMLResp, 'retEvento' )    // Mauricio Cruz - 13/10/2011
-
+   
    nPos := 1
    nI := 0
    DO WHILE .T.
@@ -235,25 +237,25 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       IF EMPTY( cXMLResp3 ) .OR. nPos <= 0
          EXIT
       ENDIF
-     cSeq := ALLTRIM(STR(nI))
-     aRetorno['Id_'+cSeq]          := oFuncoes:pegaTag(cXMLResp3, "Id")
-     aRetorno['tpAmb_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "tpAmb")
-     aRetorno['verAplic_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "verAplic")
-     aRetorno['cOrgao_'+cSeq]      := oFuncoes:pegaTag(cXMLResp3, "cOrgao")
-     aRetorno['cStat_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "cStat")
-     aRetorno['xMotivo_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "xMotivo")
-     aRetorno['chNFe_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "chNFe")
-     aRetorno['tpEvento_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "tpEvento")
-     aRetorno['xEvento_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "xEvento")
-     aRetorno['nSeqEvento_'+cSeq]  := oFuncoes:pegaTag(cXMLResp3, "nSeqEvento")
-     aRetorno['CNPJDest_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "CNPJDest")
-     aRetorno['CPFDest_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "CPFDest")
-     aRetorno['emailDest_'+cSeq]   := oFuncoes:pegaTag(cXMLResp3, "emailDest")
-     aRetorno['dhRegEvento_'+cSeq] := oFuncoes:pegaTag(cXMLResp3, "dhRegEvento")
-     aRetorno['nProt_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "nProt")
-
+      cSeq := ALLTRIM(STR(nI))
+      aRetorno['Id_'+cSeq]          := oFuncoes:pegaTag(cXMLResp3, "Id")
+      aRetorno['tpAmb_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "tpAmb")
+      aRetorno['verAplic_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "verAplic")
+      aRetorno['cOrgao_'+cSeq]      := oFuncoes:pegaTag(cXMLResp3, "cOrgao")
+      aRetorno['cStat_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "cStat")
+      aRetorno['xMotivo_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "xMotivo")
+      aRetorno['chNFe_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "chNFe")
+      aRetorno['tpEvento_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "tpEvento")
+      aRetorno['xEvento_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "xEvento")
+      aRetorno['nSeqEvento_'+cSeq]  := oFuncoes:pegaTag(cXMLResp3, "nSeqEvento")
+      aRetorno['CNPJDest_'+cSeq]    := oFuncoes:pegaTag(cXMLResp3, "CNPJDest")
+      aRetorno['CPFDest_'+cSeq]     := oFuncoes:pegaTag(cXMLResp3, "CPFDest")
+      aRetorno['emailDest_'+cSeq]   := oFuncoes:pegaTag(cXMLResp3, "emailDest")
+      aRetorno['dhRegEvento_'+cSeq] := oFuncoes:pegaTag(cXMLResp3, "dhRegEvento")
+      aRetorno['nProt_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "nProt")
+      
       // Mauricio Cruz - 13/10/2011
-      IF oFuncoes:pegaTag(cXMLResp3, "cStat")<>'135' // SE NÃO FOR: Evento registrado e vinculado a NF-e
+      IF oFuncoes:pegaTag(cXMLResp3, "cStat")<>'135'
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := oFuncoes:pegaTag(cXMLResp3, "xMotivo")
          RETURN(aRetorno)
@@ -271,19 +273,17 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                      '</infEvento>' +;
                    '</retEvento>' +;
                  '</ProcEventoNFe>'
-*/
+*/   
    //  Mauricio Cruz - 13/10/2011
    cXMLResp := '<?xml version="1.0" encoding="UTF-8" ?>' +;
                  '<ProcEventoNFe versao="1.00" xmlns="http://www.portalfiscal.inf.br/nfe">' +;
                    '<evento ' +;
                      oFuncoes:pegaTag(cXMLDadosMsg, 'evento') +;
                    '</evento>' +;
-                     '<retEvent ' +;
+                     '<retEvento ' +;
                        cXMLResp4 +;
                    '</retEvento>' +;
                  '</ProcEventoNFe>'
-
-
    TRY
       MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-cce.xml",cXMLResp,.F.)
    CATCH
