@@ -23,6 +23,7 @@ CLASS hbNFeFuncoes
    METHOD validaPlaca(cPlaca)
 *  // Funcoes de Data
    METHOD FormatDate(dData,cMascara)
+   METHOD DesFormatDate(cData)
 *  // Funcoes de Valores
    METHOD ponto(nValor,nTamanho,nDecimais,cTipo,cSigla)
 *  // Funcoes de Diretorios
@@ -30,6 +31,8 @@ CLASS hbNFeFuncoes
 *  // Funcoes de Calculos
    METHOD modulo11(cStr,nPeso1,nPeso2)
    METHOD BringToDate(cStr)
+   Method RemoveAcentuacao(cText)
+   Method XMLnaArray(cXml)
 ENDCLASS
 
 METHOD BringToDate(cStr) CLASS hbNFeFuncoes
@@ -59,6 +62,7 @@ RETURN(cRetorno)
 
 METHOD FormatDate(dData,cMascara,cSeparador) CLASS hbNFeFuncoes
 LOCAL cResultado
+
    IF cSeparador=Nil
       cSeparador="/"
    ENDIF
@@ -96,6 +100,7 @@ LOCAL cResultado
    ELSEIF cMascara == "DD"
       cResultado = SUBS(DTOC(dData),1,2)
    ENDIF
+
 RETURN(cResultado)
 
 
@@ -225,6 +230,7 @@ METHOD parseDecode( cTexto ) CLASS hbNFeFuncoes
 LOCAL cRetorno, aFrom, aTo, nI
    aTo := { '&', '"', "'", '<', '>', 'º', 'ª' }
    aFrom := { '&amp;', '&quot;', '&#39;', '&lt;', '&gt;', '&#176;', '&#170;' }
+
    FOR nI=1 TO LEN(aFrom)
       cRetorno := STRTRAN( cTexto, aFrom[nI], aTo[nI] )
    NEXT
@@ -286,13 +292,136 @@ LOCAL lRetorno := .T., nI
    ENDIF
 RETURN (lRetorno)
 
+
+
+
+
+Method RemoveAcentuacao(cText) CLASS hbNFeFuncoes
+  cText:= StrTran(cText,"Ã","A")
+  cText:= StrTran(cText,"Â","A")
+  cText:= StrTran(cText,"Á","A")
+  cText:= StrTran(cText,"Ä","A")
+  cText:= StrTran(cText,"À","A")
+  cText:= StrTran(cText,"ã","a")
+  cText:= StrTran(cText,"â","a")
+  cText:= StrTran(cText,"á","a")
+  cText:= StrTran(cText,"ä","a")
+  cText:= StrTran(cText,"à","a")
+
+  cText:= StrTran(cText,"É","E")
+  cText:= StrTran(cText,"Ê","E")
+  cText:= StrTran(cText,"Ë","E")
+  cText:= StrTran(cText,"È","E")
+  cText:= StrTran(cText,"é","e")
+  cText:= StrTran(cText,"ê","e")
+  cText:= StrTran(cText,"ë","e")
+  cText:= StrTran(cText,"è","e")
+  cText:= StrTran(cText,"Í","I")
+
+  cText:= StrTran(cText,"Î","I")
+  cText:= StrTran(cText,"Ï","I")
+  cText:= StrTran(cText,"Ì","I")
+  cText:= StrTran(cText,"í","i")
+  cText:= StrTran(cText,"î","i")
+  cText:= StrTran(cText,"ï","i")
+  cText:= StrTran(cText,"ì","i")
+
+  cText:= StrTran(cText,"Ó","O")
+  cText:= StrTran(cText,"Õ","O")
+  cText:= StrTran(cText,"Ô","O")
+  cText:= StrTran(cText,"ó","O")
+  cText:= StrTran(cText,"Ö","O")
+  cText:= StrTran(cText,"Ò","O")
+  cText:= StrTran(cText,"õ","o")
+  cText:= StrTran(cText,"ô","o")
+  cText:= StrTran(cText,"ó","o")
+  cText:= StrTran(cText,"ö","o")
+  cText:= StrTran(cText,"ò","o")
+  cText := StrTran(cText,"º","")
+  cText:= StrTran(cText,CHR(176),"")
+
+  cText:= StrTran(cText,"Û","U")
+  cText:= StrTran(cText,"Ú","U")
+  cText:= StrTran(cText,"Ü","U")
+  cText:= StrTran(cText,"Ù","U")
+  cText:= StrTran(cText,"û","u")
+  cText:= StrTran(cText,"ú","u")
+  cText:= StrTran(cText,"ü","u")
+  cText:= StrTran(cText,"ù","u")
+
+  cText := StrTran(cText,"Ç","C")
+  cText := StrTran(cText,"ç","c")
+  cText := StrTran(cText,"&")
+return(cText)
+
+
+
+
+METHOD DesFormatDate(cData) CLASS hbNFeFuncoes
+/*
+   Recebe a data no formato 'yyyy-mm-ddThh:mm:ss' e retorna uma data xBase
+   Mauricio Cruz - 23/05/2013
+*/
+LOCAL dRet:=CTOD('')
+IF AT('T',cData)>0
+   cData:=LEFT(cData,AT('T',cData)-1)
+ENDIF
+
+dRet := CTOD( RIGHT(cData,2)+'/'+SUBSTR(cData,6,2)+'/'+LEFT(cData,4) )
+
+Return(dRet)
+
+
+
+Method XMLnaArray(cXml) CLASS hbNFeFuncoes
+/*
+   Retorna um XML na array
+   Armando Pinto /  Mauricio Cruz - 31/05/2013
+   {NOME DA TAG, CONTEUDO DA TAG, NIVEL}
+*/
+
+Local oXMLNode, oXMLIter, oXMLFirst
+LOCAL aRetorno:={{'','','',''}}, aTOK:={}
+LOCAL cPath:='', cNOD:=''
+
+ADEL(aRetorno,1,.T.)  
+
+IF cXml=NIL .OR. !FILE(cXml)
+   RETURN({})
+ENDIF
+   
+oXmlDoc := TXmlDocument():new()
+oXMlDoc:read( Memoread( cXML ) ) 
+   
+oXMLFirst := oXmlDoc:findFirst()
+oXMLIter := TXmlIterator():new( oXMLFirst )
+   
+Do While .T.
+   TRY
+      oXMLNode := oXMLIter:next()
+      cPath:=SUBSTR(STRTRAN(oXMLNode:Path(),'/','.'),2,LEN(oXMLNode:Path()))
+      aTOK:=HB_ATokens( cPath,".",.F.,.F.)
+      IF LEN(aTOK)>=2
+         cNOD:=aTOK[LEN(aTOK)-1]
+      ELSE
+         cNOD:=''
+      ENDIF
+      AADD(aRetorno, {oXMLNode:cName,oXMLNode:cData,cPath,cNOD })
+   CATCH
+      EXIT
+   END
+EndDo
+
+Return(aRetorno)
+
+
 #pragma BeginDump
 #include "windows.h"
 #include "hbapi.h"
 
 typedef INT (WINAPI * _CONSISTEINSCRICAOESTADUAL)(const char *szInscr_Est,const char *szEstado);
 
-HB_FUNC( CONSISTEINSCRICAOESTADUAL )
+HB_FUNC( HBNFE_CONSISTEINSCRICAOESTADUAL )
 {
    HINSTANCE handle = LoadLibrary( "ie32_dll3.dll" );
    if ( handle )
@@ -309,9 +438,9 @@ HB_FUNC( CONSISTEINSCRICAOESTADUAL )
 #pragma EndDump
 
 
-*******************
-FUNCTION CNPJ(FCGC)
-*******************
+*************************
+FUNCTION HBNFE_CNPJ(FCGC)
+*************************
 LOCAL T :=0,  TT := 0,  TTT :=  0
 LOCAL CCNPJ := SPACE(18)
 
@@ -369,9 +498,10 @@ IF CCNPJ != PARTEa1+PARTEa2+PARTEa3+PARTEa4+PARTEa5
 ENDIF
 RETURN .T.
 
-******************
-FUNCTION CPF(FCPF)
-******************
+
+************************
+FUNCTION HBNFE_CPF(FCPF)
+************************
 LOCAL T :=0,  TT :=0,  TTT :=  0
 LOCAL CCPF :=  SPACE(11)
 
@@ -421,7 +551,7 @@ IF CCPF !=PARTEA1+PARTEA2+PARTEA3+PARTEA4
 ENDIF
 RETURN .T.
 
-FUNCTION CODIGO_UF(cEST)
+FUNCTION HBNFE_CODIGO_UF(cEST)
 /*
    retorna o codigo do estado
    Mauricio Cruz - 21/09/2011
@@ -464,3 +594,5 @@ IF nSCAN>0
 ENDIF
 
 RETURN(cRET)
+
+

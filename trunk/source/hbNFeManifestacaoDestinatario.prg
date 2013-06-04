@@ -75,9 +75,9 @@ if cUrlWS = nil
 endif
 TRY
    #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
    #else
-      oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
    #endif
 CATCH
    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
@@ -125,9 +125,9 @@ cXML:='<?xml version="1.0" encoding="utf-8"?>'+;
       '</soap:Envelope>'
 
 #ifdef __XHARBOUR__
-   oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
 #else
-   oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
 #endif
 oDOMDoc:async = .F.
 oDOMDoc:validateOnParse  = .T.
@@ -306,9 +306,9 @@ if cUrlWS = nil
 endif
 TRY
    #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
    #else
-      oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
    #endif
 CATCH
    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
@@ -353,9 +353,9 @@ cXML:='<?xml version="1.0" encoding="utf-8"?>'+;
       '</soap:Envelope>'
 
 #ifdef __XHARBOUR__
-   oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
 #else
-   oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
 #endif
 oDOMDoc:async = .F.
 oDOMDoc:validateOnParse  = .T.

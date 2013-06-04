@@ -34,8 +34,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       ::cUFWS := ::ohbNFe:cUFWS
    ENDIF
    IF ::versaoDados = Nil
-      ::versaoDados :=  '2.01' //::ohbNFe:versaoDados
+      ::versaoDados := '2.01'
    ENDIF
+
    IF ::tpAmb = Nil
       ::tpAmb := ::ohbNFe:tpAmb
    ENDIF
@@ -137,9 +138,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      #endif
   ELSE // MSXML
      #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
      #else
-        oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
      #endif
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
@@ -147,9 +148,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
 
      #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
      #else
-        oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
      #endif
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
@@ -184,7 +185,9 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      ENDDO
      cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
    ENDIF
+
    cXMLResp := oFuncoes:pegaTag( cXMLResp, 'retConsSitNFe' )
+
    TRY
       MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml",cXMLResp,.F.)
    CATCH
@@ -192,18 +195,18 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      aRetorno['MsgErro']  := 'Problema ao gravar retorno da consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml"
      RETURN(aRetorno)
    END
-   aRetorno['OK']       := .T.
-   aRetorno['MsgErro']  := ""
-   aRetorno['tpAmb']    := oFuncoes:pegaTag(cXMLResp, "tpAmb")
-   aRetorno['verAplic'] := oFuncoes:pegaTag(cXMLResp, "verAplic")
-   aRetorno['dhRecbto'] := oFuncoes:pegaTag(cXMLResp, "dhRecbto")
-   aRetorno['nProt']    := oFuncoes:pegaTag(cXMLResp, "nProt")
-   aRetorno['digVal']   := oFuncoes:pegaTag(cXMLResp, "digVal")
-   aRetorno['cStat']    := oFuncoes:pegaTag(cXMLResp, "cStat")
-   aRetorno['xMotivo']  := oFuncoes:pegaTag(cXMLResp, "xMotivo")
-   aRetorno['cUF']      := oFuncoes:pegaTag(cXMLResp, "uUF")
-   aRetorno['chNFe']    := oFuncoes:pegaTag(cXMLResp, "chNFe")
-   aRetorno['protNFe']  := oFuncoes:pegaTag(cXMLResp, "protNFe")
+   aRetorno['OK']           := .T.
+   aRetorno['MsgErro']      := ""
+   aRetorno['tpAmb']        := oFuncoes:pegaTag(cXMLResp, "tpAmb")
+   aRetorno['verAplic']     := oFuncoes:pegaTag(cXMLResp, "verAplic")
+   aRetorno['dhRecbto']     := oFuncoes:pegaTag(cXMLResp, "dhRecbto")
+   aRetorno['nProt']        := oFuncoes:pegaTag(cXMLResp, "nProt")
+   aRetorno['digVal']       := oFuncoes:pegaTag(cXMLResp, "digVal")
+   aRetorno['cStat']        := oFuncoes:pegaTag(cXMLResp, "cStat")
+   aRetorno['xMotivo']      := oFuncoes:pegaTag(cXMLResp, "xMotivo")
+   aRetorno['cUF']          := oFuncoes:pegaTag(cXMLResp, "uUF")
+   aRetorno['chNFe']        := oFuncoes:pegaTag(cXMLResp, "chNFe")
+   aRetorno['protNFe']      := oFuncoes:pegaTag(cXMLResp, "protNFe")
    // acresentado as duas tag abaixo: Leonardo Machado - 28/06/2012
    aRetorno['retCancNFe']   := oFuncoes:pegaTag(cXMLResp, "retCancNFe")
    aRetorno['procEventoNFe']:= oFuncoes:pegaTag(cXMLResp, "procEventoNFe")
@@ -220,20 +223,12 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
             aRetorno['protNFe']:='<protNFe '+aRetorno['protNFe']+'</protNFe>'
          ENDIF
 
-         // ADD tag "nfeProc" -> Anderson Camilo - 23/11/2011
+         // ADD tag "nfeProc" -> Mauricio Cruz - 03/10/2011
          cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?><nfeProc versao="2.01" xmlns="http://www.portalfiscal.inf.br/nfe">'+;
                     SUBS(cXMLSai,1,AT('/NFe>',cXMLSai)+4) + ;
                     aRetorno['protNFe'] + '</nfeProc>'
 
 /*
-                    SUBS(cXMLSai,AT('<NFe ',cXMLSai),AT('/NFe>',cXMLSai) - AT('<NFe ',cXMLSai) + 5) + ;
-                    aRetorno['protNFe'] + '</nfeProc>'
-
-         // ADD tag "nfeProc" -> Mauricio Cruz - 03/10/2011
-         cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?><nfeProc versao="2.00" xmlns="http://www.portalfiscal.inf.br/nfe">'+; 
-                    SUBS(cXMLSai,1,AT('/NFe>',cXMLSai)+4) + ;
-                    aRetorno['protNFe'] + '</nfeProc>'
-
          cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?>';
                  + '<nfeProc versao="2.00" xmlns="http://www.portalfiscal.inf.br/nfe">';
                  + '<NFe xmlns' + hbNFe_PegaDadosXML('NFe xmlns', cXMLSai, 'NFe' ) + '</NFe>';

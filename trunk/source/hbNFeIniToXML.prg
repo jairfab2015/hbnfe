@@ -19,7 +19,6 @@ CLASS hbNFeIniToXML
    DATA cIniFile
    DATA cXMLFile
    DATA lValida    // Assina e Valida
-   DATA lIniComando   // se .T. ele não vai ler arquivo, vai pegar o conteudo do cIniFile  // Anderson Camilo dia 03/11/2011
    
    DATA aIde
    DATA aRefNfe       // notas referenciadas - Mauricio Cruz - 18/01/2012
@@ -28,21 +27,21 @@ CLASS hbNFeIniToXML
    DATA aRetirada
    DATA aEntrega
    DATA aICMSTotal
-   DATA aISSTotal
-   DATA aRetTrib
-   DATA aTransp
-   DATA aRetTransp
-   DATA aVeicTransp
-   DATA aReboque
-   DATA aFatura
-   DATA aDuplicatas
-   DATA aInfAdic
-   DATA aObsCont
-   DATA aObsFisco
-   DATA aProcRef
+  	DATA aISSTotal
+  	DATA aRetTrib
+  	DATA aTransp
+  	DATA aRetTransp
+  	DATA aVeicTransp
+  	DATA aReboque
+  	DATA aFatura
+  	DATA aDuplicatas
+  	DATA aInfAdic
+  	DATA aObsCont
+  	DATA aObsFisco
+  	DATA aProcRef
    DATA aExporta
-   DATA aCompra
-   DATA aInfProt
+  	DATA aCompra
+  	DATA aInfProt
 
    DATA aItem
    DATA aItemDI
@@ -63,7 +62,9 @@ CLASS hbNFeIniToXML
    DATA aItemCOFINS
    DATA aItemCOFINSST
    DATA aItemISSQN
-   DATA lCriaSaiNfe INIT .T.   // se deve criar ou não o SAINFE.TXT.  Mauricio Cruz - 28/11/2011
+   DATA lCriaSaiNfe INIT .F.   // se deve criar ou não o SAINFE.TXT.  Mauricio Cruz - 28/11/2011
+   DATA aItemCOMB
+	  DATA lMostra_imp_danfe INIT .F.
 
    DATA cXMLSaida
    METHOD execute()
@@ -74,39 +75,22 @@ ENDCLASS
 
 METHOD execute() CLASS hbNFeIniToXML
 LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValida, aRetornoVal, oCancela, aRetornoCan
-
    IF ::lValida = Nil
       ::lValida := .F.
    ENDIF
-   
-   IF ::lIniComando = Nil     // Anderson Camilo   09/11/2011
-      ::lIniComando := .F.
+
+   IF !FILE( ::cIniFile )
+      aRetorno['OK'] := .F.
+      aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
+      RETURN(aRetorno)
    ENDIF
-   
-   IF !::lIniComando          // Anderson Camilo   09/11/2011   
-	   IF !FILE( ::cIniFile )
-	      aRetorno['OK'] := .F.
-	      aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
-	      RETURN(aRetorno)
-	   ELSE
-		   aRetorno['OK'] := .T.
 
-		   cXML := MEMOREAD( ::cIniFile )
-		   cComando := SUBS( cXML, 1, AT("(", cXML )-1)
-		ENDIF
-	ELSE
-      cXML := ::cIniFile
-     
-      IF At("[",cXML) = 0
-         aRetorno['OK'] := .F.
-         aRetorno['MsgErro'] := 'Conteudo do comando INI invalido ' + ::cIniFile
-         RETURN(aRetorno)
-      ENDIF
+   aRetorno['OK'] := .T.
 
-      aRetorno['OK'] := .T.
-      cComando := SUBS( cXML, 1, AT("(", cXML )-1)
-	ENDIF	
-   hIniData := LerIni( cXML )
+   cXML := MEMOREAD( ::cIniFile )
+   cComando := SUBS( cXML, 1, AT("(", cXML )-1)
+
+   hIniData := HB_ReadIni( ::cIniFile )  // ESSA FUNÇÃO ORIGINAL DO XHARBOUR TEM UM PROBLEMA E LÊ APENAS 1024 BYTS, POR ISSO FOI MUDADO PARA ESSA HBNFE_ReadIni() QUE LÊ 4096BYTS
    IF "CRIAR" $ UPPER(cComando)
       aRetorno := ::criaNFe(hIniData,::cIniFile)
       IF ::lCriaSaiNfe
@@ -117,12 +101,14 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
          ENDIF
       ENDIF
    ELSEIF "ASSINAR" $ UPPER(cComando)
+
       oAssina := hbNFeAssina()
       oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe
       oAssina:cXMLFile := SUBS( cXML, AT("(", cXML )+2, AT(")", cXML )-2)
       oAssina:lMemFile := .F.
       aRetornoAss := oAssina:execute()
       oAssina := Nil
+      
       IF aRetornoAss['OK'] == .F.
          aRetorno['OK'] := .F.
          aRetorno['MsgErro'] := aRetornoAss['MsgErro']
@@ -227,12 +213,13 @@ RETURN(aRetorno)
 METHOD criaNFe(hIniData,cIniFile) CLASS hbNFeIniToXML
 LOCAL oFuncoes := hbNFeFuncoes(), aRetorno := hash(), cDV, cChaveNFe, ;
       oAssina, aRetornoAss, oValida, aRetornoVal,;
-      nICob, nNICob, nItem, nNItem, nObs, nAdi, nDI, mI, mY, nCasas, cConteudo   && cConteudo nCasas Acrescentado por Anderson Camilo dia 30/07/2012
+      nICob, nNICob, nItem, nNItem, nObs, nAdi, nDI, mI, mY
+LOCAL nItnRef:=0      
 LOCAL aMSGvld:={}
 LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
-   aRetorno['OK'] := .T.
-
+   aRetorno['OK'] := .T.      
+   
    cChaveNFe := ::ohbNFe:empresa_UF + ;
              oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYMM","") + ;
              PADL(ALLTRIM(hIniData['Emitente']['CNPJ']),14,'0') + ;
@@ -244,179 +231,166 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
    cDV := oFuncoes:modulo11( cChaveNFe, 2, 9 )
    cChaveNFe += cDV
-
+   
    ::aIde := hash()
-   ::aIde[ "cUF" ] := ::ohbNFe:empresa_UF
-   ::aIde[ "cNF" ] := STRZERO(VAL(hIniData['Identificacao']['Codigo']),8)
-   ::aIde[ "natOp" ] := oFuncoes:parseEncode( hIniData['Identificacao']['NaturezaOperacao'] )
-   ::aIde[ "indPag" ] := hIniData['Identificacao']['FormaPag']
-   ::aIde[ "mod" ] := hIniData['Identificacao']['Modelo']
-   ::aIde[ "serie" ] := hIniData['Identificacao']['Serie']
-   ::aIde[ "nNF" ] := ALLTRIM(STR(VAL(hIniData['Identificacao']['Numero'])))
-   ::aIde[ "dEmi" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYYY-MM-DD","-")
+	::aIde[ "cUF" ] := ::ohbNFe:empresa_UF
+	::aIde[ "cNF" ] := STRZERO(VAL(hIniData['Identificacao']['Codigo']),8)
+ ::aIde[ "natOp" ] := oFuncoes:parseEncode( hIniData['Identificacao']['NaturezaOperacao'] )
+	::aIde[ "indPag" ] := hIniData['Identificacao']['FormaPag']
+	::aIde[ "mod" ] := hIniData['Identificacao']['Modelo']
+	::aIde[ "serie" ] := hIniData['Identificacao']['Serie']
+	::aIde[ "nNF" ] := ALLTRIM(STR(VAL(hIniData['Identificacao']['Numero'])))
+	::aIde[ "dEmi" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYYY-MM-DD","-")
    TRY
 	   ::aIde[ "dSaiEnt" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Saida']),"YYYY-MM-DD","-")
    CATCH
       ::aIde[ "dSaiEnt" ] := ''
    END
-   TRY
-      ::aIde[ "hSaiEnt" ] := hIniData['Identificacao']['hSaiEnt']
+  	TRY
+   	::aIde[ "hSaiEnt" ] := hIniData['Identificacao']['hSaiEnt']
    CATCH
       ::aIde[ "hSaiEnt" ] := ''
    END
-   ::aIde[ "tpNF" ] := hIniData['Identificacao']['Tipo']
-   ::aIde[ "cMunFG" ] := hIniData['Emitente']['CidadeCod'] //::ohbNFe:empresa_cMun // codigo ibge empresa
-   ::aIde[ "tpImp" ] := ::ohbNFe:empresa_tpImp // 1 - retrato 2-paisagem
-   ::aIde[ "tpEmis" ] := ::ohbNFe:tpEmis  // 1-normal scan fsda...
-   ::aIde[ "cDV" ] := cDV // Digito verificador chave nfe
-   ::aIde[ "tpAmb" ] := ::ohbNFe:tpAmb // 1- producao 2-homologacao
-   IF hIniData['Identificacao']['Finalidade'] = '0'
-      ::aIde[ "finNFe" ] := '1'
-   ELSE
-      ::aIde[ "finNFe" ] := hIniData['Identificacao']['Finalidade'] // finalidade 1-normal/2-complementar 3- de ajuste
-   ENDIF
-   ::aIde[ "procEmi" ] := '0' //0 - emissão de NF-e com aplicativo do contribuinte 1 - emissão de NF-e avulsa pelo Fisco 2 - emissão de NF-e avulsa pelo contribuinte com seu certificado digital, através do site do Fisco 3- emissão NF-e pelo contribuinte com aplicativo fornecido pelo Fisco.
-   ::aIde[ "verProc" ] := ::ohbNFe:versaoSistema // versao sistema
-
-   // processo referenciado            && Alterado por Anderson Camilo 13/08/2012
-   ::aProcRef := hash()
-   nPrRef := 0
-   DO WHILE .T.
-      nPrRef ++
-       TRY
-          ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['Tipo']
-		  
-		  if ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NFe'       && Tipo de documento    NF-e
-             ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_refNFe"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['nNF']	
-			 
-           elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'CTe'       && Tipo de documento   CT-e
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_refCTe"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['refCTe']		  
-
-           elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NFP'       && Tipo de documento   NF Produtor
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_cUF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['cUF']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_AAMM"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['AAMM']		  
-                  TRY
-                    ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['CNPJ']	
-                  CATCH
-                    ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] := ''
-                  END
-                  TRY
-                    ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CPF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['CPF']	
-                  CATCH
-                    ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CPF"] := ''
-                  END
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_IE"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['IE']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['Modelo']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_serie"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['Serie']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nNF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['nNF']		  
-				  
-           elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NF'       && Tipo de documento   NF Modelo 01
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_cUF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['cUF']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_AAMM"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['AAMM']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['CNPJ']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['Modelo']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_serie"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['Serie']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nNF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['nNF']		
-				  
-           elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'ECF'       && Tipo de documento   ECF Cupom Fiscal
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['ModECF']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nECF"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['nECF']		  
-                  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nCOO"] := hIniData['NFRef'+STRZERO(nPrRef,3)] ['nCOO']		  
-				  
-          endif
-		  
-       CATCH
-          nPrRef --
-          EXIT
-       END
-   ENDDO
+	::aIde[ "tpNF" ] := hIniData['Identificacao']['Tipo']
+	::aIde[ "cMunFG" ] := hIniData['Emitente']['CidadeCod'] //::ohbNFe:empresa_cMun // codigo ibge empresa
    
-   ::aEmit := hash()
-   ::aEmit[ "CNPJ" ] := hIniData['Emitente']['CNPJ']
-   ::aEmit[ "CPF" ] := '' // avulso pelo fisco
-   ::aEmit[ "xNome" ] := oFuncoes:parseEncode( hIniData['Emitente']['Razao'] )
-    ::aEmit[ "xFant" ] := oFuncoes:parseEncode( hIniData['Emitente']['Fantasia'] )
-   ::aEmit[ "xLgr" ] := oFuncoes:parseEncode( hIniData['Emitente']['Logradouro'] )
-   ::aEmit[ "nro" ] := hIniData['Emitente']['Numero']
-   ::aEmit[ "xCpl" ] := oFuncoes:parseEncode( hIniData['Emitente']['Complemento'] )
-   ::aEmit[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Emitente']['Bairro'] )
-   ::aEmit[ "cMun" ] := hIniData['Emitente']['CidadeCod']
-   ::aEmit[ "xMun" ] := oFuncoes:parseEncode( hIniData['Emitente']['Cidade'] )
-   ::aEmit[ "UF" ] := hIniData['Emitente']['UF']
-   ::aEmit[ "CEP" ] := hIniData['Emitente']['CEP']
+   // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012
+    ::aRefNfe:=hash()
+   WHILE .T.
+      nItnRef++
+      TRY
+         ::aRefNfe['refNF'+STRZERO(nItnRef,3)]  := hIniData['NFRef'+STRZERO(nItnRef,3)]['Tipo']
+      CATCH
+         nItnRef--
+         EXIT
+      END
+      ::aRefNfe['refNFe'+STRZERO(nItnRef,3)] := hIniData['NFRef'+STRZERO(nItnRef,3)]['refNFe']
+      IF !hIniData['NFRef'+STRZERO(nItnRef,3)]['Tipo']='NFe'
+         ::aRefNfe['refNF'+STRZERO(nItnRef,3)]  := '1A'
+      ENDIF
+      ::aRefNfe['cUF'+STRZERO(nItnRef,3)]    := hIniData['NFRef'+STRZERO(nItnRef,3)]['cUF']
+      ::aRefNfe['AAMM'+STRZERO(nItnRef,3)]   := hIniData['NFRef'+STRZERO(nItnRef,3)]['AAMM']
+      ::aRefNfe['CNPJ'+STRZERO(nItnRef,3)]   := hIniData['NFRef'+STRZERO(nItnRef,3)]['CNPJ']
+      ::aRefNfe['mod'+STRZERO(nItnRef,3)]    := hIniData['NFRef'+STRZERO(nItnRef,3)]['Modelo']
+      ::aRefNfe['serie'+STRZERO(nItnRef,3)]  := hIniData['NFRef'+STRZERO(nItnRef,3)]['Serie']
+      ::aRefNfe['nNF'+STRZERO(nItnRef,3)]    := hIniData['NFRef'+STRZERO(nItnRef,3)]['nNF']
+   ENDDO
+ 
+
+	::aIde[ "tpImp" ] := ::ohbNFe:empresa_tpImp // 1 - retrato 2-paisagem
+	::aIde[ "tpEmis" ] := ::ohbNFe:tpEmis  // 1-normal scan fsda...
+   
+   IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5  // SE FOR MODO SCAN...
+      ::aIde[ "dhCont" ] := ALLTRIM(STR(YEAR(CTOD(hIniData['Identificacao']['dhCont']))))+'-'+;
+                            ALLTRIM(STRZERO( MONTH(CTOD(hIniData['Identificacao']['dhCont'])),2 ))+'-'+;
+                            ALLTRIM(STRZERO( DAY(CTOD(hIniData['Identificacao']['dhCont'])),2 )) +'T'+;
+                            ALLTRIM(hIniData['Identificacao']['contHr'])
+      ::aIde[ "xJust" ] :=   hIniData['Identificacao']['xJust']
+   ENDIF
+   
+	::aIde[ "cDV" ] := cDV // Digito verificador chave nfe
+	::aIde[ "tpAmb" ] := ::ohbNFe:tpAmb // 1- producao 2-homologacao
+	IF hIniData['Identificacao']['Finalidade'] = '0'
+	   ::aIde[ "finNFe" ] := '1'
+	ELSE
+   	::aIde[ "finNFe" ] := hIniData['Identificacao']['Finalidade'] // finalidade 1-normal/ 2-complementar/ 3- de ajuste
+   ENDIF
+	::aIde[ "procEmi" ] := '0' //0 - emissão de NF-e com aplicativo do contribuinte 1 - emissão de NF-e avulsa pelo Fisco 2 - emissão de NF-e avulsa pelo contribuinte com seu certificado digital, através do site do Fisco 3- emissão NF-e pelo contribuinte com aplicativo fornecido pelo Fisco.
+	::aIde[ "verProc" ] := ::ohbNFe:versaoSistema // versao sistema
+
+
+ ::aEmit := hash()
+	::aEmit[ "CNPJ" ] := hIniData['Emitente']['CNPJ']
+	::aEmit[ "CPF" ] := '' // avulso pelo fisco
+ ::aEmit[ "xNome" ] := oFuncoes:parseEncode( hIniData['Emitente']['Razao'] )
+	::aEmit[ "xFant" ] := oFuncoes:parseEncode( hIniData['Emitente']['Fantasia'] )
+	::aEmit[ "xLgr" ] := oFuncoes:parseEncode( hIniData['Emitente']['Logradouro'] )
+	::aEmit[ "nro" ] := hIniData['Emitente']['Numero']
+	::aEmit[ "xCpl" ] := oFuncoes:parseEncode( hIniData['Emitente']['Complemento'] )
+	::aEmit[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Emitente']['Bairro'] )
+	::aEmit[ "cMun" ] := hIniData['Emitente']['CidadeCod']
+	::aEmit[ "xMun" ] := oFuncoes:parseEncode( hIniData['Emitente']['Cidade'] )
+	::aEmit[ "UF" ] := hIniData['Emitente']['UF']
+	::aEmit[ "CEP" ] := hIniData['Emitente']['CEP']
+	TRY
+    	::aEmit[ "cPais" ] := hIniData['Emitente']['PaisCod']
+    	::aEmit[ "xPais" ] := hIniData['Emitente']['Pais']
+	CATCH
+   	::aEmit[ "cPais" ] := '1058'
+    	::aEmit[ "xPais" ] := 'BRASIL'
+	END
    TRY
-       ::aEmit[ "cPais" ] := hIniData['Emitente']['PaisCod']
-       ::aEmit[ "xPais" ] := hIniData['Emitente']['Pais']
+	   ::aEmit[ "fone" ] := oFuncoes:eliminaString(hIniData['Emitente']['Fone'], ".-/ ()")
    CATCH
-      ::aEmit[ "cPais" ] := '1058'
-       ::aEmit[ "xPais" ] := 'BRASIL'
+      ::aEmit[ "fone" ] := ''
    END
-   ::aEmit[ "fone" ] := oFuncoes:eliminaString(hIniData['Emitente']['Fone'], ".-/ ()")
-   ::aEmit[ "IE" ] := oFuncoes:eliminaString(hIniData['Emitente']['IE'], ".-/ ")
-   TRY
-      ::aEmit[ "IEST" ] := hIniData['Emitente']['IEST']
-   CATCH
-      ::aEmit[ "IEST" ] := ''
-   END
-   TRY
-      ::aEmit[ "IM" ] := hIniData['Emitente']['IM']
-   CATCH
-      ::aEmit[ "IM" ] := ''
-   END
-   TRY
-      ::aEmit[ "CNAE" ] := hIniData['Emitente']['CNAE']
-   CATCH
-      ::aEmit[ "CNAE" ] := ''
-   END
-   TRY
-      ::aEmit[ "CRT" ] := hIniData['Emitente']['CRT']
-   CATCH
-      ::aEmit[ "CRT" ] := '1'
-   END
+	::aEmit[ "IE" ] := oFuncoes:eliminaString(hIniData['Emitente']['IE'], ".-/ ")
+	TRY
+   	::aEmit[ "IEST" ] := hIniData['Emitente']['IEST']
+	CATCH
+   	::aEmit[ "IEST" ] := ''
+	END
+	TRY
+   	::aEmit[ "IM" ] := hIniData['Emitente']['IM']
+	CATCH
+   	::aEmit[ "IM" ] := ''
+	END
+	TRY
+   	::aEmit[ "CNAE" ] := hIniData['Emitente']['CNAE']
+	CATCH
+   	::aEmit[ "CNAE" ] := ''
+	END
+	TRY
+   	::aEmit[ "CRT" ] := hIniData['Emitente']['CRT']
+	CATCH
+   	::aEmit[ "CRT" ] := '1'
+	END
 
    ::aDest := hash()
    IF LEN( hIniData['Destinatario']['CNPJ'] ) <= 11 .AND. hIniData['Destinatario']['UF'] <>'EX'  // Mauricio Cruz - 03/10/2011
-      ::aDest[ "CPF" ] := hIniData['Destinatario']['CNPJ'] 
+   	::aDest[ "CPF" ] := hIniData['Destinatario']['CNPJ'] 
    ELSE
-      ::aDest[ "CNPJ" ] := hIniData['Destinatario']['CNPJ']
+   	::aDest[ "CNPJ" ] := hIniData['Destinatario']['CNPJ']
    ENDIF
    IF ::ohbNFe:tpAmb='2' .AND. hIniData['Destinatario']['UF'] <>'EX'   // Mauricio Cruz - 03/10/2011
-      ::aDest[ "CNPJ" ] := '99999999000191'
+      //::aDest[ "CNPJ" ] := '99999999000191'
    ENDIF
    
-   IF ::ohbNFe:tpAmb='1'    // Mauricio Cruz - 30/09/2011
-      ::aDest[ "xNome" ] := oFuncoes:parseEncode( hIniData['Destinatario']['NomeRazao'] )
-   ELSE
+   IF ::ohbNFe:tpAmb='2'    // Mauricio Cruz - 30/09/2011
       ::aDest[ "xNome" ] := 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
-   ENDIF
-
-   ::aDest[ "xLgr" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Logradouro'] )
-   IF !EMPTY( hIniData['Destinatario']['Numero'] )
-      ::aDest[ "nro" ] := hIniData['Destinatario']['Numero']
    ELSE
-      ::aDest[ "nro" ] := '0'
+      ::aDest[ "xNome" ] := oFuncoes:parseEncode( hIniData['Destinatario']['NomeRazao'] )
    ENDIF
-   ::aDest[ "xCpl" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Complemento'] )
-   ::aDest[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Bairro'] )
-   ::aDest[ "cMun" ] := hIniData['Destinatario']['CidadeCod']
-   ::aDest[ "xMun" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Cidade'] )
-   ::aDest[ "UF" ] := hIniData['Destinatario']['UF']
-   IF !EMPTY(hIniData['Destinatario']['CEP']) .AND. hIniData['Destinatario']['UF'] <>'EX'   // Mauricio Cruz - 04/10/2011 (Motivo de exportacao)
-      ::aDest[ "CEP" ] := hIniData['Destinatario']['CEP']
-   ENDIF
-   TRY
-      IF !EMPTY( hIniData['Destinatario']['PaisCod'] )
-         ::aDest[ "cPais" ] := hIniData['Destinatario']['PaisCod']
-         ::aDest[ "xPais" ] := hIniData['Destinatario']['Pais']
-      ELSE
-         ::aDest[ "cPais" ] := '1058'
-         ::aDest[ "xPais" ] := 'BRASIL'
-      ENDIF
-   CATCH
-      ::aDest[ "cPais" ] := '1058'
-       ::aDest[ "xPais" ] := 'BRASIL'
-   END
 
+	::aDest[ "xLgr" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Logradouro'] )
+	IF !EMPTY( hIniData['Destinatario']['Numero'] )
+   	::aDest[ "nro" ] := hIniData['Destinatario']['Numero']
+   ELSE
+   	::aDest[ "nro" ] := '0'
+   ENDIF
+	::aDest[ "xCpl" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Complemento'] )
+	::aDest[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Bairro'] )
+	::aDest[ "cMun" ] := hIniData['Destinatario']['CidadeCod']
+	::aDest[ "xMun" ] := oFuncoes:parseEncode( hIniData['Destinatario']['Cidade'] )
+	::aDest[ "UF" ] := hIniData['Destinatario']['UF']
+   IF !EMPTY(hIniData['Destinatario']['CEP']) .AND. hIniData['Destinatario']['UF'] <>'EX'  // Mauricio Cruz - 04/10/2011 (Motivo de exportacao)
+	   ::aDest[ "CEP" ] := hIniData['Destinatario']['CEP']
+   ENDIF
+	TRY
+	   IF !EMPTY( hIniData['Destinatario']['PaisCod'] )
+      	::aDest[ "cPais" ] := hIniData['Destinatario']['PaisCod']
+      	::aDest[ "xPais" ] := hIniData['Destinatario']['Pais']
+      ELSE
+      	::aDest[ "cPais" ] := '1058'
+      	::aDest[ "xPais" ] := 'BRASIL'
+      ENDIF
+	CATCH
+   	::aDest[ "cPais" ] := '1058'
+    	::aDest[ "xPais" ] := 'BRASIL'
+	END
+
+  
+   
    TRY   // Alterado - Mauricio Cruz - 30/09/2011
       IF !EMPTY( hIniData['Destinatario']['Fone'] )
          ::aDest[ "fone" ] := oFuncoes:eliminaString(hIniData['Destinatario']['Fone'], ".-/ ()")
@@ -433,242 +407,215 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       ::aDest[ "IE" ] := ''
    END
 
-   TRY
-      ::aDest[ "ISUF" ] := hIniData['Destinatario']['ISUF']
-   CATCH
-      ::aDest[ "ISUF" ] := ''
-   END
-   TRY
-      ::aDest[ "email" ] := hIniData['Destinatario']['Email']
-   CATCH
-      ::aDest[ "email" ] := ''
-   END
+	TRY
+   	::aDest[ "ISUF" ] := hIniData['Destinatario']['ISUF']
+	CATCH
+   	::aDest[ "ISUF" ] := ''
+	END
+	TRY
+   	::aDest[ "email" ] := hIniData['Destinatario']['Email']
+	CATCH
+   	::aDest[ "email" ] := ''
+	END
 
-   ::aRetirada := hash()
-   TRY
-       ::aRetirada[ "CNPJ" ]    := hIniData['Retirada']['CNPJ']
-       ::aRetirada[ "CPF" ]     := hIniData['Retirada']['CPF']
-       ::aRetirada[ "xLgr" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xLgr'] )
-       ::aRetirada[ "nro" ]     := hIniData['Retirada']['nro']
-       ::aRetirada[ "xCpl" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xCpl'] )
-       ::aRetirada[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Retirada']['xBairro'] )
-       ::aRetirada[ "cMun" ]    := hIniData['Retirada']['cMun']
-       ::aRetirada[ "xMun" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xMun'] )
-       ::aRetirada[ "UF" ]      := hIniData['Retirada']['UF']
-   CATCH
-   END
+	::aRetirada := hash()
+	TRY
+    	::aRetirada[ "CNPJ" ]    := hIniData['Retirada']['CNPJ']
+    	::aRetirada[ "CPF" ]     := hIniData['Retirada']['CPF']
+    	::aRetirada[ "xLgr" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xLgr'] )
+    	::aRetirada[ "nro" ]     := hIniData['Retirada']['nro']
+    	::aRetirada[ "xCpl" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xCpl'] )
+    	::aRetirada[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Retirada']['xBairro'] )
+    	::aRetirada[ "cMun" ]    := hIniData['Retirada']['cMun']
+    	::aRetirada[ "xMun" ]    := oFuncoes:parseEncode( hIniData['Retirada']['xMun'] )
+    	::aRetirada[ "UF" ]      := hIniData['Retirada']['UF']
+	CATCH
+	END
 
-   ::aEntrega := hash()
-   TRY
+	::aEntrega := hash()
+	TRY
       TRY
-          ::aEntrega[ "CNPJ" ]    := hIniData['Entrega']['CNPJ']
+    	   ::aEntrega[ "CNPJ" ]    := hIniData['Entrega']['CNPJ']
       CATCH
          ::aEntrega[ "CNPJ" ]    := ''
       END
       TRY
-          ::aEntrega[ "CPF" ]     := hIniData['Entrega']['CPF']
+    	   ::aEntrega[ "CPF" ]     := hIniData['Entrega']['CPF']
       CATCH
          ::aEntrega[ "CPF" ]     := ''
       END
-       ::aEntrega[ "xLgr" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xLgr'] )
-       ::aEntrega[ "nro" ]     := hIniData['Entrega']['nro']
-       ::aEntrega[ "xCpl" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xCpl'] )
-       ::aEntrega[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Entrega']['xBairro'] )
-       ::aEntrega[ "cMun" ]    := hIniData['Entrega']['cMun']
-       ::aEntrega[ "xMun" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xMun'] )
-       ::aEntrega[ "UF" ]      := hIniData['Entrega']['UF']
-   CATCH
-   END
+    	::aEntrega[ "xLgr" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xLgr'] )
+    	::aEntrega[ "nro" ]     := hIniData['Entrega']['nro']
+    	::aEntrega[ "xCpl" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xCpl'] )
+    	::aEntrega[ "xBairro" ] := oFuncoes:parseEncode( hIniData['Entrega']['xBairro'] )
+    	::aEntrega[ "cMun" ]    := hIniData['Entrega']['cMun']
+    	::aEntrega[ "xMun" ]    := oFuncoes:parseEncode( hIniData['Entrega']['xMun'] )
+    	::aEntrega[ "UF" ]      := hIniData['Entrega']['UF']
+	CATCH
+	END
 
-    ::aItem := hash()
-    ::aItemDI := hash()
-     ::aItemAdi := hash()
-    ::aItemICMS := hash()
-     ::aItemIPI := hash()
-     ::aItemII := hash()
-     ::aItemPIS := hash()
-     ::aItemPISST := hash()
-   ::aItemCOFINS := hash()
-   ::aItemCOFINSST := hash()
+ 	::aItem := hash()
+ 	::aItemDI := hash()
+  	::aItemAdi := hash()
+ 	::aItemICMS := hash()
+  	::aItemIPI := hash()
+  	::aItemII := hash()
+  	::aItemPIS := hash()
+  	::aItemPISST := hash()
+	::aItemCOFINS := hash()
+	::aItemCOFINSST := hash()
+	::aItemCOMB := hash()
+		
    nItem := 0
    DO WHILE .T.
       nItem ++
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_cProd" ] := hIniData['Produto'+STRZERO(nItem,3)]['Codigo']
-       CATCH
-          nItem --
-          EXIT
-       END
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_cProd" ] := hIniData['Produto'+STRZERO(nItem,3)]['Codigo']
+    	CATCH
+    	   nItem --
+       	EXIT
+    	END
 
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ]     := hIniData['Produto'+STRZERO(nItem,3)]['EAN']
-       CATCH
-          ::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ]     := ''
-       END
-       ::aItem[ "item"+STRZERO(nItem,3)+"_xProd" ]    := oFuncoes:parseEncode( hIniData['Produto'+STRZERO(nItem,3)]['Descricao'] )
-       ::aItem[ "item"+STRZERO(nItem,3)+"_NCM" ]      := hIniData['Produto'+STRZERO(nItem,3)]['NCM']
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ]   := hIniData['Produto'+STRZERO(nItem,3)]['EXTIPI']
-       CATCH
-       END
-       ::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ]     := hIniData['Produto'+STRZERO(nItem,3)]['CFOP']
-       ::aItem[ "item"+STRZERO(nItem,3)+"_uCom" ]     := hIniData['Produto'+STRZERO(nItem,3)]['Unidade']
-	   && Alterado por anderson camilo em 30/07/2012
-	   nCasas := 0
-	   cConteudo := ''
-	   cConteudo = hIniData['Produto'+STRZERO(nItem,3)]['Quantidade']
-	   nCasas = if(at('.',cConteudo) > 0, len(cConteudo) - at('.',cConteudo), nil)
-       ::aItem[ "item"+STRZERO(nItem,3)+"_qCom" ]     := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['Quantidade'], nCasas)
-
-*    ::aItem[ "item"+STRZERO(nItem,3)+"_qCom" ]     := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['Quantidade'] )
-
-         && Alterado por anderson camilo em 30/07/2012
-       cConteudo = hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'] 
-	   nCasas = if(at('.',cConteudo) > 0, len(cConteudo) - at('.',cConteudo), nil)
-       ::aItem[ "item"+STRZERO(nItem,3)+"_vUnCom" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], nCasas )
-	   
-*    ::aItem[ "item"+STRZERO(nItem,3)+"_vUnCom" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], 4 )
-       ::aItem[ "item"+STRZERO(nItem,3)+"_vProd" ]    := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorTotal'] )
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ] := hIniData['Produto'+STRZERO(nItem,3)]['cEANTrib']
-       CATCH
-          ::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ] := ''
-       END
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['uTrib']
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ]     := hIniData['Produto'+STRZERO(nItem,3)]['EAN']
+    	CATCH
+       	::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ]     := ''
+    	END
+    	::aItem[ "item"+STRZERO(nItem,3)+"_xProd" ]    := oFuncoes:parseEncode( hIniData['Produto'+STRZERO(nItem,3)]['Descricao'] )
+    	::aItem[ "item"+STRZERO(nItem,3)+"_NCM" ]      := hIniData['Produto'+STRZERO(nItem,3)]['NCM']
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ]   := hIniData['Produto'+STRZERO(nItem,3)]['EXTIPI']
+    	CATCH
+    	END
+    	::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ]     := hIniData['Produto'+STRZERO(nItem,3)]['CFOP']
+    	::aItem[ "item"+STRZERO(nItem,3)+"_uCom" ]     := hIniData['Produto'+STRZERO(nItem,3)]['Unidade']
+    	::aItem[ "item"+STRZERO(nItem,3)+"_qCom" ]     := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['Quantidade'] , 4 )
+    	::aItem[ "item"+STRZERO(nItem,3)+"_vUnCom" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], 5 )
+    	::aItem[ "item"+STRZERO(nItem,3)+"_vProd" ]    := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorTotal'] )
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ] := hIniData['Produto'+STRZERO(nItem,3)]['cEANTrib']
+    	CATCH
+       	::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ] := ''
+    	END
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['uTrib']
       CATCH
-          ::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['Unidade']
+       	::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['Unidade']
       END
-       TRY
-         && Alterado por anderson camilo em 30/07/2012	   
-         cConteudo = hIniData['Produto'+STRZERO(nItem,3)]['qTrib']
-	     nCasas = if(at('.',cConteudo) > 0, len(cConteudo) - at('.',cConteudo), nil)
-	   
-         ::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['qTrib'], nCasas)
-*      ::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    :=  hIniData['Produto'+STRZERO(nItem,3)]['qTrib']
-		 
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['qTrib']
       CATCH
-         ::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := '0.00'
+      	::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := '0.00'
       END
-       TRY
-         && Alterado por anderson camilo em 30/07/2012	   
-         cConteudo = hIniData['Produto'+STRZERO(nItem,3)]['vUnTrib']
-	     nCasas = if(at('.',cConteudo) > 0, len(cConteudo) - at('.',cConteudo), nil)
-         ::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vUnTrib'],nCasas )
-	   
-*        ::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vUnTrib'] )
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vUnTrib'] )
       CATCH
-          ::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], 4 )
+       	::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], 5 )
       END
-       TRY
-          ::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vFrete'] )
-       CATCH
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]     := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vSeg'] )
-       CATCH
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]    := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorDesconto'] )
-       CATCH
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vOutro'] )
-       CATCH
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ]   := hIniData['Produto'+STRZERO(nItem,3)]['IndTot']
-       CATCH
-         ::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ]   := '1'
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_infAdProd" ]   := hIniData['Produto'+STRZERO(nItem,3)]['infAdProd']
-       CATCH
-       END
+    	TRY
+       	::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vFrete'] )
+    	CATCH
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]     := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vSeg'] )
+    	CATCH
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]    := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorDesconto'] )
+    	CATCH
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vOutro'] )
+    	CATCH
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ]   := hIniData['Produto'+STRZERO(nItem,3)]['IndTot']
+    	CATCH
+      	::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ]   := '1'
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_infAdProd" ]   := hIniData['Produto'+STRZERO(nItem,3)]['infAdProd']
+    	CATCH
+    	END
 
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ]     := hIniData['Produto'+STRZERO(nItem,3)]['xPed']
-       CATCH
-       END
-       TRY
-         ::aItem[ "item"+STRZERO(nItem,3)+"_nItemPed" ] := hIniData['Produto'+STRZERO(nItem,3)]['nItemPed']
-       CATCH
-       END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ]     := hIniData['Produto'+STRZERO(nItem,3)]['xPed']
+    	CATCH
+    	END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"_nItemPed" ] := hIniData['Produto'+STRZERO(nItem,3)]['nItemPed']
+    	CATCH
+    	END
+  
+      TRY 
+	     	::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ] := hIniData['comb'+STRZERO(nItem,3)]['cProdANP']
+			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_CODIF" ] := hIniData['comb'+STRZERO(nItem,3)]['CODIF']
+			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_qTemp" ] := oFuncoes:strTostrval( hIniData['comb'+STRZERO(nItem,3)]['qTemp'] , 4 )			
+			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_UFCons" ] := hIniData['comb'+STRZERO(nItem,3)]['UFCons']		   
+		CATCH
+		END
 
+  
       nDi := 0
       DO WHILE .T.
          nDi ++
-         TRY
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['nDI']
-         CATCH
-            TRY
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['NumeroDI']
-            CATCH
-               nDi --
-               EXIT
-            END
-         END
-         TRY
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDI" ]         := oFuncoes:FormatDate(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['dDI']),"YYYY-MM-DD","-")
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_xLocDesemb" ]  := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['xLocDesemb']
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_UFDesemb" ]    := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['UFDesemb']
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDesemb" ]     := oFuncoes:FormatDate(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['dDesemb']),"YYYY-MM-DD","-")
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['cExportador']
-         CATCH
-              TRY
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDI" ]         := oFuncoes:FormatDate(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI']),"YYYY-MM-DD","-")
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_xLocDesemb" ]  := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['LocalDesembaraco']
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_UFDesemb" ]    := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['UFDesembaraco']
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDesemb" ]     := oFuncoes:FormatDate(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco']),"YYYY-MM-DD","-")
-               ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['CodigoExportador']
-            CATCH
-               aRetorno['OK'] := .F.
-               aRetorno['MsgErro'] := 'Problema ao gerar DI'
-               RETURN(aRetorno)
-            END
-         END
+        	TRY
+            // alterado -> Mauricio Cruz - 04/10/2011
+           	//::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['nDI']
+            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['NumeroDI']   
+        	CATCH
+        	   nDi --
+           	EXIT
+        	END
+         /* alterado -> Mauricio Cruz - 04/10/2011
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDI" ]         := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['dDI']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_xLocDesemb" ]  := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['xLocDesemb']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_UFDesemb" ]    := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['UFDesemb']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDesemb" ]     := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['dDesemb']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['cExportador']
+         */
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDI" ]         := STR(YEAR(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),4)+'-'+;
+                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),2)+'-'+; 
+                                                                               STRZERO(DAY(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),2)
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_xLocDesemb" ]  := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['LocalDesembaraco']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_UFDesemb" ]    := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['UFDesembaraco']
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDesemb" ]     := STR(YEAR(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),4)+'-'+;
+                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),2)+'-'+; 
+                                                                               STRZERO(DAY(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),2)
+      	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['CodigoExportador']
+         
 
          nAdi := 0
          DO WHILE .T.
-            nAdi ++
-             TRY
-                ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nAdicao']
-             CATCH
-                TRY
-                   ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['NumeroAdicao']
-                CATCH
-                   nAdi --
-                   EXIT
-                END
-             END
-              TRY
-                 TRY
-                  ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nSeqAdic']
-               CATCH
-                    ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := ALLTRIM(STR(nAdi))
-               END
-                ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['cFabricante']
-                ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['vDescDI']
-              CATCH
-                 TRY
-                   TRY
-                     ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nSeqAdic']
-                  CATCH
-                     ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := ALLTRIM(STR(nAdi))
-                  END
-                   ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['CodigoFabricante']
-                   ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['DescontoADI']
-               CATCH
-                  aRetorno['OK'] := .F.
-                  aRetorno['MsgErro'] := 'Problema ao gerar Adicao'
-                  RETURN(aRetorno)
-               END
-              END
+            nAdi++  //  nDi ++  Mauricio Cruz - 04/10/2011
+          	TRY
+               //alterado -> Mauricio Cruz - 04/10/2011
+             	//::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nAdicao']
+               ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['NumeroAdicao']
+          	CATCH
+          	   nAdi--   //nDi --  Mauricio Cruz - 04/10/2011
+             	EXIT
+          	END
+            /*  alterado -> Mauricio Cruz - 04/10/2011
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nSeqAdic']
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['cFabricante']
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['vDescDI']
+            */
+
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ] := ALLTRIM(STR(nAdi))    //hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['nSeqAdic']
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['CodigoFabricante']
+          	::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     := hIniData['LADI'+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)]['DescontoADI']
          ENDDO
       ENDDO
 
-       // todo veiculos (veicProd), medicamentos (med), armamentos (arm), combustiveis (comb)
-      
+      IF ::lMostra_imp_danfe
+         TRY // valor aproximado do imposto
+            ::aItemICMS[ "item"+STRZERO(nItem,3)+"vTotTrib" ] := hIniData['IMPOSTO'+STRZERO(nItem,3)]['vTotTrib']
+         CATCH
+            ::aItemICMS[ "item"+STRZERO(nItem,3)+"vTotTrib" ] := '0.00'
+         END
+      ENDIF
+
       TRY
          IF !EMPTY( hIniData['ICMS'+STRZERO(nItem,3)]['Origem'] )
             ::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ]        := hIniData['ICMS'+STRZERO(nItem,3)]['Origem']
@@ -678,679 +625,735 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       CATCH
          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ]        := '0'
       END
-      IF ::aEmit[ "CRT" ] == '1'     // Alterado por Anderson Camilo  25/10/2011
-           ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ]         := ''
-         TRY
-            ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['CSOSN']
-         CATCH
-         END
+      IF ::aEmit[ "CRT" ] == '3'
+        	::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ]       := ''
+      	TRY
+         	::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ]         := hIniData['ICMS'+STRZERO(nItem,3)]['CST']
+      	CATCH
+      	END
       ELSE
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ]       := ''
-         TRY
-            ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ]         := hIniData['ICMS'+STRZERO(nItem,3)]['CST']
-         CATCH
-         END
+        	::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ]         := ''
+      	TRY
+         	::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['CSOSN']
+      	CATCH
+      	END
       ENDIF
-       TRY
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Modalidade']
-       CATCH
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ]       := '0'
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ]      := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualReducao']
-       CATCH
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ]         := hIniData['ICMS'+STRZERO(nItem,3)]['ValorBase']
-       CATCH
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ]         := '0.00'
-       END
-       TRY
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Aliquota']
-       CATCH
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ]       := '0.00'
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Valor']
-       CATCH
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ]       := '0.00'
-       END
-       TRY
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['ModalidadeST']
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ]      := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualMargemST']
-       CATCH
-       END
-       TRY
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualReducaoST']
-       CATCH    
+    	TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Modalidade']
+    	CATCH
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ]       := '0'
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ]      := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualReducao']
+    	CATCH
+         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ]      := '0.00'
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ]         := hIniData['ICMS'+STRZERO(nItem,3)]['ValorBase']
+    	CATCH
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ]         := '0.00'
+    	END
+    	TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Aliquota']
+    	CATCH
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ]       := '0.00'
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['Valor']
+    	CATCH
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ]       := '0.00'
+    	END
+    	TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['ModalidadeST']
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ]      := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualMargemST']
+    	CATCH
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ]     := '0'
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ]      := '0.00'
+    	END
+    	TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualReducaoST']
+    	CATCH    
          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]    := '0.00'    // Mauricio Cruz - 04/10/2011
-       END
-       TRY
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['ValorBaseST']
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['AliquotaST']
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['ValorST']
-          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_UFST" ]        := hIniData['ICMS'+STRZERO(nItem,3)]['UFST']
-       CATCH
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pBCOp" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['pBCOp']
-       CATCH
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTRet']
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTRet']
-       CATCH
-         TRY
-            ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTret']
-            ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTret']
-         CATCH
-         END
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_motDesICMS" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['motDesICMS']
-       CATCH
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['pCredSN']
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ] := hIniData['ICMS'+STRZERO(nItem,3)]['vCredICMSSN']
-       CATCH
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ]     := '0.00'
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ] := '0.00'
-       END
-       TRY
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTDest" ]   := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTDest']
-         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTDest" ] := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTDest']
-       CATCH
-       END
+    	END
+    	TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['ValorBaseST']
+      CATCH
+         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ]       := '0.00'
+      END
+      TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['AliquotaST']
+      CATCH
+         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ]     := '0.00'
+      END
+      TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['ValorST']
+      CATCH
+         ::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ]     := '0.00'
+      END
+      TRY
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_UFST" ]        := hIniData['ICMS'+STRZERO(nItem,3)]['UFST']
+    	CATCH
+       	::aItemICMS[ "item"+STRZERO(nItem,3)+"_UFST" ]        := '0.00'
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pBCOp" ]       := hIniData['ICMS'+STRZERO(nItem,3)]['pBCOp']
+    	CATCH
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTRet']
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTRet']
+    	CATCH
+      	TRY
+         	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTret']
+         	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTret']
+      	CATCH
+      	END
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_motDesICMS" ]  := hIniData['ICMS'+STRZERO(nItem,3)]['motDesICMS']
+    	CATCH
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ]     := hIniData['ICMS'+STRZERO(nItem,3)]['pCredSN']
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ] := hIniData['ICMS'+STRZERO(nItem,3)]['vCredICMSSN']
+    	CATCH
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ]     := '0.00'
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ] := '0.00'
+    	END
+    	TRY
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTDest" ]   := hIniData['ICMS'+STRZERO(nItem,3)]['vBCSTDest']
+      	::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTDest" ] := hIniData['ICMS'+STRZERO(nItem,3)]['vICMSSTDest']
+    	CATCH
+    	END
 
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_clEnq" ]    := hIniData['IPI'+STRZERO(nItem,3)]['ClasseEnquadramento']
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_clEnq" ]    := hIniData['IPI'+STRZERO(nItem,3)]['ClasseEnquadramento']
       CATCH
       END
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CNPJProd" ] := hIniData['IPI'+STRZERO(nItem,3)]['CNPJProdutor']
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_CNPJProd" ] := hIniData['IPI'+STRZERO(nItem,3)]['CNPJProdutor']
       CATCH
       END
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_cSelo" ]    := hIniData['IPI'+STRZERO(nItem,3)]['CodigoSeloIPI']
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_qSelo" ]    := hIniData['IPI'+STRZERO(nItem,3)]['QuantidadeSelos']
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_cSelo" ]    := hIniData['IPI'+STRZERO(nItem,3)]['CodigoSeloIPI']
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_qSelo" ]    := hIniData['IPI'+STRZERO(nItem,3)]['QuantidadeSelos']
       CATCH
       END
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ]     := hIniData['IPI'+STRZERO(nItem,3)]['CodigoEnquadramento']
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ]     := hIniData['IPI'+STRZERO(nItem,3)]['CodigoEnquadramento']
       CATCH
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ]     := '999'
-      END
-
-        TRY
-          ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ]   := hIniData['IPI'+STRZERO(nItem,3)]['CST']
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ]   := hIniData['IPI'+STRZERO(nItem,3)]['ValorBase']
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ]  := hIniData['IPI'+STRZERO(nItem,3)]['Aliquota']
-      CATCH
-      END
-        TRY
-          ::aItemIPI[ "item"+STRZERO(nItem,3)+"_qUnid" ] := hIniData['IPI'+STRZERO(nItem,3)]['Quantidade']
-      CATCH
-      END
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_vUnid" ] := hIniData['IPI'+STRZERO(nItem,3)]['ValorUnidade']
-      CATCH
-      END
-        TRY
-         ::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ]  := hIniData['IPI'+STRZERO(nItem,3)]['Valor']
-      CATCH
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ]     := '999'
       END
 
-        TRY
-         ::aItemII[ "item"+STRZERO(nItem,3)+"_vBC" ]      := hIniData['II'+STRZERO(nItem,3)]['ValorBase']
-         ::aItemII[ "item"+STRZERO(nItem,3)+"_vDespAdu" ] := hIniData['II'+STRZERO(nItem,3)]['ValorDespAduaneiras']
-         ::aItemII[ "item"+STRZERO(nItem,3)+"_vII" ]      := hIniData['II'+STRZERO(nItem,3)]['ValorII']
-         ::aItemII[ "item"+STRZERO(nItem,3)+"_vIOF" ]     := hIniData['II'+STRZERO(nItem,3)]['ValorIOF']
+     	TRY
+       	::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ]   := hIniData['IPI'+STRZERO(nItem,3)]['CST']
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ]   := hIniData['IPI'+STRZERO(nItem,3)]['ValorBase']
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ]  := hIniData['IPI'+STRZERO(nItem,3)]['Aliquota']
+      CATCH
+      END
+     	TRY
+       	::aItemIPI[ "item"+STRZERO(nItem,3)+"_qUnid" ] := hIniData['IPI'+STRZERO(nItem,3)]['Quantidade']
+      CATCH
+      END
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_vUnid" ] := hIniData['IPI'+STRZERO(nItem,3)]['ValorUnidade']
+      CATCH
+      END
+     	TRY
+      	::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ]  := hIniData['IPI'+STRZERO(nItem,3)]['Valor']
+      CATCH
+      END
+
+     	TRY
+      	::aItemII[ "item"+STRZERO(nItem,3)+"_vBC" ]      := hIniData['II'+STRZERO(nItem,3)]['ValorBase']
+      	::aItemII[ "item"+STRZERO(nItem,3)+"_vDespAdu" ] := hIniData['II'+STRZERO(nItem,3)]['ValorDespAduaneiras']
+      	::aItemII[ "item"+STRZERO(nItem,3)+"_vII" ]      := hIniData['II'+STRZERO(nItem,3)]['ValorII']
+      	::aItemII[ "item"+STRZERO(nItem,3)+"_vIOF" ]     := hIniData['II'+STRZERO(nItem,3)]['ValorIOF']
       CATCH
       END
 
       TRY
-         ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] := hIniData['PIS'+STRZERO(nItem,3)]['CST']
-         IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]  := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorBase'] )
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ] := hIniData['PIS'+STRZERO(nItem,3)]['Aliquota']
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
-         ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Quantidade'], 4 )
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorAliquota'], 4 )
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
-         ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99'
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]       := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorBase'] )
-            ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
+      	::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] := hIniData['PIS'+STRZERO(nItem,3)]['CST']
+      	IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]  := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorBase'] )
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ] := hIniData['PIS'+STRZERO(nItem,3)]['Aliquota']
+      	   ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
+      	ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Quantidade'], 4 )
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorAliquota'], 4 )
+      	   ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
+      	ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]       := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorBase'] )
+         	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Valor'] )
            TRY
-              ::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Quantidade'], 4)
+           	::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Quantidade'], 4)
            CATCH
            END
            TRY
-              ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorAliquota'], 4 )
+           	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['ValorAliquota'], 4 )
            CATCH
            END
            TRY
-               ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Aliquota'] )
+         	   ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ]      := oFuncoes:strTostrval( hIniData['PIS'+STRZERO(nItem,3)]['Aliquota'] )
            CATCH
-               ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ]      := '0.00'
+         	   ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ]      := '0.00'
            END
         ENDIF
       CATCH
-         ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] := '01'
-         ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]  := '0.00'
-           ::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ] := '0.00'
-           ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ] := '0.00'
+      	::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] := '01'
+      	::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ]  := '0.00'
+        	::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ] := '0.00'
+     	   ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ] := '0.00'
       END
 
-        TRY
-         ::aItemPISST[ "vBC" ]       := hIniData['PISST'+STRZERO(nItem,3)]['ValorBase']
-         ::aItemPISST[ "pPIS" ]      := hIniData['PISST'+STRZERO(nItem,3)]['AliquotaPerc']
-         ::aItemPISST[ "vPIS" ]      := hIniData['PISST'+STRZERO(nItem,3)]['ValorPISST']
-         ::aItemPISST[ "qBCProd" ]   := hIniData['PISST'+STRZERO(nItem,3)]['Quantidade']
-         ::aItemPISST[ "vAliqProd" ] := hIniData['PISST'+STRZERO(nItem,3)]['AliquotaValor']
+     	TRY
+      	::aItemPISST[ "vBC" ]       := hIniData['PISST'+STRZERO(nItem,3)]['ValorBase']
+      	::aItemPISST[ "pPIS" ]      := hIniData['PISST'+STRZERO(nItem,3)]['AliquotaPerc']
+      	::aItemPISST[ "vPIS" ]      := hIniData['PISST'+STRZERO(nItem,3)]['ValorPISST']
+      	::aItemPISST[ "qBCProd" ]   := hIniData['PISST'+STRZERO(nItem,3)]['Quantidade']
+      	::aItemPISST[ "vAliqProd" ] := hIniData['PISST'+STRZERO(nItem,3)]['AliquotaValor']
       CATCH
       END
 
-        TRY
-           ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] := hIniData['COFINS'+STRZERO(nItem,3)]['CST']
-           IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]     := hIniData['COFINS'+STRZERO(nItem,3)]['ValorBase']
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ] := hIniData['COFINS'+STRZERO(nItem,3)]['Aliquota']
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ] := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
-           ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := hIniData['COFINS'+STRZERO(nItem,3)]['Quantidade']
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := hIniData['COFINS'+STRZERO(nItem,3)]['ValorAliquota']
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
-           ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99'
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]       := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['ValorBase'] )
-             ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
+     	TRY
+        	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] := hIniData['COFINS'+STRZERO(nItem,3)]['CST']
+        	IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]     := hIniData['COFINS'+STRZERO(nItem,3)]['ValorBase']
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ] := hIniData['COFINS'+STRZERO(nItem,3)]['Aliquota']
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ] := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
+        	ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := hIniData['COFINS'+STRZERO(nItem,3)]['Quantidade']
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := hIniData['COFINS'+STRZERO(nItem,3)]['ValorAliquota']
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
+        	ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]       := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['ValorBase'] )
+          	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Valor'] )
              TRY
-                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := hIniData['COFINS'+STRZERO(nItem,3)]['Quantidade']
+             	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ]   := hIniData['COFINS'+STRZERO(nItem,3)]['Quantidade']
              CATCH
              END
              TRY
-                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := hIniData['COFINS'+STRZERO(nItem,3)]['ValorAliquota']
+          	   ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ] := hIniData['COFINS'+STRZERO(nItem,3)]['ValorAliquota']
              CATCH
              END
              TRY
-                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Aliquota'] )
+             	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]   := oFuncoes:strTostrval( hIniData['COFINS'+STRZERO(nItem,3)]['Aliquota'] )
              CATCH
-                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]   := '0.00'
+             	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]   := '0.00'
              END
-           ENDIF
+        	ENDIF
       CATCH
-           ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ]     := '01'
-           ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]     := '0.00'
-           ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ] := '0.00'
-           ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ] := '0.00'
+        	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ]     := '01'
+        	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ]     := '0.00'
+        	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ] := '0.00'
+        	::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ] := '0.00'
       END
 
-        TRY
-         ::aItemCOFINSST[ "vBC" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['ValorBase']
-         ::aItemCOFINSST[ "pCOFINS" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['AliquotaPerc']
-         ::aItemCOFINSST[ "vCOFINS" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['ValorCOFINSST']
-         ::aItemCOFINSST[ "qBCProd" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['Quantidade']
-         ::aItemCOFINSST[ "vAliqProd" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['AliquotaValor']
+     	TRY
+      	::aItemCOFINSST[ "vBC" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['ValorBase']
+      	::aItemCOFINSST[ "pCOFINS" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['AliquotaPerc']
+      	::aItemCOFINSST[ "vCOFINS" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['ValorCOFINSST']
+      	::aItemCOFINSST[ "qBCProd" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['Quantidade']
+      	::aItemCOFINSST[ "vAliqProd" ] := hIniData['COFINSST'+STRZERO(nItem,3)]['AliquotaValor']
       CATCH
       END
    ENDDO
-
-   // totais da NF
-   ::aICMSTotal := hash()
-
-   TRY                                // Modificado por Anderson Camilo dia 07/11/2011
-      ::aICMSTotal[ "vBC" ] := oFuncoes:strTostrval( hIniData['Total']['BaseICMS'] )
-   CATCH 
+   
+ 	// totais da NF
+	::aICMSTotal := hash()
+   TRY
+	   ::aICMSTotal[ "vBC" ] := oFuncoes:strTostrval( hIniData['Total']['BaseICMS'] )
+   CATCH
       ::aICMSTotal[ "vBC" ] := '0.00'
-   END   
+   END
+   TRY
+	   ::aICMSTotal[ "vICMS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorICMS'] )
+   CATCH
+      ::aICMSTotal[ "vICMS" ] := '0.00'
+   END
+   TRY
+	   ::aICMSTotal[ "vBCST" ] := oFuncoes:strTostrval( hIniData['Total']['BaseICMSSubstituicao'] )
+   CATCH
+      ::aICMSTotal[ "vBCST" ] := '0.00'
+   END
+   TRY
+	   ::aICMSTotal[ "vST" ] := oFuncoes:strTostrval( hIniData['Total']['ValorICMSSubstituicao'] )
+   CATCH
+      ::aICMSTotal[ "vST" ] := '0.00'
+   END
+   TRY
+	   ::aICMSTotal[ "vProd" ] := oFuncoes:strTostrval( hIniData['Total']['ValorProduto'] )
+   CATCH
+      ::aICMSTotal[ "vProd" ] := '0.00'
+   END
+   TRY
+	   ::aICMSTotal[ "vFrete" ] := oFuncoes:strTostrval( hIniData['Total']['ValorFrete'] )
+   CATCH
+      ::aICMSTotal[ "vFrete" ] := '0.00'
+   END
+  	TRY
+    	::aICMSTotal[ "vSeg" ] := oFuncoes:strTostrval( hIniData['Total']['ValorSeguro'] )
+   CATCH
+    	::aICMSTotal[ "vSeg" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vDesc" ] := oFuncoes:strTostrval( hIniData['Total']['ValorDesconto'] )
+   CATCH
+   	::aICMSTotal[ "vDesc" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vII" ] := oFuncoes:strTostrval( hIniData['Total']['ValorII'] )
+   CATCH
+   	::aICMSTotal[ "vII" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vIPI" ] := oFuncoes:strTostrval( hIniData['Total']['ValorIPI'] )
+   CATCH
+   	::aICMSTotal[ "vIPI" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vPIS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorPIS'] )
+   CATCH
+   	::aICMSTotal[ "vPIS" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vCOFINS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorCOFINS'] )
+   CATCH
+   	::aICMSTotal[ "vCOFINS" ] := '0.00'
+   END
+  	TRY
+   	::aICMSTotal[ "vOutro" ] := oFuncoes:strTostrval( hIniData['Total']['ValorOutrasDespesas'] )
+   CATCH
+   	::aICMSTotal[ "vOutro" ] := '0.00'
+   END
+  	::aICMSTotal[ "vNF" ] := oFuncoes:strTostrval( hIniData['Total']['ValorNota'] )
 
-   TRY                                // Modificado por Anderson Camilo dia 07/11/2011
-     ::aICMSTotal[ "vICMS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorICMS'] )
-   CATCH
-     ::aICMSTotal[ "vICMS" ] := '0.00'
-   END
-   
-   TRY                                // Modificado por Anderson Camilo dia 25/10/2011
-       ::aICMSTotal[ "vBCST" ] := oFuncoes:strTostrval( hIniData['Total']['BaseICMSSubstituicao'] )
-   CATCH 
-       ::aICMSTotal[ "vBCST" ] := '0.00'
-   END   
-   
-   TRY                                // Modificado por Anderson Camilo dia 25/10/2011
-       ::aICMSTotal[ "vST" ] := oFuncoes:strTostrval( hIniData['Total']['ValorICMSSubstituicao'] )
-   CATCH 
-       ::aICMSTotal[ "vST" ] := '0.00'
-   END   
-   ::aICMSTotal[ "vProd" ] := oFuncoes:strTostrval( hIniData['Total']['ValorProduto'] )
-   TRY                                // Modificado por Anderson Camilo dia 25/10/2011
-       ::aICMSTotal[ "vFrete" ] := oFuncoes:strTostrval( hIniData['Total']['ValorFrete'] )
-   CATCH 
-       ::aICMSTotal[ "vFrete" ] := '0.00'      
-   END   
-   TRY
-       ::aICMSTotal[ "vSeg" ] := oFuncoes:strTostrval( hIniData['Total']['ValorSeguro'] )
-   CATCH
-       ::aICMSTotal[ "vSeg" ] := '0.00'
-   END
-   TRY
-      ::aICMSTotal[ "vDesc" ] := oFuncoes:strTostrval( hIniData['Total']['ValorDesconto'] )
-   CATCH
-      ::aICMSTotal[ "vDesc" ] := '0.00'
-   END
-   TRY
-      ::aICMSTotal[ "vII" ] := oFuncoes:strTostrval( hIniData['Total']['ValorII'] )
-   CATCH
-      ::aICMSTotal[ "vII" ] := '0.00'
-   END
-   TRY
-      ::aICMSTotal[ "vIPI" ] := oFuncoes:strTostrval( hIniData['Total']['ValorIPI'] )
-   CATCH
-      ::aICMSTotal[ "vIPI" ] := '0.00'
-   END
-     TRY
-      ::aICMSTotal[ "vPIS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorPIS'] )
-   CATCH
-      ::aICMSTotal[ "vPIS" ] := '0.00'
-   END
-     TRY
-      ::aICMSTotal[ "vCOFINS" ] := oFuncoes:strTostrval( hIniData['Total']['ValorCOFINS'] )
-   CATCH
-      ::aICMSTotal[ "vCOFINS" ] := '0.00'
-   END
-     TRY
-      ::aICMSTotal[ "vOutro" ] := oFuncoes:strTostrval( hIniData['Total']['ValorOutrasDespesas'] )
-   CATCH
-      ::aICMSTotal[ "vOutro" ] := '0.00'
-   END
-   ::aICMSTotal[ "vNF" ] := oFuncoes:strTostrval( hIniData['Total']['ValorNota'] )
-
-   ::aISSTotal := hash()
-   TRY
-       ::aISSTotal[ "vServ" ] := hIniData['Total']['ValorServicos']
-       ::aISSTotal[ "vBC" ] := hIniData['Total']['ValorBaseISS']
-       ::aISSTotal[ "vISS" ] := hIniData['Total']['ValorISSQN']
-       ::aISSTotal[ "vPIS" ] := hIniData['Total']['ValorPISISS']
-       ::aISSTotal[ "vCOFINS" ] := hIniData['Total']['ValorCONFINSISS']
-   CATCH
-   END
-
-   ::aRetTrib := hash()
-   TRY
-       ::aRetTrib[ "vRetPIS" ] := hIniData['Total']['vRetPIS']
-       ::aRetTrib[ "vRetCOFINS" ] := hIniData['Total']['vRetCOFINS']
-       ::aRetTrib[ "vRetCSLL" ] := hIniData['Total']['vRetCSLL']
-       ::aRetTrib[ "vBCIRRF" ] := hIniData['Total']['vBCIRRF']
-       ::aRetTrib[ "vIRRF" ] := hIniData['Total']['vIRRF']
-       ::aRetTrib[ "vBCRetPrev" ] := hIniData['Total']['vBCRetPrev']
-       ::aRetTrib[ "vRetPrev" ] := hIniData['Total']['vRetPrev']
-   CATCH
-   END
-
-   ::aTransp := hash()
-   TRY
-       ::aTransp[ "modFrete" ] := hIniData['Transportador']['Freteporconta']
-   CATCH
-      TRY
-          ::aTransp[ "modFrete" ] := hIniData['Transportador']['FretePorConta']
-      CATCH
-          ::aTransp[ "modFrete" ] := '0'
-      END
-   END
-   IF EMPTY(::aTransp[ "modFrete" ])
-        ::aTransp[ "modFrete" ] := '0'
+   IF ::lMostra_imp_danfe
+      ::aICMSTotal[ "vTotTrib" ] := oFuncoes:strTostrval( hIniData['Total']['vTotTrib'] )
    ENDIF
-   TRY
+
+	::aISSTotal := hash()
+	TRY
+    	::aISSTotal[ "vServ" ] := hIniData['Total']['ValorServicos']
+    	::aISSTotal[ "vBC" ] := hIniData['Total']['ValorBaseISS']
+    	::aISSTotal[ "vISS" ] := hIniData['Total']['ValorISSQN']
+    	::aISSTotal[ "vPIS" ] := hIniData['Total']['ValorPISISS']
+    	::aISSTotal[ "vCOFINS" ] := hIniData['Total']['ValorCONFINSISS']
+	CATCH
+	END
+
+	::aRetTrib := hash()
+	TRY
+    	::aRetTrib[ "vRetPIS" ] := hIniData['Total']['vRetPIS']
+    	::aRetTrib[ "vRetCOFINS" ] := hIniData['Total']['vRetCOFINS']
+    	::aRetTrib[ "vRetCSLL" ] := hIniData['Total']['vRetCSLL']
+    	::aRetTrib[ "vBCIRRF" ] := hIniData['Total']['vBCIRRF']
+    	::aRetTrib[ "vIRRF" ] := hIniData['Total']['vIRRF']
+    	::aRetTrib[ "vBCRetPrev" ] := hIniData['Total']['vBCRetPrev']
+    	::aRetTrib[ "vRetPrev" ] := hIniData['Total']['vRetPrev']
+	CATCH
+	END
+
+	::aTransp := hash()
+	TRY
+    	::aTransp[ "modFrete" ] := hIniData['Transportador']['Freteporconta']
+	CATCH
+   	TRY
+       	::aTransp[ "modFrete" ] := hIniData['Transportador']['FretePorConta']
+      CATCH
+       	::aTransp[ "modFrete" ] := '0'
+      END
+	END
+	IF EMPTY(::aTransp[ "modFrete" ])
+     	::aTransp[ "modFrete" ] := '0'
+	ENDIF
+	TRY
       IF LEN( hIniData['Transportador']['CnpjCpf'] ) <= 11
-         IF !EMPTY( hIniData['Transportador']['CnpjCpf'] )
-             ::aTransp[ "CPF" ] := hIniData['Transportador']['CnpjCpf']
+      	IF !EMPTY( hIniData['Transportador']['CnpjCpf'] )
+          	::aTransp[ "CPF" ] := hIniData['Transportador']['CnpjCpf']
          ENDIF
       ELSE
-          ::aTransp[ "CNPJ" ] := hIniData['Transportador']['CnpjCpf']
+       	::aTransp[ "CNPJ" ] := hIniData['Transportador']['CnpjCpf']
       ENDIF
-       ::aTransp[ "xNome" ] := oFuncoes:parseEncode( hIniData['Transportador']['NomeRazao'] )
-       IF !EMPTY( hIniData['Transportador']['IE'] )
-          ::aTransp[ "IE" ] := hIniData['Transportador']['IE']
-      ENDIF
-       IF !EMPTY( hIniData['Transportador']['Endereco'] )
-          ::aTransp[ "xEnder" ] := oFuncoes:parseEncode( hIniData['Transportador']['Endereco'] )
-      ENDIF
-       ::aTransp[ "xMun" ] := oFuncoes:parseEncode( hIniData['Transportador']['Cidade'] )
-       ::aTransp[ "UF" ] := hIniData['Transportador']['UF']
    CATCH
    END
+   TRY
+    	::aTransp[ "xNome" ] := oFuncoes:parseEncode( hIniData['Transportador']['NomeRazao'] )
+   CATCH
+   END   
+   TRY
+    	IF !EMPTY( hIniData['Transportador']['IE'] )
+       	::aTransp[ "IE" ] := hIniData['Transportador']['IE']
+      ENDIF
+   CATCH
+   END
+   TRY
+    	IF !EMPTY( hIniData['Transportador']['Endereco'] )
+       	::aTransp[ "xEnder" ] := oFuncoes:parseEncode( hIniData['Transportador']['Endereco'] )
+      ENDIF
+   CATCH
+   END
+   TRY
+      IF !EMPTY(oFuncoes:parseEncode( hIniData['Transportador']['Cidade'] ))
+    	   ::aTransp[ "xMun" ] := oFuncoes:parseEncode( hIniData['Transportador']['Cidade'] )
+      ENDIF
+   CATCH
+   END
+   TRY
+    	::aTransp[ "UF" ] := hIniData['Transportador']['UF']
+   CATCH
+   END
+
    // retTransp
-   ::aRetTransp := hash()
-   TRY
-       ::aRetTransp[ "vServ" ] := hIniData['Transportador']['ValorServico']
-       ::aRetTransp[ "vBCRet" ] := hIniData['Transportador']['ValorBase']
-       ::aRetTransp[ "pICMSRet" ] := hIniData['Transportador']['Aliquota']
-       ::aRetTransp[ "vICMSRet" ] := hIniData['Transportador']['Valor']
-       ::aRetTransp[ "CFOP" ] := hIniData['Transportador']['CFOP']
-       ::aRetTransp[ "cMunFG" ] := hIniData['Transportador']['CidadeCod']
+	::aRetTransp := hash()
+	TRY
+    	::aRetTransp[ "vServ" ] := hIniData['Transportador']['ValorServico']
+    	::aRetTransp[ "vBCRet" ] := hIniData['Transportador']['ValorBase']
+    	::aRetTransp[ "pICMSRet" ] := hIniData['Transportador']['Aliquota']
+    	::aRetTransp[ "vICMSRet" ] := hIniData['Transportador']['Valor']
+    	::aRetTransp[ "CFOP" ] := hIniData['Transportador']['CFOP']
+    	::aRetTransp[ "cMunFG" ] := hIniData['Transportador']['CidadeCod']
+	CATCH
+	END
+	// veicTransp
+	::aVeicTransp := hash()
+	TRY
+   	::aVeicTransp[ "placa" ] := hIniData['Transportador']['Placa']
+    ::aVeicTransp[ "placa" ] := STRTRAN(::aVeicTransp[ "placa" ], "-", "" )
+    ::aVeicTransp[ "placa" ] := STRTRAN(::aVeicTransp[ "placa" ], " ", "" )
    CATCH
    END
-   // veicTransp
-   ::aVeicTransp := hash()
-   TRY
-      ::aVeicTransp[ "placa" ] := hIniData['Transportador']['Placa']
-      ::aVeicTransp[ "placa" ] := STRTRAN(::aVeicTransp[ "placa" ], "-", "" )
-      ::aVeicTransp[ "placa" ] := STRTRAN(::aVeicTransp[ "placa" ], " ", "" )
-   CATCH
-   END
-   TRY
-      ::aVeicTransp[ "UF" ] := hIniData['Transportador']['ufplaca']
-   CATCH
-      TRY
-         ::aVeicTransp[ "UF" ] := hIniData['Transportador']['UFPlaca']
+	TRY
+   	::aVeicTransp[ "UF" ] := hIniData['Transportador']['ufplaca']
+	CATCH
+   	TRY
+      	::aVeicTransp[ "UF" ] := hIniData['Transportador']['UFPlaca']
       CATCH
       END
-   END
-   TRY
-      ::aVeicTransp[ "RNTC" ] := hIniData['Transportador']['RNTC']
-   CATCH
-   END
+	END
+	TRY
+   	::aVeicTransp[ "RNTC" ] := hIniData['Transportador']['RNTC']
+	CATCH
+	END
 
-   TRY
-      ::aVeicTransp[ "vagao" ] := hIniData['Transportador']['vagao']
-   CATCH
-   END
-   TRY
-      ::aVeicTransp[ "balsa" ] := hIniData['Transportador']['balsa']
-   CATCH
-   END
+	TRY
+   	::aVeicTransp[ "vagao" ] := hIniData['Transportador']['vagao']
+	CATCH
+	END
+	TRY
+   	::aVeicTransp[ "balsa" ] := hIniData['Transportador']['balsa']
+	CATCH
+	END
 
-   //reboque
-   ::aReboque := hash()
-   TRY
-       ::aReboque[ "placa" ] := hIniData['Reboque001']['placa']
-       ::aReboque[ "placa" ] := STRTRAN(::aReboque[ "placa" ], "-", "" )
-       ::aReboque[ "placa" ] := STRTRAN(::aReboque[ "placa" ], " ", "" )
-       ::aReboque[ "UF" ] := hIniData['Reboque001']['UF']
-   CATCH
-   END
-   TRY
-       ::aReboque[ "RNTC" ] := hIniData['Reboque001']['RNTC']
-   CATCH
-   END
-   // dados transportados
-   TRY
-      ::aTransp[ "qVol" ] := hIniData['Volume001']['quantidade']
-   CATCH
-      TRY
-         ::aTransp[ "qVol" ] := hIniData['Volume001']['Quantidade']
-      CATCH
-      END
-   END
-   TRY
-*      IF !EMPTY(::aTransp[ "esp" ])    // Mauricio Cruz - 30/09/2011
-      IF !EMPTY( hIniData['Volume001']['Especie'] )  // Anderson Camilo 30/07/2012
-         ::aTransp[ "esp" ] := hIniData['Volume001']['Especie']
+	//reboque
+	::aReboque := hash()
+	TRY
+    	::aReboque[ "placa" ] := hIniData['Reboque001']['placa']
+     ::aReboque[ "placa" ] := STRTRAN(::aReboque[ "placa" ], "-", "" )
+     ::aReboque[ "placa" ] := STRTRAN(::aReboque[ "placa" ], " ", "" )
+    	::aReboque[ "UF" ] := hIniData['Reboque001']['UF']
+	CATCH
+	END
+	TRY
+    	::aReboque[ "RNTC" ] := hIniData['Reboque001']['RNTC']
+	CATCH
+	END
+	// dados transportados
+	TRY
+      IF VAL(hIniData['Volume001']['quantidade'])>0
+   	   ::aTransp[ "qVol" ] := hIniData['Volume001']['quantidade']
+      ELSE
+         ::aTransp[ "qVol" ] := '0'
       ENDIF
-   CATCH
-   END
-   TRY
-      IF !EMPTY( hIniData['Volume001']['Marca'] )
-         ::aTransp[ "marca" ] := hIniData['Volume001']['Marca']
+	CATCH
+      ::aTransp[ "qVol" ] := '0'
+	END
+	TRY
+      IF !EMPTY(hIniData['Volume001']['Especie'])    // Mauricio Cruz - 30/09/2011
+   	   ::aTransp[ "esp" ] := hIniData['Volume001']['Especie']
       ENDIF
-   CATCH
-   END
-   TRY
-      ::aTransp[ "nVol" ] := hIniData['Volume001']['Numeracao']
-   CATCH
-   END
-   TRY
-      IF VAL( hIniData['Volume001']['PesoLiquido'] ) > 0
-         ::aTransp[ "pesoL" ] := ALLTRIM( STR( VAL( hIniData['Volume001']['PesoLiquido'] ) ,20 ,3 ) )
-      ENDIF
-   CATCH
-        ::aTransp[ "pesoL" ] := '0.000'
-   END
-   TRY
-      IF VAL( hIniData['Volume001']['PesoBruto'] ) > 0
-         ::aTransp[ "pesoB" ] := ALLTRIM( STR( VAL( hIniData['Volume001']['PesoBruto'] ) ,20 ,3 ) )
-      ENDIF
-   CATCH
-        ::aTransp[ "pesoB" ] := '0.000'
-   END
+	CATCH
+	END
+	TRY
+	   IF !EMPTY( hIniData['Volume001']['Marca'] )
+      	::aTransp[ "marca" ] := hIniData['Volume001']['Marca']
+    ENDIF
+	CATCH
+	END
+	TRY
+    IF !EMPTY( hIniData['Volume001']['nVol'] )
+       ::aTransp[ "nVol" ] := hIniData['Volume001']['Numeracao']
+    ENDIF
+	CATCH
+	END
+	TRY
+	   IF VAL( hIniData['Volume001']['PesoLiquido'] ) > 0
+      	::aTransp[ "pesoL" ] := ALLTRIM( STR( VAL( hIniData['Volume001']['PesoLiquido'] ) ,20 ,3 ) )
+     ENDIF
+	CATCH
+     	::aTransp[ "pesoL" ] := '0.000'
+	END
+	TRY
+	   IF VAL( hIniData['Volume001']['PesoBruto'] ) > 0
+      	::aTransp[ "pesoB" ] := ALLTRIM( STR( VAL( hIniData['Volume001']['PesoBruto'] ) ,20 ,3 ) )
+    ENDIF
+	CATCH
+     	::aTransp[ "pesoB" ] := '0.000'
+	END
 
-   TRY
-      ::aTransp[ "nLacre" ] := hIniData['Lacre001001']['nLacre']
-   CATCH
-   END
-
-   ::aFatura := hash()
-   TRY
-       ::aFatura[ "nFat" ] := hIniData['Fatura']['Numero']
-       ::aFatura[ "vOrig" ] := hIniData['Fatura']['ValorOriginal']
-       ::aFatura[ "vDesc" ] := hIniData['Fatura']['ValorDesconto']
-       ::aFatura[ "vLiq" ] := hIniData['Fatura']['ValorLiquido']
-   CATCH
-   END
-   //Duplicatas
-    ::aDuplicatas := hash()
+	TRY
+   	::aTransp[ "nLacre" ] := hIniData['Lacre001001']['nLacre']
+	CATCH
+	END
+   
+	::aFatura := hash()
+	TRY
+    	::aFatura[ "nFat" ] := hIniData['Fatura']['Numero']
+    	::aFatura[ "vOrig" ] := hIniData['Fatura']['ValorOriginal']
+    	::aFatura[ "vDesc" ] := hIniData['Fatura']['ValorDesconto']
+    	::aFatura[ "vLiq" ] := hIniData['Fatura']['ValorLiquido']
+	CATCH
+	END
+	//Duplicatas
+ 	::aDuplicatas := hash()
    nICob := 0
    DO WHILE .T.
       nICob ++
-       TRY
-          ::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_nDup" ] := hIniData['Duplicata'+STRZERO(nICob,3)]['Numero']
-       CATCH
-          nICob --
-          EXIT
-       END
-       ::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_dVenc" ] := oFuncoes:FormatDate(CTOD(hIniData['Duplicata'+STRZERO(nICob,3)]['DataVencimento']),"YYYY-MM-DD","-")
-       ::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_vDup" ] := oFuncoes:strTostrval( hIniData['Duplicata'+STRZERO(nICob,3)]['Valor'] )
+    	TRY
+       	::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_nDup" ] := hIniData['Duplicata'+STRZERO(nICob,3)]['Numero']
+    	CATCH
+    	   nICob --
+       	EXIT
+    	END
+    	::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_dVenc" ] := oFuncoes:FormatDate(CTOD(hIniData['Duplicata'+STRZERO(nICob,3)]['DataVencimento']),"YYYY-MM-DD","-")
+    	::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_vDup" ] := oFuncoes:strTostrval( hIniData['Duplicata'+STRZERO(nICob,3)]['Valor'] )
    ENDDO
 
-   ::aInfAdic := hash()
-   TRY
-      ::aInfAdic[ "infAdFisco" ] := oFuncoes:parseEncode( hIniData['DadosAdicionais']['Fisco'] )
+	::aInfAdic := hash()
+   /*
+	TRY
+   	::aInfAdic[ "infAdFisco" ] := oFuncoes:parseEncode( hIniData['DadosAdicionais']['Fisco'] )
    CATCH
    END
-   TRY
-      ::aInfAdic[ "infCpl" ] := oFuncoes:parseEncode( hIniData['DadosAdicionais']['Complemento'] )
+	TRY
+   	::aInfAdic[ "infCpl" ] := oFuncoes:parseEncode( hIniData['DadosAdicionais']['Complemento'] )
    CATCH
    END
-   //obsCont
-    ::aObsCont := hash()
+   */
+   
+   // Maurício cruz - 27/10/2011
+   IF !EMPTY(SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ))
+        //::aInfAdic[ "infAdFisco" ] := CLEAR_CHAR( oFuncoes:parseEncode( SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ),.t. ) )
+       TRY
+         cOBSFISCO:=hIniData['DadosAdicionais']['Fisco']
+       CATCH
+         cOBSFISCO:=''
+       END
+       IF LEFT(cOBSFISCO,1) ='"'
+       		 ::aInfAdic[ "infAdFisco" ] :=  CLEAR_CHAR('"' + oFuncoes:parseEncode(SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ),.t.  ) +;
+          if ( right( alltrim(hIniData['DadosAdicionais']['Fisco']) ,1)= '"' ,'"','' ) )
+       ELSE
+         ::aInfAdic[ "infAdFisco" ] := CLEAR_CHAR( oFuncoes:parseEncode( SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ),.t. ) )
+  	   ENDIF
+   ENDIF
+
+   IF !EMPTY(SYG_GetPrivateProfileString( 'DadosAdicionais', 'Complemento', , cIniFile ))
+       //::aInfAdic[ "infCpl" ] := CLEAR_CHAR ( oFuncoes:parseEncode( SYG_GetPrivateProfileString( 'DadosAdicionais', 'Complemento', , cIniFile ),.t. ) )
+      TRY
+        cOBSADICIONAL:=hIniData['DadosAdicionais']['Complemento']
+      CATCH
+        cOBSADICIONAL:=''
+      END
+      IF LEFT(cOBSADICIONAL,1) ='"'
+      		 ::aInfAdic[ "infCpl" ] :=  CLEAR_CHAR('"' + oFuncoes:parseEncode(SYG_GetPrivateProfileString( 'DadosAdicionais', 'Complemento', , cIniFile ),.t.  ) + ;
+      		 if ( right( alltrim(hIniData['DadosAdicionais']['Complemento']) ,1)= '"' ,'"','' ) )
+   	   ELSE
+         ::aInfAdic[ "infCpl" ] := CLEAR_CHAR( oFuncoes:parseEncode( SYG_GetPrivateProfileString( 'DadosAdicionais', 'Complemento', , cIniFile ),.t. ) )
+ 	    ENDIF
+   ENDIF
+
+	//obsCont
+ 	::aObsCont := hash()
    nObs := 0
    DO WHILE .T.
       nObs ++
-       TRY
-          ::aObsCont[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Campo'] )
-       CATCH
-          nObs --
-          EXIT
-       END
-       ::aObsCont[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Texto'] )
+    	TRY
+       	::aObsCont[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Campo'] )
+    	CATCH
+    	   nObs --
+       	EXIT
+    	END
+    	::aObsCont[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Texto'] )
    ENDDO
-   //obsFisco
-   ::aObsFisco := hash()
+	//obsFisco
+	::aObsFisco := hash()
    nObs := 0
    DO WHILE .T.
       nObs ++
-       TRY
-          ::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Campo'] )
-       CATCH
-          nObs --
-          EXIT
-       END
-       ::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Texto'] )
+    	TRY
+       	::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Campo'] )
+    	CATCH
+    	   nObs --
+       	EXIT
+    	END
+    	::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Texto'] )
    ENDDO
 
-   // processo referenciado            && Comentado esse bloco por Anderson Camilo 13/08/2012
-*   ::aProcRef := hash()
-*   nObs := 0
-*   DO WHILE .T.
-*      nObs ++
-*       TRY
-*          ::aObsFisco[ "pref"+STRZERO(nObs,3)+"_nProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['nProc']
-*       CATCH
-*          nObs --
-*          EXIT
-*       END
-*       ::aObsFisco[ "pref"+STRZERO(nObs,3)+"_indProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['indProc']
-*   ENDDO
+   // processo referenciado
+   ::aProcRef := hash()
+   nObs := 0
+   DO WHILE .T.
+      nObs ++
+    	TRY
+       	::aObsFisco[ "pref"+STRZERO(nObs,3)+"_nProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['nProc']
+    	CATCH
+    	   nObs --
+       	EXIT
+    	END
+    	::aObsFisco[ "pref"+STRZERO(nObs,3)+"_indProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['indProc']
+   ENDDO
 
    
-   ::aExporta := hash()
-   TRY
+	::aExporta := hash()
+	TRY
       ::aExporta[ "UFEmbarq" ] := hIniData['Exporta']['UFEmbarq']
       ::aExporta[ "xLocEmbarq" ] := hIniData['Exporta']['xLocEmbarq']
-   CATCH
-   END
+	CATCH
+	END
 
-   ::aCompra := hash()
-   TRY
-       ::aCompra[ "xNEmp" ] := hIniData['Compra']['xNEmp']
-       ::aCompra[ "xPed" ] := hIniData['Compra']['xPed']
-       ::aCompra[ "xCont" ] := hIniData['Compra']['xCont']
-   CATCH
-   END
-
+	::aCompra := hash()
+	TRY
+    	::aCompra[ "xNEmp" ] := hIniData['Compra']['xNEmp']
+    	::aCompra[ "xPed" ] := hIniData['Compra']['xPed']
+    	::aCompra[ "xCont" ] := hIniData['Compra']['xCont']
+	CATCH
+	END
+   
    ::REGRAS_NFE(@aMSGvld,cChaveNFe,nItem)
    IF LEN(aMSGvld)>0
-      //IF !ERROS_ALERTAS_NFE(aMSGvld)  //aqui pode mostrar um browse de VETOR para mostrar os erros retornados.
+      IF !ERROS_ALERTAS_NFE(aMSGvld)
          aRetorno['OK'] := .F.
          aRetorno['MsgErro'] := ''
          RETURN(aRetorno)
-      //ENDIF
+      ENDIF
    ENDIF
-
-   ::cXMLSaida := '<NFe xmlns="http://www.portalfiscal.inf.br/nfe">' + ;
-                  '<infNFe versao="2.00" Id="NFe'+cChaveNFe+'">'
-   ::incluiTag('ide')
-       ::incluiTag('cUF'     ,::aIde[ "cUF" ])
-       ::incluiTag('cNF'     ,::aIde[ "cNF" ])
-       ::incluiTag('natOp'   ,::aIde[ "natOp" ])
-       ::incluiTag('indPag'  ,::aIde[ "indPag" ])
-       ::incluiTag('mod'     ,::aIde[ "mod" ])
-       ::incluiTag('serie'   ,::aIde[ "serie" ])
-       ::incluiTag('nNF'     ,::aIde[ "nNF" ])
-       ::incluiTag('dEmi'    ,::aIde[ "dEmi" ])
+   
+   ************************************************************************************************
+   *                            CRIACAO DO ARQUIVO XML                                            *
+   ************************************************************************************************
+   
+   
+   
+   
+   
+   
+	::cXMLSaida := '<NFe xmlns="http://www.portalfiscal.inf.br/nfe">' + ;
+	               '<infNFe versao="2.00" Id="NFe'+cChaveNFe+'">'
+	::incluiTag('ide')
+    	::incluiTag('cUF'     ,::aIde[ "cUF" ])
+    	::incluiTag('cNF'     ,::aIde[ "cNF" ])
+    	::incluiTag('natOp'   ,::aIde[ "natOp" ])
+    	::incluiTag('indPag'  ,::aIde[ "indPag" ])
+    	::incluiTag('mod'     ,::aIde[ "mod" ])
+    	::incluiTag('serie'   ,::aIde[ "serie" ])
+    	::incluiTag('nNF'     ,::aIde[ "nNF" ])
+    	::incluiTag('dEmi'    ,::aIde[ "dEmi" ])
       IF !EMPTY(::aIde[ "dSaiEnt" ])
-    	   ::incluiTag('dSaiEnt' ,::aIde[ "dSaiEnt" ])
+    	    ::incluiTag('dSaiEnt' ,::aIde[ "dSaiEnt" ])
       ENDIF
-      IF !EMPTY(::aIde[ "hSaiEnt" ])
-          ::incluiTag('hSaiEnt' ,::aIde[ "hSaiEnt" ])
+    	IF !EMPTY(::aIde[ "hSaiEnt" ])
+       	::incluiTag('hSaiEnt' ,::aIde[ "hSaiEnt" ])
       ENDIF
-       ::incluiTag('tpNF'    ,::aIde[ "tpNF" ])
-       ::incluiTag('cMunFG'  ,::aIde[ "cMunFG" ])
-	   
-	                && Alterado por Anderson Camilo 13/08/2012
-      nPrRef := 0
-      DO WHILE .T.
-         nPrRef ++
-         TRY
-            if !empty( ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] )
-               ::incluiTag('NFref')
-		 
-               if ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NFe'       && Tipo de documento    NF-e
-                  ::incluiTag('refNFe', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_refNFe"] )
-   		 
-                elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'CTe'  && Tipo de documento   CT-e
-                       ::incluiTag('refCTe', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_refCTe"] )
+    	::incluiTag('tpNF'    ,::aIde[ "tpNF" ])
+    	::incluiTag('cMunFG'  ,::aIde[ "cMunFG" ])
+   
+
+      // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012   
+      IF nItnRef>0
+         ::incluiTag('NFref')
+      ENDIF
       
-                elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NFP'  && Tipo de documento   NF Produtor
-                       ::incluiTag('refNFP')
-                       ::incluiTag('cUF',  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_cUF"]  )  	  
-                       ::incluiTag('AAMM', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_AAMM"] )  
-                       TRY
-                          if !empty( ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] )
-                             ::incluiTag('CNPJ', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] )
-                           else
-                             ::incluiTag('CPF', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CPF"] )
-                           endif  						 
-                       CATCH
-                          ::incluiTag('CPF', '' )
-                       END
-                       ::incluiTag('IE',    ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_IE"]    )
-                       ::incluiTag('mod',   ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"]   )  
-                       ::incluiTag('serie', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_serie"] )  
-                       ::incluiTag('nNF',   ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nNF"]   )
-                       ::incluiTag('/refNFP')
-   			  
-                elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'NF'       && Tipo de documento   NF Modelo 01
-                       ::incluiTag('refNF')
-                       ::incluiTag('cUF',  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_cUF"]  )  	  
-                       ::incluiTag('AAMM', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_AAMM"] )  
-                       ::incluiTag('CNPJ', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_CNPJ"] )
-                       ::incluiTag('mod',   ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"]   )  
-                       ::incluiTag('serie', ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_serie"] )  
-                       ::incluiTag('nNF',   ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nNF"]   )
-                       ::incluiTag('/refNF')
-   			  
-                elseif ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_indProc" ] = 'ECF'       && Tipo de documento   ECF Cupom Fiscal
-                       ::incluiTag('refECF')			  
-                       ::incluiTag('mod',   ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_mod"]  )
-                       ::incluiTag('nECF',  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nECF"] )
-                       ::incluiTag('nCOO',  ::aProcRef[ "NFref"+STRZERO(nPrRef,3) + "_nCOO"] )
-                       ::incluiTag('/refECF')			  
-               endif
-		 
-               ::incluiTag('/NFref')
-		 
-            endif   		  
-		 
-         CATCH
-            nPrRef --
-            EXIT
-         END
-      ENDDO
-	   
-       ::incluiTag('tpImp'   ,::aIde[ "tpImp" ])
-       ::incluiTag('tpEmis'  ,::aIde[ "tpEmis" ])
-       ::incluiTag('cDV'     ,::aIde[ "cDV" ])
-       ::incluiTag('tpAmb'   ,::aIde[ "tpAmb" ])
-       ::incluiTag('finNFe'  ,::aIde[ "finNFe" ])
-       ::incluiTag('procEmi' ,::aIde[ "procEmi" ])
-       ::incluiTag('verProc' ,::aIde[ "verProc" ])
-   ::incluiTag('/ide')
-
-   ::incluiTag('emit')
-       ::incluiTag('CNPJ'     ,::aEmit[ "CNPJ" ])
-       ::incluiTag('xNome'    ,::aEmit[ "xNome" ])
-       ::incluiTag('xFant'    ,::aEmit[ "xFant" ])
-       ::incluiTag('enderEmit')
-       ::incluiTag('xLgr'     ,::aEmit[ "xLgr" ])
-       ::incluiTag('nro'      ,::aEmit[ "nro" ])
-       ::incluiTag('xBairro'  ,::aEmit[ "xBairro" ])
-       ::incluiTag('cMun'     ,::aEmit[ "cMun" ])
-       ::incluiTag('xMun'     ,::aEmit[ "xMun" ])
-       ::incluiTag('UF'       ,::aEmit[ "UF" ])
-       ::incluiTag('CEP'      ,::aEmit[ "CEP" ])
-       ::incluiTag('cPais'    ,::aEmit[ "cPais" ])
-       ::incluiTag('xPais'    ,::aEmit[ "xPais" ])
-       ::incluiTag('fone'     ,::aEmit[ "fone" ])
-       ::incluiTag('/enderEmit')
-       ::incluiTag('IE'       ,::aEmit[ "IE" ])
-       IF !EMPTY(::aEmit[ "IEST" ])
-          ::incluiTag('IEST'  ,::aEmit[ "IEST" ])
+      FOR mI:=1 TO nItnRef
+         IF !EMPTY(::aRefNfe['refNFe'+STRZERO(mI,3)])
+            ::incluiTag('refNFe'  ,::aRefNfe['refNFe'+STRZERO(mI,3)])
+         ELSE
+            TRY
+               ::incluiTag('refNF',::aRefNfe['refNF' +STRZERO(mI,3)])
+            CATCH
+            END
+            ::incluiTag('cUF'     ,::aRefNfe['cUF'   +STRZERO(mI,3)])
+            ::incluiTag('AAMM'    ,::aRefNfe['AAMM'  +STRZERO(mI,3)])
+            ::incluiTag('CNPJ'    ,::aRefNfe['CNPJ'  +STRZERO(mI,3)])
+            ::incluiTag('mod'     ,::aRefNfe['mod'   +STRZERO(mI,3)])
+            ::incluiTag('serie'   ,::aRefNfe['serie' +STRZERO(mI,3)])
+            ::incluiTag('nNF'     ,::aRefNfe['nNF'   +STRZERO(mI,3)])
+         ENDIF
+      NEXT
+      IF nItnRef>0
+         ::incluiTag('/NFref')
       ENDIF
-       IF !EMPTY(::aEmit[ "IM" ])
-          ::incluiTag('IM'    ,::aEmit[ "IM" ])
-          ::incluiTag('CNAE'  ,::aEmit[ "CNAE" ])
+      
+    	::incluiTag('tpImp'   ,::aIde[ "tpImp" ])
+    	::incluiTag('tpEmis'  ,::aIde[ "tpEmis" ])
+    	::incluiTag('cDV'     ,::aIde[ "cDV" ])
+    	::incluiTag('tpAmb'   ,::aIde[ "tpAmb" ])
+    	::incluiTag('finNFe'  ,::aIde[ "finNFe" ])
+    	::incluiTag('procEmi' ,::aIde[ "procEmi" ])
+    	::incluiTag('verProc' ,::aIde[ "verProc" ])
+      IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5
+         ::incluiTag('dhCont' ,::aIde[ "dhCont" ])
+         ::incluiTag('xJust' ,::aIde[ "xJust" ])
       ENDIF
-       ::incluiTag('CRT'      ,::aEmit[ "CRT" ])
-   ::incluiTag('/emit')
+	::incluiTag('/ide')
 
-   ::incluiTag('dest')
-      TRY
-          ::incluiTag('CNPJ'     ,::aDest[ "CNPJ" ])
+	::incluiTag('emit')
+    	::incluiTag('CNPJ'     ,::aEmit[ "CNPJ" ])
+    	::incluiTag('xNome'    ,::aEmit[ "xNome" ])
+      IF !EMPTY(::aEmit[ "xFant" ])
+    	   ::incluiTag('xFant'    ,::aEmit[ "xFant" ])
+      ENDIF
+    	::incluiTag('enderEmit')
+    	::incluiTag('xLgr'     ,::aEmit[ "xLgr" ])
+    	::incluiTag('nro'      ,::aEmit[ "nro" ])
+    	::incluiTag('xBairro'  ,::aEmit[ "xBairro" ])
+    	::incluiTag('cMun'     ,::aEmit[ "cMun" ])
+    	::incluiTag('xMun'     ,::aEmit[ "xMun" ])
+    	::incluiTag('UF'       ,::aEmit[ "UF" ])
+    	::incluiTag('CEP'      ,::aEmit[ "CEP" ])
+    	::incluiTag('cPais'    ,::aEmit[ "cPais" ])
+    	::incluiTag('xPais'    ,::aEmit[ "xPais" ])
+      IF !EMPTY(::aEmit[ "fone" ])
+    	   ::incluiTag('fone'     ,::aEmit[ "fone" ])
+      ENDIF
+    	::incluiTag('/enderEmit')
+    	::incluiTag('IE'       ,::aEmit[ "IE" ])
+    	IF !EMPTY(::aEmit[ "IEST" ])
+       	::incluiTag('IEST'  ,::aEmit[ "IEST" ])
+      ENDIF
+    	IF !EMPTY(::aEmit[ "IM" ])
+       	::incluiTag('IM'    ,::aEmit[ "IM" ])
+       	::incluiTag('CNAE'  ,::aEmit[ "CNAE" ])
+      ENDIF
+    	::incluiTag('CRT'      ,::aEmit[ "CRT" ])
+	::incluiTag('/emit')
+
+	::incluiTag('dest')
+	   TRY
+       	::incluiTag('CNPJ'     ,::aDest[ "CNPJ" ])
       CATCH
-          ::incluiTag('CPF'      ,::aDest[ "CPF" ])
+       	::incluiTag('CPF'      ,::aDest[ "CPF" ])
       END
-       ::incluiTag('xNome'    ,::aDest[ "xNome" ])
-       ::incluiTag('enderDest')
-       ::incluiTag('xLgr'     ,::aDest[ "xLgr" ])
-       ::incluiTag('nro'      ,::aDest[ "nro" ])
-       ::incluiTag('xBairro'  ,::aDest[ "xBairro" ])
-       ::incluiTag('cMun'     ,::aDest[ "cMun" ])
-       ::incluiTag('xMun'     ,::aDest[ "xMun" ])
-       ::incluiTag('UF'       ,::aDest[ "UF" ])
+    	::incluiTag('xNome'    ,::aDest[ "xNome" ])
+    	::incluiTag('enderDest')
+    	::incluiTag('xLgr'     ,::aDest[ "xLgr" ])
+    	::incluiTag('nro'      ,::aDest[ "nro" ])
+    	::incluiTag('xBairro'  ,::aDest[ "xBairro" ])
+    	::incluiTag('cMun'     ,::aDest[ "cMun" ])
+    	::incluiTag('xMun'     ,::aDest[ "xMun" ])
+    	::incluiTag('UF'       ,::aDest[ "UF" ])
       
       TRY   // Mauricio Cruz  04/10/2011 (Motivo de exportacao)
-          ::incluiTag('CEP'      ,::aDest[ "CEP" ])
+    	   ::incluiTag('CEP'      ,::aDest[ "CEP" ])
       CATCH
          IF ::aDest[ "UF" ] <> 'EX'
             aRetorno['OK'] := .F.
@@ -1358,26 +1361,27 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             RETURN(aRetorno)
          ENDIF
       END
-       ::incluiTag('cPais'    ,::aDest[ "cPais" ])
-       ::incluiTag('xPais'    ,::aDest[ "xPais" ])
+    	::incluiTag('cPais'    ,::aDest[ "cPais" ])
+    	::incluiTag('xPais'    ,::aDest[ "xPais" ])
 
       // Mauricio Cruz - 30/09/2011
-       //::incluiTag('fone'     ,::aDest[ "fone" ])
-       IF !EMPTY(::aDest[ "fone" ])
-          ::incluiTag('fone'    ,::aDest[ "fone" ])
+    	//::incluiTag('fone'     ,::aDest[ "fone" ])
+    	IF !EMPTY(::aDest[ "fone" ])
+       	::incluiTag('fone'    ,::aDest[ "fone" ])
       ENDIF
       
-       ::incluiTag('/enderDest')
-       ::incluiTag('IE'       ,::aDest[ "IE" ])
-       IF !EMPTY(::aDest[ "ISUF" ])
-          ::incluiTag('ISUF'  ,::aDest[ "ISUF" ])
+    	::incluiTag('/enderDest')
+    	::incluiTag('IE'       ,::aDest[ "IE" ])
+      
+    	IF !EMPTY(::aDest[ "ISUF" ])
+       	::incluiTag('ISUF'  ,::aDest[ "ISUF" ])
       ENDIF
-       IF !EMPTY(::aDest[ "email" ])
-          ::incluiTag('email'    ,::aDest[ "email" ])
+    	IF !EMPTY(::aDest[ "email" ])
+       	::incluiTag('email'    ,::aDest[ "email" ])
       ENDIF
       
-   ::incluiTag('/dest')
-
+	::incluiTag('/dest')
+   
    TRY
       IF !EMPTY(::aEntrega[ "CNPJ" ]) .OR. !EMPTY(::aEntrega[ "CPF" ])
          ::incluiTag('entrega')
@@ -1441,16 +1445,16 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
    nNItem := nItem
    FOR nItem = 1 TO nNItem
-      ::incluiTag('det nItem="'+ALLTRIM(STR(nItem))+'"')
+   	::incluiTag('det nItem="'+ALLTRIM(STR(nItem))+'"')
          ::incluiTag('prod')
-            ::incluiTag('cProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_cProd" ])
+         	::incluiTag('cProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_cProd" ])
             TRY
                IF oFuncoes:validaEan(::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ])[1] = .T.
                   ::incluiTag('cEAN'     ,::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ])   //<cEAN />
                ELSE
                   aRetorno['OK'] := .F.
                   aRetorno['MsgErro'] := 'Problema ao validar EAN ' + oFuncoes:validaEan(::aItem[ "item"+STRZERO(nItem,3)+"_cEAN" ])[2]
-*                  RETURN(aRetorno)
+                  * RETURN(aRetorno)
                ENDIF
             CATCH
                ::incluiTag('cEAN'     ,'')   //<cEAN />
@@ -1461,26 +1465,27 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             IF aRetorno['OK'] = .F.
                RETURN(aRetorno)
             ENDIF
-            ::incluiTag('xProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_xProd" ])
-            ::incluiTag('NCM'      ,::aItem[ "item"+STRZERO(nItem,3)+"_NCM" ])
-            TRY
-               IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ])
-                  ::incluiTag('EXTIPI',::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ])
+            
+         	::incluiTag('xProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_xProd" ])
+         	::incluiTag('NCM'      ,::aItem[ "item"+STRZERO(nItem,3)+"_NCM" ])
+         	TRY
+            	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ])
+               	::incluiTag('EXTIPI',::aItem[ "item"+STRZERO(nItem,3)+"_EXTIPI" ])
                ENDIF
             CATCH
             END
-            ::incluiTag('CFOP'     ,::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ])
-            ::incluiTag('uCom'     ,::aItem[ "item"+STRZERO(nItem,3)+"_uCom" ])
-            ::incluiTag('qCom'     ,::aItem[ "item"+STRZERO(nItem,3)+"_qCom" ])
-            ::incluiTag('vUnCom'   ,::aItem[ "item"+STRZERO(nItem,3)+"_vUnCom" ])
-            ::incluiTag('vProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_vProd" ])
+         	::incluiTag('CFOP'     ,::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ])
+         	::incluiTag('uCom'     ,::aItem[ "item"+STRZERO(nItem,3)+"_uCom" ])
+         	::incluiTag('qCom'     ,::aItem[ "item"+STRZERO(nItem,3)+"_qCom" ])
+         	::incluiTag('vUnCom'   ,::aItem[ "item"+STRZERO(nItem,3)+"_vUnCom" ])
+         	::incluiTag('vProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_vProd" ])
             TRY
                IF oFuncoes:validaEan(::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ])[1] = .T.
-                  ::incluiTag('cEANTrib'     ,::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ])   //<cEANTrib />
+         	      ::incluiTag('cEANTrib' ,::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ]) //<cEANTrib />
                ELSE
                   aRetorno['OK'] := .F.
                   aRetorno['MsgErro'] := 'Problema ao validar EANTrib ' + oFuncoes:validaEan(::aItem[ "item"+STRZERO(nItem,3)+"_cEANTrib" ])[2]
-*                  RETURN(aRetorno)
+                  * RETURN(aRetorno)
                ENDIF
             CATCH
                ::incluiTag('cEANTrib'     ,'')   //<cEANTrib />
@@ -1491,130 +1496,146 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             IF aRetorno['OK'] = .F.
                RETURN(aRetorno)
             ENDIF
-            ::incluiTag('uTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ])
-            ::incluiTag('qTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ])
-            ::incluiTag('vUnTrib'  ,::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ])
-            TRY
-               IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) <> 0
-                  ::incluiTag('vFrete',::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ])
+               
+         	::incluiTag('uTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ])
+         	::incluiTag('qTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ])
+         	::incluiTag('vUnTrib'  ,::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ])
+         	TRY
+            	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) <> 0
+               	::incluiTag('vFrete',::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ])
                ENDIF
             CATCH
             END
-            TRY
-                IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]) <> 0
-                   ::incluiTag('vSeg'  ,::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ])
+         	TRY
+             	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ]) <> 0
+                	::incluiTag('vSeg'  ,::aItem[ "item"+STRZERO(nItem,3)+"_vSeg" ])
                ENDIF
             CATCH
             END
-            TRY
-                IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]) <> 0
-                   ::incluiTag('vDesc' ,::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ])
+         	TRY
+             	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ]) <> 0
+                	::incluiTag('vDesc' ,::aItem[ "item"+STRZERO(nItem,3)+"_vDesc" ])
                ENDIF
             CATCH
             END
-            TRY
-                IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]) <> 0
-                   ::incluiTag('vOutro',::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ])
+         	TRY
+             	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ]) <> 0
+                	::incluiTag('vOutro',::aItem[ "item"+STRZERO(nItem,3)+"_vOutro" ])
                ENDIF
             CATCH
             END
-            TRY
-               ::incluiTag('indTot'   ,::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ])
+         	TRY
+            	::incluiTag('indTot'   ,::aItem[ "item"+STRZERO(nItem,3)+"_indTot" ])
             CATCH
             END
 
             // DI - Mauricio Cruz - 04/10/2011
             IF nDI>0
-               FOR mI:=1 TO nDi
-	               TRY
-		               IF !EMPTY(ALLTRIM(::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_cExportador" ])) // Fernando 28/11
-	                     ::incluiTag('DI')
-	                        ::incluiTag('nDI'          ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_nDI" ]         )
-	                        ::incluiTag('dDI'          ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_dDI" ]         )
-	                        ::incluiTag('xLocDesemb'   ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_xLocDesemb" ]  )
-	                        ::incluiTag('UFDesemb'     ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_UFDesemb" ]    )
-	                        ::incluiTag('dDesemb'      ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_dDesemb" ]     )
-	                        ::incluiTag('cExportador'  ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_cExportador" ] )
-	                        FOR mY:=1 TO nAdi
-	                           IF VAL(ALLTRIM(::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ] )) > 0
-		                           ::incluiTag('adi')
-		                              ::incluiTag('nAdicao'      ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ]     )
-		                              ::incluiTag('nSeqAdic'     ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ]    )
-		                              ::incluiTag('cFabricante'  ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] )
-		                              IF VAL( ::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ] ) > 0
-		                                 ::incluiTag('vDescDI'      ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     )
-		                              ENDIF   
-		                           ::incluiTag('/adi')
-		                        ENDIF   
-	                        NEXT
-	                     ::incluiTag('/DI')
-			            ENDIF   
-	               CATCH
-	               END
-               NEXT
-            ENDIF			
-
+               TRY
+                  FOR mI:=1 TO nDi
+                     ::incluiTag('DI')
+                        ::incluiTag('nDI'          ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_nDI" ]         )
+                        ::incluiTag('dDI'          ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_dDI" ]         )
+                        ::incluiTag('xLocDesemb'   ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_xLocDesemb" ]  )
+                        ::incluiTag('UFDesemb'     ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_UFDesemb" ]    )
+                        ::incluiTag('dDesemb'      ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_dDesemb" ]     )
+                        ::incluiTag('cExportador'  ,::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(mI,3)+"_cExportador" ] )
+                        FOR mY:=1 TO nAdi
+                           ::incluiTag('adi')
+                              ::incluiTag('nAdicao'      ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nAdicao" ]     )
+                              ::incluiTag('nSeqAdic'     ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_nSeqAdic" ]    )
+                              ::incluiTag('cFabricante'  ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_cFabricante" ] )
+                              IF ALLTRIM(::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ])#'0.00'
+                                 ::incluiTag('vDescDI'      ,::aItemAdi[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+STRZERO(nAdi,3)+"_vDescDI" ]     )
+                              ENDIF
+                           ::incluiTag('/adi')
+                        NEXT
+                     ::incluiTag('/DI')
+                  NEXT
+               CATCH
+               END
+            ENDIF
+            
          	TRY
             	::incluiTag('xPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ])
             CATCH
             END
-
-         ::incluiTag('/prod')
+				
+				TRY
+					IF VAL(::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])>0
+						::incluiTag('comb')											
+							::incluiTag('cProdANP' ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])						
+							::incluiTag('CODIF'    ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_CODIF" ])
+							::incluiTag('qTemp'    ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_qTemp" ])
+							::incluiTag('UFCons'   ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_UFCons" ])
+						::incluiTag('/comb')						
+					ENDIF
+				CATCH
+				END			
+			 	
+      	::incluiTag('/prod')
          
-         
-         ::incluiTag('imposto')
+      	::incluiTag('imposto')
+            
+       IF ::lMostra_imp_danfe
+          ::incluiTag('vTotTrib',::aItemICMS[ "item"+STRZERO(nItem,3)+"vTotTrib" ])
+       ENDIF
+         	::incluiTag('ICMS')
 
-            ::incluiTag('ICMS')
-               IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00,10,20,30,40,41,50,51,60,70,90'
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
-                     ::incluiTag('ICMS40')
-                  ELSE
-                     ::incluiTag('ICMS'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+         	   IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00,10,20,30,40,41,50,51,60,70,90'
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
+                  	::incluiTag('ICMS40')
+               	ELSE
+                  	::incluiTag('ICMS'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
                   ENDIF
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                       ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                       ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '10'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                       ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                       ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '20'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                      ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
-                       ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                       ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '30'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      //::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                    	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                    	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '10'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                    	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                    	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])>0
+                   	   ::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])>0
+                   	   ::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                     ENDIF
+                   	::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '20'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                   	::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
+                    	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                    	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '30'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                   	::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                   	::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                   	::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	//::incluiTag('vICMS'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
                      // havendo valor de icms, deve-se informar o mesmo e o motivo da desoneracao (N28)
                      IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS"]) >0    //Mauricio Cruz - 04/10/2011
-                        ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+                        ::incluiTag('vICMS'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
                         TRY   // Mauricio Cruz - 03/10/2011
                            IF !EMPTY(::aItemICMS[ "item"+STRZERO(nItem,3)+"_motDesICMS" ])
                               ::incluiTag('motDesICMS'  ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_motDesICMS" ])
@@ -1625,201 +1646,204 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                            ::incluiTag('motDesICMS'  ,'9')
                         END
                      ENDIF
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '51'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                      TRY
-                         IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ]) > 0
-                            ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
-                         ENDIF   
-                      CATCH
-                      END
-                       ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                       ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '60'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('vBCSTRet'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ])
-                      ::incluiTag('vICMSSTRet'  ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '70'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                      ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
-                      ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                      ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                      ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '90'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                      ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                      TRY
-                         IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ]) > 0
-                            ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
-                         ENDIF   
-                      CATCH
-                      END
-                      ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                      ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                      TRY
-                         ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      CATCH
-                         ::incluiTag('modBCST'       ,'0')
-							 END   
-                      TRY
-	                     ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-	                     ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      CATCH
-                      END
-                      TRY
-                         ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      CATCH
-                         ::incluiTag('vBCST'       ,'0.00')
-                      END
-                      TRY
-                         ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      CATCH
-                         ::incluiTag('pICMSST'       ,'0.00')
-                      END
-                      TRY
-                         ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                      CATCH
-                         ::incluiTag('vICMSST'       ,'0.00')
-                      END
-                  ENDIF
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
-                     ::incluiTag('/ICMS40')
-                  ELSE
-                     ::incluiTag('/ICMS'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '51'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                     TRY
+                        IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])>0
+                   	      ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
+                        ENDIF
+                     CATCH
+                     END
+                    	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                    	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '60'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                     TRY
+                   	   ::incluiTag('vBCSTRet'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ])
+                   	   ::incluiTag('vICMSSTRet'  ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ])
+                     CATCH
+                     END
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '70'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                   	::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
+                   	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                   	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                   	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                   	::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                   	::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                   	::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '90'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CST'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                     ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])>0
+               	      ::incluiTag('pRedBC'   ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
+                     ENDIF
+                   	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                   	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])>0
+                        ::incluiTag('pMVAST'   ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])>0
+                        ::incluiTag('pRedBCST' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                     ENDIF
+                	   ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+               	ENDIF
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '40,41,50'
+                  	::incluiTag('/ICMS40')
+               	ELSE
+                  	::incluiTag('/ICMS'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CST" ])
                   ENDIF
                ELSE
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
-                     ::incluiTag('ICMSSN102')
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
-                     ::incluiTag('ICMSSN202')
-                  ELSE
-                     ::incluiTag('ICMSSN'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
+                  	::incluiTag('ICMSSN102')
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
+                  	::incluiTag('ICMSSN202')
+               	ELSE
+                  	::incluiTag('ICMSSN'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
                   ENDIF
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '101'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                      ::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
-                      ::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '201'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                      ::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
-                      ::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '500'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                      TRY
-                         ::incluiTag('vBCSTRet'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ])
-                         ::incluiTag('vICMSSTRet'  ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ])
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '101'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+                   	::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
+                   	::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '201'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                   	::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                     if val(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])>0
+                	      ::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                     endif
+                   	::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+                   	::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
+                   	::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ] ) >0
+                   	   ::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]) >0
+                   	   ::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])>0
+                   	   ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])>0
+                   	   ::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])>0
+                   	   ::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+                     ENDIF
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '500'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+                   	TRY
+                      	::incluiTag('vBCSTRet'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCSTRet" ])
+                      	::incluiTag('vICMSSTRet'  ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSSTRet" ])
                      CATCH
-                         ::incluiTag('vBCSTRet'    ,'0.00')
-                         ::incluiTag('vICMSSTRet'  ,'0.00')
+                      	::incluiTag('vBCSTRet'    ,'0.00')
+                      	::incluiTag('vICMSSTRet'  ,'0.00')
                      END
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '900'
-                      ::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
-                      ::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
-                      ::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
-                      ::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                      ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
-                      ::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
-                      ::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
-                      ::incluiTag('modBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
-                      ::incluiTag('pMVAST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
-                      ::incluiTag('pRedBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
-                      ::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
-                      ::incluiTag('pICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
-                      ::incluiTag('vICMSST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
-                      ::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
-                      ::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
-                  ENDIF
-                  IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
-                     ::incluiTag('/ICMSSN102')
-                  ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
-                     ::incluiTag('/ICMSSN202')
-                  ELSE
-                     ::incluiTag('/ICMSSN'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] = '900'
+                   	::incluiTag('orig'        ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_orig" ])
+                   	::incluiTag('CSOSN'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
+                   	::incluiTag('modBC'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBC" ])
+                   	::incluiTag('vBC'         ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])>0
+                   	   ::incluiTag('pRedBC'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBC" ])
+                     ENDIF
+                   	::incluiTag('pICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMS" ])
+                   	::incluiTag('vICMS'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMS" ])
+                   	::incluiTag('modBCST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_modBCST" ])
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])>0
+                   	   ::incluiTag('pMVAST'      ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pMVAST" ])
+                     ENDIF
+                     IF VAL(::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])>0
+                   	   ::incluiTag('pRedBCST'    ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ])
+                     ENDIF
+                   	::incluiTag('vBCST'       ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vBCST" ])
+                   	::incluiTag('pICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pICMSST" ])
+                   	::incluiTag('vICMSST'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vICMSST" ])
+                   	::incluiTag('pCredSN'     ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_pCredSN" ])
+                   	::incluiTag('vCredICMSSN' ,::aItemICMS[ "item"+STRZERO(nItem,3)+"_vCredICMSSN" ])
+               	ENDIF
+               	IF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '102,103,300,400'
+                  	::incluiTag('/ICMSSN102')
+               	ELSEIF ::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ] $ '202,203'
+                  	::incluiTag('/ICMSSN202')
+               	ELSE
+                  	::incluiTag('/ICMSSN'+::aItemICMS[ "item"+STRZERO(nItem,3)+"_CSOSN" ])
                   ENDIF
                ENDIF
-            ::incluiTag('/ICMS')
+         	::incluiTag('/ICMS')
 
 
             TRY
               IF !EMPTY( ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] )
-                  ::incluiTag('IPI')
-                     TRY
-                       ::incluiTag('clEnq'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_clEnq" ])
+               	::incluiTag('IPI')
+               	   TRY
+                    	::incluiTag('clEnq'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_clEnq" ])
                     CATCH
                     END
-                     TRY
-                       ::incluiTag('CNPJProd'     ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CNPJProd" ])
+               	   TRY
+                    	::incluiTag('CNPJProd'     ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CNPJProd" ])
                     CATCH
                     END
-                     TRY
-                       ::incluiTag('cSelo'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_cSelo" ])
+               	   TRY
+                    	::incluiTag('cSelo'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_cSelo" ])
                     CATCH
                     END
-                     TRY
-                       ::incluiTag('qSelo'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_qSelo" ])
+               	   TRY
+                    	::incluiTag('qSelo'        ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_qSelo" ])
                     CATCH
                     END
-                     TRY
-                       ::incluiTag('cEnq'         ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ])
+               	   TRY
+                    	::incluiTag('cEnq'         ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_cEnq" ])
                     CATCH
-                       ::incluiTag('cEnq'         ,'999')
+                    	::incluiTag('cEnq'         ,'999')
                     END
 
-                       IF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00,49,50'
-                        ::incluiTag('IPITrib')
-                           ::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
-                             ::incluiTag('vBC'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                             ::incluiTag('pIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ])
-                             ::incluiTag('vIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ])
-                        ::incluiTag('/IPITrib')
-                       ELSEIF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02,03,04,51,52,53,54,55'
-                         ::incluiTag('IPINT')
-                           ::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
-                         ::incluiTag('/IPINT')
-                       ELSEIF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99'
-                        ::incluiTag('IPIOutr')
-                           ::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
-                             ::incluiTag('vBC'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                             ::incluiTag('pIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ])
-                             ::incluiTag('vIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ])
-                        ::incluiTag('/IPIOutr')
-                       ENDIF
-                  ::incluiTag('/IPI')
+                    	IF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '00,49,50'
+                     	::incluiTag('IPITrib')
+                        	::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
+                          	::incluiTag('vBC'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                          	::incluiTag('pIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ])
+                          	::incluiTag('vIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ])
+                     	::incluiTag('/IPITrib')
+                    	ELSEIF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02,03,04,51,52,53,54,55'
+                      	::incluiTag('IPINT')
+                        	::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
+                      	::incluiTag('/IPINT')
+                    	ELSEIF ::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99'
+                     	::incluiTag('IPIOutr')
+                        	::incluiTag('CST'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_CST" ])
+                          	::incluiTag('vBC'    ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                          	::incluiTag('pIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_pIPI" ])
+                          	::incluiTag('vIPI'   ,::aItemIPI[ "item"+STRZERO(nItem,3)+"_vIPI" ])
+                     	::incluiTag('/IPIOutr')
+                    	ENDIF
+               	::incluiTag('/IPI')
               ENDIF
             CATCH
             END
@@ -1827,33 +1851,17 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             
             // Mauricio Cruz - 04/10/2011
             TRY
-               IF SUBS(::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ],1,1)='3'   // So precisa do II se for nota de importacao
+               IF LEFT(::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ],1)='3'   // So precisa do II se for nota de importacao
                   ::incluiTag('II')
-                     TRY // Fernando 28/11
-                        ::incluiTag('vBC'     ,::aItemII[ "item"+STRZERO(nItem,3)+"_vBC" ]      )
-                     CATCH
-                        ::incluiTag('vBC'     ,'0.00'     )
-                     END
-                     TRY // Fernando 28/11
-                        ::incluiTag('vDespAdu',::aItemII[ "item"+STRZERO(nItem,3)+"_vDespAdu" ] )
-                     CATCH
-                        ::incluiTag('vDespAdu'     ,'0.00'     )
-                     END
-                     TRY // Fernando 28/11
-                        ::incluiTag('vII'     ,::aItemII[ "item"+STRZERO(nItem,3)+"_vII" ]      )
-                     CATCH
-                        ::incluiTag('vII'     ,'0.00'     )
-                     END
-                     TRY // Fernando 28/11
-                        ::incluiTag('vIOF'    ,::aItemII[ "item"+STRZERO(nItem,3)+"_vIOF" ]     )
-                     CATCH
-                        ::incluiTag('vIOF'     ,'0.00'     )
-                     END
+                     ::incluiTag('vBC'     ,::aItemII[ "item"+STRZERO(nItem,3)+"_vBC" ]      )
+                     ::incluiTag('vDespAdu',::aItemII[ "item"+STRZERO(nItem,3)+"_vDespAdu" ] )
+                     ::incluiTag('vII'     ,::aItemII[ "item"+STRZERO(nItem,3)+"_vII" ]      )
+                     ::incluiTag('vIOF'    ,::aItemII[ "item"+STRZERO(nItem,3)+"_vIOF" ]     )
                   ::incluiTag('/II')
                ENDIF
             CATCH
-            END			
-			
+            END
+
             // Mauricio Cruz - 30/09/2011
             IF EMPTY(::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ])
                ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ]:='01'
@@ -1862,60 +1870,76 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]:='0.00'
             ENDIF
 
-            ::incluiTag('PIS')
-                 IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                  ::incluiTag('PISAliq')
+            
+            
+            // ATENCAO!!!  OS CODIGOS CST:  49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98 PARA PIS / COFINS
+            // AINDA NAO FORAM IMPLEMENTADOS NO MANULA DA NF-E E DEVEM SER USADOS COMO 99 ATE QUE SEJA IMPLEMENTADO
+            // FICAR DE OLHO PARA QUANDO ISSO SAIR!  (NT2010.001.PDF)  ->  JA FAZ DOIS ANOS ISSO! RECHECAR...
+         	::incluiTag('PIS')
+              	IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+               	::incluiTag('PISAliq')
                ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                  ::incluiTag('PISQtde')
+               	::incluiTag('PISQtde')
                ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '04,06,07,08,09'
-                  ::incluiTag('PISNT')
-               ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99'
-                  ::incluiTag('PISOutr')
+               	::incluiTag('PISNT')
+               ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+               	::incluiTag('PISOutr')
                ENDIF
-                   ::incluiTag('CST'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                    IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                       ::incluiTag('vBC'        ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ])
-                       ::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
-                   ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                       ::incluiTag('qBCProd'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
-                       ::incluiTag('vAliqProd'  ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
-                       ::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
-                   ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,70,71,72,73,74,75,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67' // Fernando 29/11
-                       TRY
-                          ::incluiTag('vBC'        ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       CATCH
-                          ::incluiTag('vBC'        ,'0.00')
-                       END
-                       TRY
-                          ::incluiTag('pPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ])
-                       CATCH
-                          ::incluiTag('pPIS'        ,'0.00')
-                       END
-                       TRY
-                          ::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
-                       CATCH
-                          ::incluiTag('vPIS'        ,'0.00')
-                       END
-                       TRY
-                         ::incluiTag('qBCProd'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
-                       CATCH
-                       END
-                       TRY
-                         ::incluiTag('vAliqProd'  ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
-                       CATCH
-                       END
-                   ENDIF
-                 IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                  ::incluiTag('/PISAliq')
+                	::incluiTag('CST'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                 	IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+                    	::incluiTag('vBC'        ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ])
+                    	::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
+                	ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
+                    	::incluiTag('qBCProd'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
+                    	::incluiTag('vAliqProd'  ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
+                    	::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
+                	ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+                     TRY
+                    	   ::incluiTag('vBC'        ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                     CATCH
+                        ::incluiTag('vBC'        ,'0.00')
+                     END
+                     TRY
+                    	   ::incluiTag('pPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_pPIS" ])
+                     CATCH
+                        ::incluiTag('pPIS'       ,'0.00')
+                     END
+                     
+                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0. 
+                    	TRY
+                        IF VAL(::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
+                      	   ::incluiTag('qBCProd'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
+                        ENDIF
+                    	CATCH
+                        //::incluiTag('qBCProd'    ,'0.00')
+                    	END
+                    	TRY
+                        IF VAL(::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
+                      	   ::incluiTag('vAliqProd'  ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
+                        *ELSE
+                        *  ::incluiTag('vAliqProd'  ,'0.00')
+                        ENDIF
+                    	CATCH
+                        *::incluiTag('vAliqProd'  ,'0.00')
+                    	END
+                     
+                     TRY
+                    	   ::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
+                     CATCH
+                        ::incluiTag('vPIS'       ,'0.00')
+                     END
+                	ENDIF
+              	IF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+               	::incluiTag('/PISAliq')
                ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                  ::incluiTag('/PISQtde')
+               	::incluiTag('/PISQtde')
                ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '04,06,07,08,09'
-                  ::incluiTag('/PISNT')
-               ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,70,71,72,73,74,75,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67' // Fernando 29/11
-                  ::incluiTag('/PISOutr')
+               	::incluiTag('/PISNT')
+               ELSEIF ::aItemPIS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+               	::incluiTag('/PISOutr')
                ENDIF
-            ::incluiTag('/PIS')
+         	::incluiTag('/PIS')
 
             // Mauricio Cruz - 30/09/2011
             IF EMPTY(::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ])
@@ -1924,189 +1948,205 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]:='0.00'
                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]:='0.00'
             ENDIF
-
-            ::incluiTag('COFINS')
-                 IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                  ::incluiTag('COFINSAliq')
+            
+         	::incluiTag('COFINS')
+              	IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+               	::incluiTag('COFINSAliq')
                ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                  ::incluiTag('COFINSQtde')
+               	::incluiTag('COFINSQtde')
                ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '04,06,07,08,09'
-                  ::incluiTag('COFINSNT')
-               ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,70,71,72,73,74,75,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67' // Fernando 29/11'
-                  ::incluiTag('COFINSOutr')
+               	::incluiTag('COFINSNT')
+               ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+               	::incluiTag('COFINSOutr')
                ENDIF
-                   ::incluiTag('CST'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ])
-                    IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                       ::incluiTag('vBC'        ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       ::incluiTag('pCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ])
-                       ::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
-                   ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                       ::incluiTag('qBCProd'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
-                       ::incluiTag('vAliqProd'  ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
-                       ::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
-                   ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,70,71,72,73,74,75,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67' // Fernando 29/11'
-                       TRY
-                          ::incluiTag('vBC'        ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ])
-                       CATCH
-                          ::incluiTag('vBC'        ,'0.00')
-                       END
-                       TRY
-                          ::incluiTag('pCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ])
-                       CATCH
-                          ::incluiTag('pCOFINS'    ,'0.00')
-                       END
-                       TRY
-                          ::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
-                       CATCH
-                          ::incluiTag('vCOFINS'    ,'0.00')
-                       END
-                       TRY
-                         ::incluiTag('qBCProd'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
-                       CATCH
-                       END
-                       TRY
-                        ::incluiTag('vAliqProd'  ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
-                       CATCH
-                       END
-                   ENDIF
-                 IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
-                  ::incluiTag('/COFINSAliq')
+                	::incluiTag('CST'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ])
+                 	IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+                    	::incluiTag('vBC'        ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                    	::incluiTag('pCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ])
+                    	::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
+                	ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
+                    	::incluiTag('qBCProd'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
+                    	::incluiTag('vAliqProd'  ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
+                    	::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
+                	ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+                     TRY
+                 	      ::incluiTag('vBC'        ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vBC" ])
+                     CATCH
+                        ::incluiTag('vBC'        ,'0.00')
+                     END
+                     TRY
+                    	   ::incluiTag('pCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ])
+                     CATCH
+                        ::incluiTag('pCOFINS'    ,'0.00')
+                     END
+                     
+                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0. 
+                    	TRY  
+                        IF VAL(::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
+                      	   ::incluiTag('qBCProd'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
+                        ENDIF
+                    	CATCH
+                        //::incluiTag('qBCProd'    ,'0.00')
+                    	END
+                    	TRY
+                        IF VAL(::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
+                     	     ::incluiTag('vAliqProd'  ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])
+                        *ELSE
+                        *   ::incluiTag('vAliqProd'  ,'0.00')
+                        ENDIF
+                    	CATCH
+                        *::incluiTag('vAliqProd'  ,'0.00')
+                    	END
+                     TRY
+                    	   ::incluiTag('vCOFINS'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ])
+                     CATCH
+                        ::incluiTag('vCOFINS'    ,'0.00')
+                     END
+                	ENDIF
+              	IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
+               	::incluiTag('/COFINSAliq')
                ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '03'
-                  ::incluiTag('/COFINSQtde')
+               	::incluiTag('/COFINSQtde')
                ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '04,06,07,08,09'
-                  ::incluiTag('/COFINSNT')
-               ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,70,71,72,73,74,75,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67' // Fernando 29/11'
-                  ::incluiTag('/COFINSOutr')
+               	::incluiTag('/COFINSNT')
+               ELSEIF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '99,49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98'
+               	::incluiTag('/COFINSOutr')
                ENDIF
-            ::incluiTag('/COFINS')
+         	::incluiTag('/COFINS')
 
-         ::incluiTag('/imposto')
-          TRY
-             ::incluiTag('infAdProd'   ,::aItem[ "item"+STRZERO(nItem,3)+"_infAdProd" ])
+      	::incluiTag('/imposto')
+       	TRY
+          	::incluiTag('indfAdProd'   ,::aItem[ "item"+STRZERO(nItem,3)+"_indfAdProd" ])
          CATCH
          END
-      ::incluiTag('/det')
+   	::incluiTag('/det')
    NEXT
-   ::incluiTag('total')
-       ::incluiTag('ICMSTot')
-         ::incluiTag('vBC',::aICMSTotal[ "vBC" ])
-         ::incluiTag('vICMS',::aICMSTotal[ "vICMS" ])
-         ::incluiTag('vBCST',::aICMSTotal[ "vBCST" ])
-         ::incluiTag('vST',::aICMSTotal[ "vST" ])
-         ::incluiTag('vProd',::aICMSTotal[ "vProd" ])
-         ::incluiTag('vFrete',::aICMSTotal[ "vFrete" ])
-         ::incluiTag('vSeg',::aICMSTotal[ "vSeg" ])
-         ::incluiTag('vDesc',::aICMSTotal[ "vDesc" ])
-         ::incluiTag('vII',::aICMSTotal[ "vII" ])
-         ::incluiTag('vIPI',::aICMSTotal[ "vIPI" ])
-         ::incluiTag('vPIS',::aICMSTotal[ "vPIS" ])
-         ::incluiTag('vCOFINS',::aICMSTotal[ "vCOFINS" ])
-         ::incluiTag('vOutro',::aICMSTotal[ "vOutro" ])
-         ::incluiTag('vNF',::aICMSTotal[ "vNF" ])
-       ::incluiTag('/ICMSTot')
-   ::incluiTag('/total')
+   
+	::incluiTag('total')
+    	::incluiTag('ICMSTot')
+      	::incluiTag('vBC',::aICMSTotal[ "vBC" ])
+      	::incluiTag('vICMS',::aICMSTotal[ "vICMS" ])
+      	::incluiTag('vBCST',::aICMSTotal[ "vBCST" ])
+      	::incluiTag('vST',::aICMSTotal[ "vST" ])
+      	::incluiTag('vProd',::aICMSTotal[ "vProd" ])
+      	::incluiTag('vFrete',::aICMSTotal[ "vFrete" ])
+      	::incluiTag('vSeg',::aICMSTotal[ "vSeg" ])
+      	::incluiTag('vDesc',::aICMSTotal[ "vDesc" ])
+      	::incluiTag('vII',::aICMSTotal[ "vII" ])
+      	::incluiTag('vIPI',::aICMSTotal[ "vIPI" ])
+      	::incluiTag('vPIS',::aICMSTotal[ "vPIS" ])
+      	::incluiTag('vCOFINS',::aICMSTotal[ "vCOFINS" ])
+      	::incluiTag('vOutro',::aICMSTotal[ "vOutro" ])
+      	::incluiTag('vNF',::aICMSTotal[ "vNF" ])
+       IF ::lMostra_imp_danfe
+          ::incluiTag('vTotTrib',::aICMSTotal[ "vTotTrib" ])
+       ENDIF
 
-   ::incluiTag('transp')
-      ::incluiTag('modFrete'  ,::aTransp[ "modFrete" ])
-      TRY
-         IF !EMPTY( ::aTransp[ "xNome" ] )
-            ::incluiTag('transporta')
-                TRY
-                    ::incluiTag('CNPJ'     ,::aTransp[ "CNPJ" ])
+    	::incluiTag('/ICMSTot')
+	::incluiTag('/total')
+
+	::incluiTag('transp')
+   	::incluiTag('modFrete'  ,::aTransp[ "modFrete" ])
+   	TRY
+   	   IF !EMPTY( ::aTransp[ "xNome" ] )
+         	::incluiTag('transporta')
+          	   TRY
+                 	::incluiTag('CNPJ'     ,::aTransp[ "CNPJ" ])
                CATCH
-                  TRY
-                      ::incluiTag('CPF'      ,::aTransp[ "CPF" ])
+            	   TRY
+                   	::incluiTag('CPF'      ,::aTransp[ "CPF" ])
                   CATCH
                   END
                END
-               ::incluiTag('xNome'  ,::aTransp[ "xNome" ])
-                 TRY
-                  ::incluiTag('IE'     ,::aTransp[ "IE" ])
+            	::incluiTag('xNome'  ,::aTransp[ "xNome" ])
+           	   TRY
+               	::incluiTag('IE'     ,::aTransp[ "IE" ])
                CATCH
                END
-                 TRY
-                  ::incluiTag('xEnder' ,::aTransp[ "xEnder" ])
+           	   TRY
+               	::incluiTag('xEnder' ,::aTransp[ "xEnder" ])
                CATCH
                END
-                 TRY
-                  ::incluiTag('xMun'   ,::aTransp[ "xMun" ])
+           	   TRY
+               	::incluiTag('xMun'   ,::aTransp[ "xMun" ])
                CATCH
                END
-                 TRY
-                  ::incluiTag('UF'     ,::aTransp[ "UF" ])
+           	   TRY
+               	::incluiTag('UF'     ,::aTransp[ "UF" ])
                CATCH
                END
-            ::incluiTag('/transporta')
+          ::incluiTag('/transporta')
          ENDIF
       CATCH
       END
-      TRY
-         IF !EMPTY( ::aVeicTransp[ "placa" ] )
+      
+   	TRY
+   	   IF !EMPTY( ::aVeicTransp[ "placa" ] )
+            IF !oFuncoes:validaPlaca( ::aVeicTransp[ "placa" ] )
+               aRetorno[ 'OK' ] := .F.
+               aRetorno[ 'MsgErro' ] := 'Placa inválida ' + ::aVeicTransp[ "placa" ]
+            ENDIF
             ::incluiTag('veicTransp')
-               IF !oFuncoes:validaPlaca( ::aVeicTransp[ "placa" ] )
-                  aRetorno[ 'OK' ] := .F.
-                  aRetorno[ 'MsgErro' ] := 'Placa inválida ' + ::aVeicTransp[ "placa" ]
-               ENDIF
-
                ::incluiTag('placa' ,::aVeicTransp[ "placa" ])
                ::incluiTag('UF'    ,::aVeicTransp[ "UF" ])
         	   TRY
             	::incluiTag('RNTC'   ,::aVeicTransp[ "RNTC" ])
             CATCH
             END
-
-            ::incluiTag('/veicTransp')
-         ENDIF
+*::aVeicTransp[ "RNTC" ] := hIniData['Transportador']['RNTC']
+         	::incluiTag('/veicTransp')
+      ENDIF
       CATCH
       END
+
       IF aRetorno[ 'OK' ] = .F.
          RETURN( aRetorno )
       ENDIF
-      TRY
-         IF !EMPTY(::aTransp[ "qVol" ]) .OR. !EMPTY(::aTransp[ "esp" ]) .OR. !EMPTY(::aTransp[ "pesoL" ]) .OR. !EMPTY(::aTransp[ "pesoB" ])
-            ::incluiTag('vol')
-            TRY
-               ::incluiTag('qVol'   ,::aTransp[ "qVol" ])
+   	//TRY
+   	   IF VAL(::aTransp[ "qVol" ])>0 //.AND. (!EMPTY(::aTransp[ "esp" ]) .OR. VAL(::aTransp[ "pesoL" ])>0 .OR. VAL(::aTransp[ "pesoB" ])>0)
+         	::incluiTag('vol')
+   	      TRY
+            	::incluiTag('qVol'   ,::aTransp[ "qVol" ])
             CATCH
             END
-            TRY
-               ::incluiTag('esp'   ,::aTransp[ "esp" ])
+   	      TRY
+            	::incluiTag('esp'   ,::aTransp[ "esp" ])
             CATCH
             END
-            TRY
-               ::incluiTag('marca'   ,::aTransp[ "marca" ])
+   	      TRY
+            	::incluiTag('marca'   ,::aTransp[ "marca" ])
             CATCH
             END
-            TRY
-               ::incluiTag('nVol'   ,::aTransp[ "nVol" ])
+   	      TRY
+            	::incluiTag('nVol'   ,::aTransp[ "nVol" ])
             CATCH
             END
-            TRY
-               ::incluiTag('pesoL'   ,::aTransp[ "pesoL" ])
+   	      TRY
+            	::incluiTag('pesoL'   ,::aTransp[ "pesoL" ])
             CATCH
             END
-            TRY
-               ::incluiTag('pesoB'   ,::aTransp[ "pesoB" ])
+   	      TRY
+            	::incluiTag('pesoB'   ,::aTransp[ "pesoB" ])
             CATCH
             END
-            ::incluiTag('/vol')
+         	::incluiTag('/vol')
          ENDIF
-      CATCH
-      END
-   ::incluiTag('/transp')
+      //CATCH
+      //END
+	::incluiTag('/transp')
 
    TRY
       IF !EMPTY( ::aDuplicatas[ "dup001_nDup" ] )
-         ::incluiTag('cobr')
-         nNICob := nICob
-         FOR nICob = 1 TO nNICob
-            ::incluiTag('dup')
-               ::incluiTag('nDup'   ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_nDup" ])
-               ::incluiTag('dVenc'  ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_dVenc" ])
-               ::incluiTag('vDup'   ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_vDup" ])
-            ::incluiTag('/dup')
-         NEXT
-         ::incluiTag('/cobr')
+      	::incluiTag('cobr')
+      	nNICob := nICob
+      	FOR nICob = 1 TO nNICob
+         	::incluiTag('dup')
+            	::incluiTag('nDup'   ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_nDup" ])
+            	::incluiTag('dVenc'  ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_dVenc" ])
+            	::incluiTag('vDup'   ,::aDuplicatas[ "dup"+STRZERO(nICob,3)+"_vDup" ])
+         	::incluiTag('/dup')
+      	NEXT
+      	::incluiTag('/cobr')
       ENDIF
    CATCH
    END
@@ -2121,8 +2161,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
    END
    ::incluiTag('/infAdic')
-
-
+   
    TRY
       IF !EMPTY(::aExporta[ 'UFEmbarq' ])
          ::incluiTag('exporta')
@@ -2133,9 +2172,9 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
    END
 
-   ::incluiTag('/infNFe')
+	::incluiTag('/infNFe')
 
-   ::incluiTag('/NFe')
+	::incluiTag('/NFe')
 
    MEMOWRIT(::ohbNFe:pastaNFe+"\"+cChaveNFe+'-nfe.xml',::cXMLSaida,.F.)
    IF ::lValida
@@ -2153,7 +2192,6 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
         ELSE
            aRetorno['Assinou'] := .T.
         ENDIF
-
         oValida := hbNFeValida()
         oValida:ohbNFe := ::ohbNfe // Objeto hbNFe
         oValida:cXML := ::ohbNFe:pastaNFe+"\"+cChaveNFe+'-nfe.xml' // Arquivo XML ou ConteudoXML
@@ -2170,6 +2208,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    aRetorno['OK'] := .T.
    aRetorno['chNFe'] := cChaveNFe
    aRetorno['cXMLRet'] := ::ohbNFe:pastaNFe+"\"+cChaveNFe+'-nfe.xml'     // Mauricio Cruz - 30/09/2011
+   
 RETURN(aRetorno)
 
 METHOD incluiTag(cTag,cValor) CLASS hbNFeIniToXML
@@ -2182,53 +2221,12 @@ METHOD incluiTag(cTag,cValor) CLASS hbNFeIniToXML
          ::cXMLSaida += '<'+cTag+' />'
       ENDIF
    ELSE
+      cValor:=CLEAR_CHAR(cValor)
       ::cXMLSaida += '<'+cTag+'>'+cValor+'</'+cTag+'>'
    ENDIF
 RETURN Nil
 
-FUNCTION LerIni(cXML)
-LOCAL hRetorno := hash() , nI, cHash, cHash2, lStartHash, lStartHash2, cConteudo
-   nI:=1
-   DO WHILE SUBS(cXML,nI,1) <> "[" .AND. nI <= LEN(cXML)
-      nI ++
-   ENDDO
-   DO WHILE nI <= LEN(cXML)-6
-       IF SUBS(cXML,nI,1) == "[" // inicio nome hash
-          cHash := ""
-          nI++
-          DO WHILE SUBS(cXML,nI,1) <> "]" // termino nome hash
-             cHash += SUBS(cXML,nI,1)
-             nI++
-          ENDDO
-          hRetorno[ cHash ] := hash()
-          nI++
-          LOOP
-       ENDIF
-       cHash2 := ""
-       DO WHILE SUBS(cXML,nI,1) <> "="
-          IF SUBS(cXML,nI,1) = CHR(10) .OR. SUBS(cXML,nI,1) = CHR(13)
-             nI++
-             LOOP
-          ENDIF
-          cHash2 += SUBS(cXML,nI,1)
-          nI++
-       ENDDO
-       nI++
-       cConteudo := ""
-       DO WHILE .T.
-		    IF SUBS(cXML,nI,1) = CHR(10) .OR. nI>LEN(cXML)-6
-		       nI ++
-		       EXIT
-		    ELSEIF SUBS(cXML,nI,1) = CHR(13)
-		       nI ++
-		       LOOP   
-		    ENDIF   
-          cConteudo += SUBS(cXML,nI,1)
-          nI++
-       ENDDO
-		 hRetorno[ cHash ][ cHash2 ] := TRIM(cConteudo)
-   ENDDO
-RETURN(hRetorno)
+
 
 STATIC FUNCTION CLEAR_CHAR(cTXT)
 /*
@@ -2263,7 +2261,7 @@ ENDIF
 IF CHR(155)$cRET  // ø
    cRET:=StrTran( cRET, CHR(155))
 ENDIF
-FOR mI:=156 TO 159  // £  Ø × ƒ
+FOR mI:=156 TO 159  // £  Ø × ƒ 
    IF CHR(mI)$cRET
       cRET:=StrTran( cRET, CHR(mI))
    ENDIF
@@ -2379,7 +2377,7 @@ HB_FUNC( SYG_GETPRIVATEPROFILESTRING )
 }
 
 
-#pragma ENDDUMP
+#pragma ENDDUMP 
 
 
 
@@ -2398,13 +2396,13 @@ aMSGvld:={}
 // GA03   | A03 | Campo Id inválido: – Chave de Acesso do campo Id difere da concatenação dos campos correspondentes | Obrig.  | 502 | Rej. | Rejeição: Erro na Chave de Acesso - Campo Id não corresponde à concatenação dos campos correspondentes
 // ******************* B - Identificação da NF-e  *******************
 // GB02   | B02 | Código da UF do Emitente difere da UF do Web Service                                               | Obrig.  | 226 | Rej. | Rejeição: Código da UF do Emitente diverge da UF autorizadora
-// GB07   | B07 | Na autorização pela SEFAZ (ou SEFAZ VIRTUAL): – Série da NF-e difere da faixa de 0-889 A faixa
+// GB07   | B07 | Na autorização pela SEFAZ (ou SEFAZ VIRTUAL): – Série da NF-e difere da faixa de 0-889 A faixa 
 //                890-899 é reservada para a emissão de NF-e avulsa quando permitida pela SEFAZ.                     | Obrig.  | 266 | Rej. | Rejeição: Série utilizada fora da faixa permitida no Web Service (0-889)
 IF VAL(::aIde[ "serie" ])>=890 .AND. VAL(::aIde[ "serie" ])<=899
    AADD(aMSGvld,{.T.,'Rejeição: Série utilizada fora da faixa permitida no Web Service (0-889). '+CHR(10)+CHR(13)+'DICA: Favor não utilizar as séries entre 890 e 899'})
 ENDIF
 
-// GB07.1 | B07 | Na autorização pelo SCAN - Sistema de Contingência Nacional: – Série da NF-e difere da faixa de
+// GB07.1 | B07 | Na autorização pelo SCAN - Sistema de Contingência Nacional: – Série da NF-e difere da faixa de  
 //                900-999                                                                                            | Obrig.  | 503 | Rej. | Rejeição: Série utilizada fora da faixa permitida no SCAN (900-999)
 IF VAL(::aIde[ "tpEmis" ])=3 .AND. !(VAL(::aIde[ "serie" ])>=900 .AND. VAL(::aIde[ "serie" ])<=999)
    AADD(aMSGvld,{.T.,'Rejeição: Série utilizada fora da faixa permitida no SCAN (900-999). '+CHR(10)+CHR(13)+'DICA: Favor utilizar série entre 900 e 999 para modo SCAN.'})
@@ -2420,13 +2418,13 @@ IF DATE()-CTOD(RIGHT(::aIde[ "dEmi" ],2)+'/'+SUBSTR(::aIde[ "dEmi" ],6,2)+'/'+LE
    AADD(aMSGvld,{.T.,'Rejeição: Data de Emissão muito atrasada. '+CHR(10)+CHR(13)+'DICA: Favor ajustar a data de emissão da nota fiscal para uma data não menor que trinta (30) dias a data atual.'})
 ENDIF
 
-// GB10   | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída posterior a 30 dias
+// GB10   | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída posterior a 30 dias 
 //                da Data de Autorização                                                                             | Facult. | 504 | Rej. | Rejeição: Data de Entrada/Saída posterior ao permitido
 IF CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4))-DATE() > 30
    AADD(aMSGvld,{.F.,'Rejeição: Data de Entrada/Saída posterior ao permitido. '+CHR(10)+CHR(13)+'DICA: Favor ajustar a data de Entrada/Saída da nota fiscal para uma data não menor que trinta (30) dias a data atual.'})
 ENDIF
 
-// GB10.1 | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída anterior a 30 dias
+// GB10.1 | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída anterior a 30 dias 
 //                da Data de Autorização                                                                             | Facult. | 505 | Rej. | Rejeição: Data de Entrada/Saída anterior ao permitido
 IF !EMPTY(::aIde[ "dSaiEnt" ])
    IF DATE()- CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4)) > 30
@@ -2434,7 +2432,7 @@ IF !EMPTY(::aIde[ "dSaiEnt" ])
    ENDIF
 ENDIF
 
-// GB10.2 | B10 | Se informado Data de Entrada / Saída (dSaiEnt) para NF-e de Saída (tpNF=1):
+// GB10.2 | B10 | Se informado Data de Entrada / Saída (dSaiEnt) para NF-e de Saída (tpNF=1): 
 //                –Data de Saída (dSaiEnt) menor que a Data de Emissão (dEmis)                                       | Facult. | 506 | Rej. | Rejeição: Data de Saída menor que a Data de Emissão
 IF !EMPTY(::aIde[ "dSaiEnt" ])
    IF VAL(::aIde[ "tpNF" ])=1 .AND. CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4)) < CTOD(RIGHT(::aIde[ "dEmi" ],2)+'/'+SUBSTR(::aIde[ "dEmi" ],6,2)+'/'+LEFT(::aIde[ "dEmi" ],4))
@@ -2456,7 +2454,7 @@ WHILE .T.
       nItnRef--
       EXIT
    END
-   // GB13   | B13 | Se informada a TAG de NF-e Referenciada:
+   // GB13   | B13 | Se informada a TAG de NF-e Referenciada: 
    //                -Dígito Verificador da Chave de Acesso inválido                                                    | Facult. | 547 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso
    //                da NF-e Referenciada inválido
    IF !VERIFICA_DV_CHV_NFE(cCHV)
@@ -2472,10 +2470,10 @@ WHILE .T.
    END
 ENDDO
 
-// GB20d  | B20d| Se informada a TAG de NF Referenciada de produtor:– CNPJ com zeros, nulo ou DV inválido            | Facult. | 549 | Rej. | Rejeição: CNPJ da NF referenciada de produtor inválido.
+// GB20d  | B20d| Se informada a TAG de NF Referenciada de produtor:– CNPJ com zeros, nulo ou DV inválido            | Facult. | 549 | Rej. | Rejeição: CNPJ da NF referenciada de produtor inválido.  
 // GB20e  | B20e| Se informada a TAG de NF Referenciada de produtor:– CPF com zeros, nulo ou DV inválido             | Facult. | 550 | Rej. | Rejeição: CPF da NF referenciada de produtor inválido.
 // GB20f  | B20f| Se informada a TAG de NF Referenciada de produtor:– IE com zeros, nulo ou DV inválido para a UF.   | Facult. | 551 | Rej. | Rejeição: IE da NF referenciada de produtor inválido.
-// GB20i  | B20i| Se informada a TAG de CT-e Referenciado:- Dígito Verificador da Chave de Acesso inválido           | Facult. | 552 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso do CT-e Referenciado inválido
+// GB20i  | B20i| Se informada a TAG de CT-e Referenciado:- Dígito Verificador da Chave de Acesso inválido           | Facult. | 552 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso do CT-e Referenciado inválido  
 // GB22   | B22 | Se informada a TAG de tpEmis = 1:dhCont e xJust não devem ser informados                           | Obrig.  | 556 | Rej. | Rejeição: Justificativa de entrada em contingência não deve ser informada para tipo de emissão normal
 IF VAL(::aIde[ "tpEmis" ])=1
    TRY
@@ -2496,7 +2494,7 @@ IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5
    END
 ENDIF
 
-// GB23   | B23 | Chave de Acesso obtida pela concatenação dos campos correspondentes com dígito verificador
+// GB23   | B23 | Chave de Acesso obtida pela concatenação dos campos correspondentes com dígito verificador 
 //                (DV) inválido                                                                                      | Obrig.  | 253 | Rej. | Rejeição: Digito Verificador da chave de acesso composta inválida
 IF !VERIFICA_DV_CHV_NFE(cChaveNFe)
    AADD(aMSGvld,{.T.,'Rejeição: Digito Verificador da chave de acesso composta inválida.'})
@@ -2524,13 +2522,7 @@ IF VAL(::aIde[ "finNFe" ])=2
    ENDDO
    IF nItnRef>1
       AADD(aMSGvld,{.T.,'Rejeição: NF-e complementar possui mais de uma NF referenciada. '+CHR(10)+CHR(13)+'DICA: Favor informar apenas uma nota referenciada em (Detalhar Complemento).'})
-
    ENDIF
-
-
-
-
-
 ENDIF
 
 // GB25.2 | B25 | – CNPJ emitente da NF Referenciada difere do CNPJ emitente desta NF-e (NF modelo 1 ou NF-e)        | Obrig.  | 269 | Rej. | Rejeição: CNPJ Emitente da NF Complementar difere do CNPJ da NF Referenciada
@@ -2549,7 +2541,7 @@ IF VAL(::aIde[ "finNFe" ])=2
    ENDIF
 ENDIF
 
-// GB26   | B26 | Processo de Emissão difere de emissão pelo contribuinte (procEmi <> 0 e 3)                         | Obrig.  | 451 | Rej. | Rejeição: Processo de emissão informado inválido
+// GB26   | B26 | Processo de Emissão difere de emissão pelo contribuinte (procEmi <> 0 e 3)                         | Obrig.  | 451 | Rej. | Rejeição: Processo de emissão informado inválido  
 TRY
    IF VAL(::aIde[ "procEmi" ])<>0 .AND. VAL(::aIde[ "procEmi" ])<>3
       AADD(aMSGvld,{.T.,'Rejeição: Processo de emissão informado inválido.'})
@@ -2572,46 +2564,46 @@ ENDIF
 //
 //*********************** C- Identificação do Emitente  *************************
 //
-//GC02   | C02 | Se informada a TAG de CNPJ do emitente: – CNPJ com zeros, nulo ou DV inválido                      | Obrig.  | 207 | Rej. | Rejeição: CNPJ do emitente inválido
-IF VAL(::aEmit[ "CNPJ" ])=0 .OR. !CNPJ(::aEmit[ "CNPJ" ],.F.)
+//GC02   | C02 | Se informada a TAG de CNPJ do emitente: – CNPJ com zeros, nulo ou DV inválido                      | Obrig.  | 207 | Rej. | Rejeição: CNPJ do emitente inválido 
+IF VAL(::aEmit[ "CNPJ" ])=0 .OR. !HBNFE_CNPJ(::aEmit[ "CNPJ" ],.F.)
    AADD(aMSGvld,{.T.,'Rejeição: CNPJ do emitente inválido. '+CHR(10)+CHR(13)+'DICA: Favor revizar o CNPJ da empresa emitente.'})
-ENDIF
+ENDIF 
 
 //GC02.1 | C02 | CNPJ Base do Emitente difere do CNPJ Base da primeira NF-e do Lote recebido                        | Facult. | 560 | Rej. | Rejeição: CNPJ base do emitente difere do CNPJ base da primeira NF-e do lote recebido
 //GC02a  | C02a| Se informada a TAG CPF do emitente: – CPF só pode ser informado no campo Emitente para NFe avulsa  | Obrig.  | 407 | Rej. | Rejeição: O CPF só pode ser informado no campo emitente para a NF-e avulsa
-//GC02a.1| C02a| - CPF do Remetente de NF-e Avulsa com zeros, nulo ou DV inválido                                   | Obrig.  | 401 | Rej. | Rejeição: CPF do remetente inválido
-//GC10   | C10 | Código do Município do Emitente com DV inválido (*1)                                               | Obrig.  | 272 | Rej. | Rejeição: Código Município do Emitente: dígito inválido
+//GC02a.1| C02a| - CPF do Remetente de NF-e Avulsa com zeros, nulo ou DV inválido                                   | Obrig.  | 401 | Rej. | Rejeição: CPF do remetente inválido 
+//GC10   | C10 | Código do Município do Emitente com DV inválido (*1)                                               | Obrig.  | 272 | Rej. | Rejeição: Código Município do Emitente: dígito inválido 
 //GC10.1 | C10 | Código do Município do Emitente (2 primeiras posições) difere do Código da UF do emitente          | Obrig.  | 273 | Rej. | Rejeição: Código Município do Emitente: difere da UF do emitente
-IF LEFT( ALLTRIM(::aEmit[ "cMun" ]),2 )<>CODIGO_UF(::aEmit[ "UF" ])
+IF LEFT( ALLTRIM(::aEmit[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aEmit[ "UF" ])
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Emitente: difere da UF do emitente. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do emitente.'})
 ENDIF
 
 
 //GC12   | C12 | Sigla da UF do Emitente difere da UF do Web Service                                                | Obrig.  | 247 | Rej. | Rejeição: Sigla da UF do Emitente diverge da UF autorizadora
-//GC17   | C17 | IE Emitente com zeros ou nulo                                                                      | Obrig.  | 229 | Rej. | Rejeição: IE do emitente não informada
+//GC17   | C17 | IE Emitente com zeros ou nulo                                                                      | Obrig.  | 229 | Rej. | Rejeição: IE do emitente não informada 
 IF EMPTY(::aEmit[ "IE" ])
    AADD(aMSGvld,{.T.,'Rejeição: IE do emitente não informada. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do emitente.'})
 ENDIF
 
 //GC17.1 | C17 | IE Emitente inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)| Obrig.  | 209 | Rej. | Rejeição: IE do emitente inválida
-IF ConsisteInscricaoEstadual(::aEmit[ "IE" ],::aEmit[ "UF" ]) <> 0
+IF HBNFE_CONSISTEINSCRICAOESTADUAL(::aEmit[ "IE" ],::aEmit[ "UF" ]) <> 0
    AADD(aMSGvld,{.T.,'Rejeição: IE do emitente inválida. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do emitente.'})
 ENDIF
 
-//GC18   | C18 | Se informada operação de Faturamento Direto para veículos novos (tpOp, campo J02 = 2):
-//               –UF do Local de Entrega (campo G09) não informada (A UF é necessária na validação da IE ST
-//               nestas operações. Vide Convênio ICMS 51/00).                                                       | Obrig.  | 478 | Rej. | Rejeição: Local da entrega não informado para faturamento direto de veículos novos
-//GC18.1 | C18 | Se informada a IE do Substituto Tributário:
-//               -IEST inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)
-//               UF a ser utilizada na validação: – UF do Local de Entrega para operação de Faturamento
-//               Direto de veículos novos (campo G09, caso tpOP, campo J02 = 2);
-//               -UF do destinatário (UF, campo E12) nos demais casos.                                              | Obrig.  | 211 | Rej. | Rejeição: IE do substituto inválida
+//GC18   | C18 | Se informada operação de Faturamento Direto para veículos novos (tpOp, campo J02 = 2): 
+//               –UF do Local de Entrega (campo G09) não informada (A UF é necessária na validação da IE ST 
+//               nestas operações. Vide Convênio ICMS 51/00).                                                       | Obrig.  | 478 | Rej. | Rejeição: Local da entrega não informado para faturamento direto de veículos novos 
+//GC18.1 | C18 | Se informada a IE do Substituto Tributário: 
+//               -IEST inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2) 
+//               UF a ser utilizada na validação: – UF do Local de Entrega para operação de Faturamento 
+//               Direto de veículos novos (campo G09, caso tpOP, campo J02 = 2); 
+//               -UF do destinatário (UF, campo E12) nos demais casos.                                              | Obrig.  | 211 | Rej. | Rejeição: IE do substituto inválida  
 //
 //*************** D - Identificação do Fisco Emitente (NF-e Avulsa) ******************
-//
+//               
 //GD01   | D01 | Informado o grupo “avulsa” pela empresa                                                            | Obrig.  | 403 | Rej. | Rejeição: O grupo de informações da NF-e avulsa é de uso exclusivo do Fisco E - Identificação do Destinatário
 //
-//*************** E - Identificação do Destinatário ********************
+//*************** E - Identificação do Destinatário ********************  
 //
 //GE02   | E02 | Se Operação com Exterior (UF Destinatário = “EX”) - não informada TAG CNPJ ou CNPJ <> nulo         | Obrig.  | 507 | Rej. | Rejeição: O CNPJ do destinatário/remetente não deve ser informado em operação com o exterior
 TRY
@@ -2621,7 +2613,7 @@ TRY
 CATCH
 END
 
-//GE02.1 | E02 | Se não é Operação com Exterior (UF destinatário <> “EX”):
+//GE02.1 | E02 | Se não é Operação com Exterior (UF destinatário <> “EX”): 
 //               -CNPJ destinatário é nulo e CPF destinatário é nulo                                                | Obrig.  | 508 | Rej. | Rejeição: O CNPJ com conteúdo nulo só é válido em operação com exterior.
 
 IF ::aDest[ "UF" ]<>'EX'
@@ -2637,13 +2629,13 @@ IF ::aDest[ "UF" ]<>'EX'
 ENDIF
 
 TRY
-   //GE02.2 | E02 | Se informada TAG CNPJ: - CNPJ com zeros ou dígito de controle inválido                             | Obrig.  | 208 | Rej. | Rejeição: CNPJ do destinatário inválido
-   IF VAL(::aDest[ "CNPJ" ])>0 .AND. !CNPJ(::aDest[ "CNPJ" ],.F.)
+   //GE02.2 | E02 | Se informada TAG CNPJ: - CNPJ com zeros ou dígito de controle inválido                             | Obrig.  | 208 | Rej. | Rejeição: CNPJ do destinatário inválido 
+   IF VAL(::aDest[ "CNPJ" ])>0 .AND. !HBNFE_CNPJ(::aDest[ "CNPJ" ],.F.)
       AADD(aMSGvld,{.T.,'Rejeição: CNPJ do destinatário inválido. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CNPJ do Destinatário.'})
    ENDIF
 CATCH
    //GE03   | E03 | Se informada a TAG CPF: - CPF com zeros ou dígito de controle inválido                             | Obrig.  | 237 | Rej. | Rejeição: CPF do destinatário inválido
-   IF VAL(::aDest[ "CPF" ])>0 .AND. !CPF(::aDest[ "CPF" ],.F.)
+   IF VAL(::aDest[ "CPF" ])>0 .AND. !HBNFE_CPF(::aDest[ "CPF" ],.F.)
       AADD(aMSGvld,{.T.,'Rejeição: CPF do destinatário inválido. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CPF do Destinatário.'})
    ENDIF
 END
@@ -2651,17 +2643,17 @@ END
 //GE10   | E10 | Se não é Operação com Exterior (UF Destinatário <> “EX”):
 //               - Código Município do destinatário com dígito verificador inválido                                 | Obrig.  | 274 | Rej. | Rejeição: Código Município do Destinatário: dígito inválido
 //GE10.1 | E10 | - Código Município do destinatário (2 primeiras posições) difere do Código da UF do destinatário   | Obrig.  | 275 | Rej. | Rejeição: Código Município do Destinatário: difere da UF do Destinatário
-IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aDest[ "cMun" ]),2 )<>CODIGO_UF(::aDest[ "UF" ])
+IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aDest[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aDest[ "UF" ])
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Destinatário: difere da UF do Destinatário. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do destinatário.'})
 ENDIF
 
-//GE10.2 | E10 | Se Operação com Exterior (UF Destinatário = “EX”):
+//GE10.2 | E10 | Se Operação com Exterior (UF Destinatário = “EX”): 
 //               -Código Município do destinatário difere de “9999999”                                              | Obrig.  | 509 | Rej. | Rejeição: Informado código de município diferente de “9999999” para operação com o exterior
 IF ::aDest[ "UF" ]='EX' .AND. VAL(::aDest[ "cMun" ])<>9999999
    AADD(aMSGvld,{.T.,'Rejeição: Informado código de município diferente de “9999999” para operação com o exterior. '})  // NAO DEVE DE CAIR AQUI NUNCA
 ENDIF
 
-//GE14   | E14 | Se Operação com Exterior (UF Destinatário = “EX”):
+//GE14   | E14 | Se Operação com Exterior (UF Destinatário = “EX”): 
 //               - Código País do destinatário = 1058 (Brasil), ou não informado                                    | Facult. | 510 | Rej. | Rejeição: Operação com Exterior e Código País destinatário é 1058 (Brasil) ou não informado
 TRY
    IF ::aDest[ "UF" ]='EX' .AND. (VAL(::aDest[ "cPais" ])=1058 .OR. VAL(::aDest[ "cPais" ])=0)
@@ -2670,7 +2662,7 @@ TRY
 CATCH
 END
 
-//GE14.1 | E14 | Se informado Código País do destinatário e não é uma Operação com Exterior
+//GE14.1 | E14 | Se informado Código País do destinatário e não é uma Operação com Exterior 
 //               (UF Destinatário <> “EX”): - Código País do destinatário difere de 1058 (Brasil)                   | Facult. | 511 | Rej. | Rejeição: Não é de Operação com Exterior e Código País destinatário difere de 1058 (Brasil)
 TRY
    IF ::aDest[ "UF" ]<>'EX' .AND. VAL(::aDest[ "cPais" ])<>1058
@@ -2688,47 +2680,47 @@ ENDIF
 
 
 //GE17.1 | E17 | IE Destinatário informada e difere de “ISENTO”: -
-//               IE inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)         | Obrig.  | 210 | Rej. | Rejeição: IE do destinatário inválida
+//               IE inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)         | Obrig.  | 210 | Rej. | Rejeição: IE do destinatário inválida                            
 IF ::aDest[ "UF" ]<>'EX'
-   IF UPPER(ALLTRIM(::aDest[ "IE" ]))<>'ISENTO' .AND. ConsisteInscricaoEstadual(::aDest[ "IE" ],::aDest[ "UF" ]) <> 0 .AND. VAL(::aIde[ "tpAmb" ])<>2
+   IF UPPER(ALLTRIM(::aDest[ "IE" ]))<>'ISENTO' .AND. HBNFE_CONSISTEINSCRICAOESTADUAL(::aDest[ "IE" ],::aDest[ "UF" ]) <> 0 .AND. VAL(::aIde[ "tpAmb" ])<>2
       AADD(aMSGvld,{.T.,'Rejeição: IE do destinatário inválida. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do destinatário.'})
    ENDIF
 ENDIF
 
 //GE18   | E18 | Inscr. SUFRAMA informada: - Inscrição com dígito verificador inválido                              | Obrig.  | 235 | Rej. | Rejeição: Inscrição SUFRAMA inválida
-//GE18.1 | E18 | Inscr. SUFRAMA informada:- UF destinatário difere de AC-Acre, ou AM-Amazonas, ou RO-Rondônia, ou
-//               RR-Roraima, ou AP-Amapá (só para municípios 1600303-Macapá e 1600600-Santana)                      | Obrig.  | 251 | Rej. | Rejeição: UF/Município destinatário não pertence a SUFRAMA
+//GE18.1 | E18 | Inscr. SUFRAMA informada:- UF destinatário difere de AC-Acre, ou AM-Amazonas, ou RO-Rondônia, ou 
+//               RR-Roraima, ou AP-Amapá (só para municípios 1600303-Macapá e 1600600-Santana)                      | Obrig.  | 251 | Rej. | Rejeição: UF/Município destinatário não pertence a SUFRAMA  
 //
 //******************** F - Local da Retirada *****************
-//
-//GF02   | F02 | Se informado Local de Retirada e CNPJ Retirada difere de nulo:- CNPJ com zeros ou dígito inválido  | Facult. | 512 | Rej. | Rejeição: CNPJ do Local de Retirada inválido
+//               
+//GF02   | F02 | Se informado Local de Retirada e CNPJ Retirada difere de nulo:- CNPJ com zeros ou dígito inválido  | Facult. | 512 | Rej. | Rejeição: CNPJ do Local de Retirada inválido 
 //GF02a  | F02a| Se informada a TAG CPF: - CPF com zeros ou dígito de controle inválido                             | Facult. | 540 | Rej. | Rejeição: CPF do Local de Retirada inválido
-//GF07   | F07 | Se informado Local de Retirada e UF Retirada = “EX”:
+//GF07   | F07 | Se informado Local de Retirada e UF Retirada = “EX”: 
 //               -Código do Município do Local de Retirada difere de “9999999”                                      | Obrig.  | 513 | Rej. | Rejeição: Código Município do Local de Retirada deve ser 9999999 para UF retirada = “EX”.
-//GF07.1 | F07 | Se informado Local de Retirada e UF Retirada <> “EX”:
+//GF07.1 | F07 | Se informado Local de Retirada e UF Retirada <> “EX”: 
 //               -Código do Município do Local de Retirada com dígito verificador inválido                          | Obrig.  | 276 | Rej. | Rejeição: Código Município do Local de Retirada: dígito inválido
-//GF07.2 | F07 | - Código Município do Local de Retirada (2 primeiras posições) difere do
-//               Código da UF do Local de Retirada                                                                  | Obrig.  | 277 | Rej. | Rejeição: Código Município do Local de Retirada: difere da UF do Local de Retirada
-//
+//GF07.2 | F07 | - Código Município do Local de Retirada (2 primeiras posições) difere do 
+//               Código da UF do Local de Retirada                                                                  | Obrig.  | 277 | Rej. | Rejeição: Código Município do Local de Retirada: difere da UF do Local de Retirada 
+// 
 //***********   G - Local da Entrega      *******************
-//
+// 
 TRY
    IF !EMPTY(::aEntrega[ "xLgr" ])
       IF !EMPTY(::aEntrega[ "CNPJ" ])
          //GG02   | G02 | Se informado o Local de Entrega e CNPJ Entrega difere de nulo: - CNPJ com zeros ou dígito inválido | Facult. | 514 | Rej. | Rejeição: CNPJ do Local de Entrega inválido
-         IF VAL(::aEntrega[ "CNPJ" ])=0 .OR. !CNPJ(::aEntrega[ "CNPJ" ],.F.)
+         IF VAL(::aEntrega[ "CNPJ" ])=0 .OR. !HBNFE_CNPJ(::aEntrega[ "CNPJ" ],.F.)
             AADD(aMSGvld,{.F.,'Rejeição: CNPJ do Local de Entrega inválido. '+CHR(10)+CHR(13)+'DICA: Favor revisar o cnpj do local de entrega.'})
          ENDIF
       ELSEIF VAL(::aEntrega[ "CPF" ])=0 .OR. !EMPTY(::aEntrega[ "CPF" ])
          //GG02a  | G02a| Se informada a TAG CPF: - CPF com zeros ou dígito de controle inválido                             | Facult. | 541 | Rej. | Rejeição: CPF do Local de Entrega inválido
-         IF !CPF(::aEntrega[ "CPF" ],.F.)
+         IF !HBNFE_CPF(::aEntrega[ "CPF" ],.F.)
             AADD(aMSGvld,{.F.,'Rejeição: CPF do Local de Entrega inválido. '+CHR(10)+CHR(13)+'DICA: Favor revisar o cpf do local de entrega.'})
          ENDIF
       ENDIF
    ENDIF
 CATCH
 END
-//GG07   | G07 | Se informado Local de Entrega e UF Entrega = “EX”:
+//GG07   | G07 | Se informado Local de Entrega e UF Entrega = “EX”: 
 //               -Código do Município do Local de Entrega difere de “9999999”                                       | Obrig.  | 515 | Rej. | Rejeição: Código Município do Local de Entrega deve ser 9999999 para UF entrega = “EX”.
 TRY
    IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))='EX' .AND. VAL(::aEntrega[ "cMun" ])<>9999999
@@ -2736,12 +2728,12 @@ TRY
    ENDIF
 CATCH
 END
-//GG07.1 | G07 | Se informado Local de Entrega e UF Entrega <> “EX”:
+//GG07.1 | G07 | Se informado Local de Entrega e UF Entrega <> “EX”: 
 //               -Código Município do Local de Entrega com dígito verificador inválido                              | Obrig.  | 278 | Rej. | Rejeição: Código Município do Local de Entrega: dígito inválido
-//GG07.2 | G07 | - Código Município do Local de Entrega (2 primeiras posições) difere do
-//                 Código da UF do Local de Entrega                                                                 | Obrig.  | 279 | Rej. | Rejeição: Código Município do Local de Entrega:
+//GG07.2 | G07 | - Código Município do Local de Entrega (2 primeiras posições) difere do 
+//                 Código da UF do Local de Entrega                                                                 | Obrig.  | 279 | Rej. | Rejeição: Código Município do Local de Entrega:                 
 TRY
-   IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aEntrega[ "cMun" ]),2 )<>CODIGO_UF(::aEntrega[ "UF" ])
+   IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aEntrega[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aEntrega[ "UF" ])
       AADD(aMSGvld,{.T.,'Rejeição: Código Município do Local de Entrega Difere do Código da Unidade Federativa da Entrega. '+CHR(10)+CHR(13)+'DICA: Favor a cidade e o estado do local de entrega.'})
    ENDIF
 CATCH
@@ -2765,7 +2757,7 @@ FOR mI:=1 TO nItem
    IF VAL(::aIde[ "tpNF" ])=0 .AND. (VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 5 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 6 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 7)
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de saída para NF-e de entrada. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-
+   
    //GI08.2 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e UF destinatário <> “EX”                        | Facult. | 520 | Rej. | Rejeição: CFOP de Operação com Exterior e UF destinatário difere de “EX”
    IF ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7) .AND. ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX'
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Operação com Exterior e UF destinatário difere de “EX”. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
@@ -2775,7 +2767,7 @@ FOR mI:=1 TO nItem
    IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7)
       AADD(aMSGvld,{.F.,'Rejeição: CFOP não é de Operação com Exterior e UF destinatário é “EX”. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-
+   
    //GI08.4 | I08 | CFOP de Operação no Estado (inicia por 1 ou 5) e UF emitente difere da UF destinatário             | Facult. | 522 | Rej. | Rejeição: CFOP de Operação Estadual e UF emitente difere UF destinatário.
    IF ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=1 .OR.;
         VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=5) .AND.;
@@ -2790,19 +2782,19 @@ FOR mI:=1 TO nItem
       AADD(aMSGvld,{.F.,'Rejeição: CFOP não é de Operação Estadual e UF emitente igual a UF destinatário. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
 
-   //GI08.6 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e não informada TAG NCM
+   //GI08.6 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e não informada TAG NCM 
    //               (id:I05) completo (8 posições)                                                                     | Facult. | 524 | Rej. | Rejeição: CFOP de Operação com Exterior e não informado NCM completa
    IF (VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7) .AND. VAL(::aItem[ "item"+STRZERO(mI,3)+"_NCM" ])=0
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Operação com Exterior e não informado NCM completa. '+CHR(10)+CHR(13)+'DICA: Favor revisar o NCM do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-
+   
    //GI08.7 | I08 | CFOP de Importação (inicia por 3) e não informado a tag DI                                         | Facult. | 525 | Rej. | Rejeição: CFOP de Importação e não informado dados da DI
    IF VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .AND. LEN(::aItemDI)=0
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Importação e não informado dados da DI. '+CHR(10)+CHR(13)+'DICA: Favor informar os dados da DI usando a aba (Declaração de Importação).'  })
    ENDIF
-
-   //GI08.8 | I08 | CFOP de Exportação (inicia por 7) e não informado Local de Embarque (id:ZA01)                      | Facult. | 526 | Rej. | Rejeição: CFOP de Exportação e não informado Local de Embarque
-   //***************** J - Item / Veículos Novos ****************
+   
+   //GI08.8 | I08 | CFOP de Exportação (inicia por 7) e não informado Local de Embarque (id:ZA01)                      | Facult. | 526 | Rej. | Rejeição: CFOP de Exportação e não informado Local de Embarque  
+   //***************** J - Item / Veículos Novos ****************  
    //***************** K - Item / Medicamentos ***************
    //***************** L - Item / Armamentos ****************
    //***************** L1 - Item / Combustível ******************
@@ -2812,8 +2804,8 @@ FOR mI:=1 TO nItem
    IF VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7 .AND. VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_CST" ])<>41
       AADD(aMSGvld,{.F.,'Rejeição: Operação de Exportação com informação de ICMS incompatível. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CST do ICMS do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-   //GN17   | N17 | Se CST de ICMS = 00, 10, 20, 51, 70, 90: - Valor ICMS (id:N17) difere de Base de
-   //           Cálculo (id:N15) * Alíquota (id:N16) (*3)                                                              | Facult. | 528 | Rej. | Rejeição: Valor do ICMS difere do produto BC e Alíquota
+   //GN17   | N17 | Se CST de ICMS = 00, 10, 20, 51, 70, 90: - Valor ICMS (id:N17) difere de Base de 
+   //           Cálculo (id:N15) * Alíquota (id:N16) (*3)                                                              | Facult. | 528 | Rej. | Rejeição: Valor do ICMS difere do produto BC e Alíquota  
    //
 
    IF VAL(::aIde[ "finNFe" ])=1  // FINALIDADE NORMAL
@@ -2829,7 +2821,7 @@ FOR mI:=1 TO nItem
    ENDIF
    //*************** O - Item / Tributo: IPI ****************
 
-   //GO07   | O07 | Informada tributação do IPI (id:O07) sem informar a TAG NCM (id:I05) completo (8 posições)         | Facult. | 529 | Rej. | Rejeição: NCM de informação obrigatória para produto tributado pelo IPI
+   //GO07   | O07 | Informada tributação do IPI (id:O07) sem informar a TAG NCM (id:I05) completo (8 posições)         | Facult. | 529 | Rej. | Rejeição: NCM de informação obrigatória para produto tributado pelo IPI  
    TRY
       IF VAL(::aItemIPI[ "item"+STRZERO(mI,3)+"_pIPI" ])>0 .AND. VAL(::aItem[ "item"+STRZERO(mI,3)+"_NCM" ])=0
          AADD(aMSGvld,{.F.,'Rejeição: NCM de informação obrigatória para produto tributado pelo IPI. '+CHR(10)+CHR(13)+'DICA: Favor revisar o NCM para o item na sequência: '+ALLTRIM(STR(mI))+'.'  })
@@ -2845,10 +2837,10 @@ FOR mI:=1 TO nItem
    //****************** U - Item / Tributo: ISSQN ***************
    //
    //GU01   | U01 | Informado grupo de tributação do ISSQN (id:U01) sem informar a Inscrição Municipal (id:C19)        | Facult. | 530 | Rej. | Rejeição: Operação com tributação de ISSQN sem informar a Inscrição Municipal
-   //GU05   | U05 | Se informado Código Município do FG - ISSQN: – Código Município do FG - ISSQN com dígito inválido  | Obrig.  | 287 | Rej. | Rejeição: Código Município do FG - ISSQN: dígito inválido
+   //GU05   | U05 | Se informado Código Município do FG - ISSQN: – Código Município do FG - ISSQN com dígito inválido  | Obrig.  | 287 | Rej. | Rejeição: Código Município do FG - ISSQN: dígito inválido  
    //
    //***************** V - Item / Informação Adicional  *****************
-
+   
    IF VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_CST" ])<>51
       nVALbcl+=VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_vBC" ])
       nVALicm+=VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_vICMS" ])
@@ -2885,13 +2877,13 @@ NEXT
 
 //***************** W - Total da NF-e *****************
 //
-//GW03   |     | Total da BC ICMS (id:W03) difere do somatório do valor dos itens (id:N15) (*3).
+//GW03   |     | Total da BC ICMS (id:W03) difere do somatório do valor dos itens (id:N15) (*3). 
 //               O Total não deve considerar o valor informado para o CST 51.                                       | Facult. | 531 | Rej. | Rejeição: Total da BC ICMS difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vBC" ]),2)<>ROUND(nVALbcl,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total da BC ICMS difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o total da nota fiscal e a somatoria das bases de calculos de todos os itens excluindo os CST 51.'  })
 ENDIF
 
-//GW04   |     | Total do ICMS (id:W04) difere do somatório do valor dos itens (id:N17) (*3).
+//GW04   |     | Total do ICMS (id:W04) difere do somatório do valor dos itens (id:N17) (*3). 
 //               O Total não deve considerar o valor informado para o CST 51.                                       | Facult. | 532 | Rej. | Rejeição: Total do ICMS difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vICMS" ]),2)<>ROUND(nVALicm,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do ICMS difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total de ICMS da nota fiscal e a somatoria dos valores de ICMS de todos os itens excluindo os CST 51.'  })
@@ -2907,7 +2899,7 @@ IF ROUND(VAL(::aICMSTotal[ "vST" ]),2)<>ROUND(nVALstt,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do ICMS-ST difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total de ICMS-ST da nota fiscal e a somatoria dos valores de ICMS-ST de todos os itens.'  })
 ENDIF
 
-//GW07   |     | Total dos Produtos e Serviços (id:W07) difere do somatório do valor dos itens (id:I11).
+//GW07   |     | Total dos Produtos e Serviços (id:W07) difere do somatório do valor dos itens (id:I11). 
 //               Considerar somente os valores dos itens com a TAG indTot (id:I17b) = 1 (*3)                        | Facult. | 564 | Rej. | Rejeição: Total do Produto / Serviço difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vProd" ]),2)<>ROUND(nVALitn,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do Produto / Serviço difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total dos itens da nota fiscal e a somatoria dos valores total de todos os itens.'  })
@@ -2935,17 +2927,17 @@ ENDIF
 
 //******************* X - Transporte da NF-e ******************
 //
-//GX04   | X04 | Validar CNPJ do transportador.se informado. Obrig. 542 Rej. Rejeição: CNPJ do Transportador inválido
-//GX05   | X05 | Validar CPF do transportador.se informado.                                                         | Obrig.  | 543 | Rej. | Rejeição: CPF do Transportador inválido
+//GX04   | X04 | Validar CNPJ do transportador.se informado. Obrig. 542 Rej. Rejeição: CNPJ do Transportador inválido 
+//GX05   | X05 | Validar CPF do transportador.se informado.                                                         | Obrig.  | 543 | Rej. | Rejeição: CPF do Transportador inválido 
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
-         IF !EMPTY(::aTransp[ "CNPJ" ]) .AND. !CNPJ(::aTransp[ "CNPJ" ],.F.)
+         IF !EMPTY(::aTransp[ "CNPJ" ]) .AND. !HBNFE_CNPJ(::aTransp[ "CNPJ" ],.F.)
             AADD(aMSGvld,{.T.,'Rejeição: CNPJ do Transportador inválido. '+CHR(10)+CHR(13)+'DICA: Favor verificar o CNPJ do transportador.'  })
          ENDIF
       CATCH
          TRY
-            IF !EMPTY(::aTransp[ "CPF" ]) .AND. !CPF(::aTransp[ "CPF" ],.F.)
+            IF !EMPTY(::aTransp[ "CPF" ]) .AND. !HBNFE_CPF(::aTransp[ "CPF" ],.F.)
                AADD(aMSGvld,{.T.,'Rejeição: CPF do Transportador inválido. '+CHR(10)+CHR(13)+'DICA: Favor verificar o CPF do transportador.'  })
             ENDIF
          CATCH
@@ -2955,7 +2947,7 @@ TRY
 CATCH
 END
 
-//GX07   | X07 | Se informada a IE do Transportador: - UF do Transportador (id:X10) não informada                   | Obrig.  | 559 | Rej. | Rejeição: UF do Transportador não informada
+//GX07   | X07 | Se informada a IE do Transportador: - UF do Transportador (id:X10) não informada                   | Obrig.  | 559 | Rej. | Rejeição: UF do Transportador não informada 
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
@@ -2968,11 +2960,11 @@ TRY
 CATCH
 END
 
-//GX07.1 | X07 | Validar IE do transportador.se informado. Utilizar a UF informada para escolha do algoritmo.       | Obrig.  | 544 | Rej. | Rejeição: IE do Transportador inválida
+//GX07.1 | X07 | Validar IE do transportador.se informado. Utilizar a UF informada para escolha do algoritmo.       | Obrig.  | 544 | Rej. | Rejeição: IE do Transportador inválida    
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
-         IF !EMPTY(::aTransp[ "IE" ]) .AND. ConsisteInscricaoEstadual(::aTransp[ "IE" ],::aTransp[ "UF" ]) <> 0
+         IF !EMPTY(::aTransp[ "IE" ]) .AND. HBNFE_CONSISTEINSCRICAOESTADUAL(::aTransp[ "IE" ],::aTransp[ "UF" ]) <> 0
             AADD(aMSGvld,{.T.,'Rejeição: IE do Transportador inválida. '+CHR(10)+CHR(13)+'DICA: Favor verificar a inscrição estadual do transportador.'  })
          ENDIF
       CATCH
@@ -2981,48 +2973,51 @@ TRY
 CATCH
 END
 
-//GX17   | X17 | Se informado Código Município do FG - Transporte (id:X17):
-//               -Código do Município do FG - Transporte com dígito inválido                                        | Obrig.  | 288 | Rej. | Rejeição: Código Município do FG - Transporte: dígito inválido
+//GX17   | X17 | Se informado Código Município do FG - Transporte (id:X17): 
+//               -Código do Município do FG - Transporte com dígito inválido                                        | Obrig.  | 288 | Rej. | Rejeição: Código Município do FG - Transporte: dígito inválido  
 //
-//
-//
+//               
+//               
 //****************** Y - Dados da Cobrança *********************
 //****************** Z - Informação Adicional da NF-e *****************
 //****************** ZA - Comércio Exterior *********************
 //****************** ZB - Informação de Compra *********************
 //****************** ZC - Informações do Registro de Aquisição de Cana **************
 //****************** ZD – Informação de Crédito do Simples Nacional ****************
-//
+//               
 //******************* Banco de Dados: Emitente  ***************************
 //  PULA POR ENQUANTO...
-//G1C02  | C02 | Acessar Cadastro Contribuinte p/ Emitente: – CNPJ emitente não cadastrado                          | Facult. | 245 | Rej. | Rejeição: CNPJ Emitente não cadastrado
+//G1C02  | C02 | Acessar Cadastro Contribuinte p/ Emitente: – CNPJ emitente não cadastrado                          | Facult. | 245 | Rej. | Rejeição: CNPJ Emitente não cadastrado 
 //G1C02.1| C02 | – Emitente não autorizado                                                                          | Obrig.  | 203 | Rej. | Rejeição: Emissor não habilitado para emissão da NF-e
-//G1C17  | C17 | – IE Emitente não cadastrada                                                                       | Facult. | 230 | Rej. | Rejeição: IE do emitente não cadastrada
+//G1C17  | C17 | – IE Emitente não cadastrada                                                                       | Facult. | 230 | Rej. | Rejeição: IE do emitente não cadastrada 
 //G1C17.1| C17 | – IE Emitente não vinculada ao CNPJ                                                                | Obrig.  | 231 | Rej. | Rejeição: IE do emitente não vinculada ao CNPJ
-//G1C17.2| C17 | – Emitente em situação irregular perante o Fisco Obrig. 301 Den. Uso Denegado:
-//               Irregularidade fiscal do emitente Banco de Dados: Chave da NF-e G1B08 B08
-//               Acesso BD NFE (Chave: Ano, CNPJ Emitente, Modelo, Série, Nro):
+//G1C17.2| C17 | – Emitente em situação irregular perante o Fisco Obrig. 301 Den. Uso Denegado: 
+//               Irregularidade fiscal do emitente Banco de Dados: Chave da NF-e G1B08 B08 
+//               Acesso BD NFE (Chave: Ano, CNPJ Emitente, Modelo, Série, Nro): 
 //               –NF-e já cadastrada, com diferença na Chave de Acesso (campo de Código Numérico difere)            | Facult. | 539 | Rej. | Rejeição: Duplicidade de NF-e, com diferença na Chave de Acesso [99999999999999999999999999999999999999999]
-//G1B08.1| B08 | – NF-e já cadastrada e não Cancelada/Denegada                                                      | Obrig.  | 204 | Rej. | Rejeição: Duplicidade de NF-e
+//G1B08.1| B08 | – NF-e já cadastrada e não Cancelada/Denegada                                                      | Obrig.  | 204 | Rej. | Rejeição: Duplicidade de NF-e 
 //G1B08.2| B08 | - NF-e já cadastrada e está Cancelada                                                              | Obrig.  | 218 | Rej. | Rejeição: NF-e já esta cancelada na base de dados da SEFAZ
-//G1B08.3| B08 | - NF-e já cadastrada e está Denegada                                                               | Obrig.  | 205 | Rej. | Rejeição: NF-e está denegada na base de dados da SEFAZ
-//G1B08.4| B08 | Acesso BD de Inutilização (Chave: Ano, CNPJ, Modelo, Série, Nro):
+//G1B08.3| B08 | - NF-e já cadastrada e está Denegada                                                               | Obrig.  | 205 | Rej. | Rejeição: NF-e está denegada na base de dados da SEFAZ 
+//G1B08.4| B08 | Acesso BD de Inutilização (Chave: Ano, CNPJ, Modelo, Série, Nro): 
 //              -Numeração da NF-e está inutilizada                                                                 | Obrig.  | 206 | Rej. | Rejeição: NF-e já está inutilizada na Base de dados da SEFAZ Banco de Dados: NF-e Complementar
-//G1B25  | B25 | Se NF-e complementar (finNFe=2) e informado NF-e referenciada (Campo: refNFe):
+//G1B25  | B25 | Se NF-e complementar (finNFe=2) e informado NF-e referenciada (Campo: refNFe): 
 //               .Acessar BD NFE com a Chave de Acesso informada (Campo: refNFe);
 //               - NF-e referenciada inexistente                                                                    | Facult. | 267 | Rej. | Rejeição: NF Complementar referencia uma NF-e inexistente
 //G1B25.1| B25 | - NF-e referenciada acessada também é uma NF-e Complementar (finNFe=2)                             | Facult. | 268 | Rej. | Rejeição: NF Complementar referencia uma outra NF-e Complementar Banco de Dados: Destinatário
 //G1E17  | E17 | Se Operação no Estado (UF emitente = UF destinatário) e informado IE Destinatário: .
 //               Acessar Cadastro Contribuinte (Chave: IE / CNPJ destinatário)- CNPJ destinatário não cadastrado    | Facult. | 246 | Rej. | Rejeição: CNPJ Destinatário não cadastrado
-//G1E17.1| E17 | - IE destinatário não cadastrada                                                                   | Facult. | 233 | Rej. | Rejeição: IE do destinatário não cadastrada
+//G1E17.1| E17 | - IE destinatário não cadastrada                                                                   | Facult. | 233 | Rej. | Rejeição: IE do destinatário não cadastrada 
 //G1E17.2| E17 | - IE destinatário não vinculada ao CNPJ                                                            | Facult. | 234 | Rej. | Rejeição: IE do destinatário não vinculada ao CNPJ
-//G1E17.3| E17 | - Destinatário em situação irregular perante o Fisco                                               | Facult. | 302 | Den. | Uso Denegado: Irregularidade fiscal do destinatário
-
+//G1E17.3| E17 | - Destinatário em situação irregular perante o Fisco                                               | Facult. | 302 | Den. | Uso Denegado: Irregularidade fiscal do destinatário  
+  
 // (*1) Não validar o dígito de controle para os Códigos de Município que seguem: 2201919 - Bom Princípio do Piauí/PI; 2202251 - Canavieira /PI; 2201988 - Brejo do Piauí/PI; 2611533 – Quixaba/PE; 3117836 - Cônego Marinho/MG; 3152131 - Ponto Chique/MG; 4305871 - Coronel Barros/RS; 5203939 - Buriti de Goiás/GO; 5203962 – Buritinópolis/GO.
 // (*2) O tamanho da IE deve ser normalizado, na aplicação da SEFAZ, com acréscimo de zeros não significativos, se necessário, antes da verificação do dígito de controle.
-// (*3) Considerar uma tolerância de R$ 1,00 para mais ou para menos.
+// (*3) Considerar uma tolerância de R$ 1,00 para mais ou para menos.    
 
 RETURN(.T.)
+
+
+
 
 FUNCTION VERIFICA_DV_CHV_NFE(cCHV)
 /*
@@ -3070,7 +3065,7 @@ ENDIF
 IF RESTO = 0 OU 1
    DV= 0
 ELSE
-  DV = 11 - 10 = 1
+  DV = 11 - 10 = 1  
 ENIDF
 
 

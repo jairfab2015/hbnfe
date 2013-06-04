@@ -108,9 +108,9 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
      #endif
   ELSE // MSXML
      #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( "MSXML2.ServerXMLHTTP.5.0" )
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
      #else
-        oServerWS := win_oleCreateObject( "MSXML2.ServerXMLHTTP.5.0")
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
      #endif
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
@@ -118,9 +118,9 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
   
      #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( "MSXML2.DOMDocument.5.0" )
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
      #else
-        oDOMDoc := win_oleCreateObject( "MSXML2.DOMDocument.5.0")
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
      #endif
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
@@ -156,8 +156,14 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
      cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
    ENDIF
    //cXMLResp := oFuncoes:pegaTag( cXMLResp , "nfeRetRecepcao2Result")
+   TRY
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-pro-rec.xml",cXMLResp,.F.)
+   CATCH
+   END
+   
    cXMLResp := oFuncoes:pegaTag( cXMLResp , "retConsReciNFe") // Ajuste NFe2 - Mauricio Cruz - 31/10/2012
-
+   
+   
    TRY
       MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::nRec+"-pro-rec.xml",cXMLResp,.F.)
    CATCH
@@ -175,6 +181,12 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    aRetorno['cMsg']     := oFuncoes:pegaTag(cXMLResp, "cMsg")
    aRetorno['xMsg']     := oFuncoes:pegaTag(cXMLResp, "xMsg")
    cXMLResp2 := oFuncoes:pegaTag(cXMLResp, "protNFe")
+
+   TRY
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-aRetorno.xml",cXMLResp2,.F.)
+   CATCH
+   END
+
    aRetornoNF := hash()
    nI := 0
    DO WHILE .T.
@@ -185,7 +197,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
       aRetorno['NF'+STRZERO(nI,2)+'_dhRecbto'] := oFuncoes:pegaTag(cXMLResp2, "dhRecbto")
       aRetorno['NF'+STRZERO(nI,2)+'_nProt']    := oFuncoes:pegaTag(cXMLResp2, "nProt")
       aRetorno['NF'+STRZERO(nI,2)+'_digVal']   := oFuncoes:pegaTag(cXMLResp2, "digVal")
-      aRetorno['NF'+STRZERO(nI,2)+'_cStat']    := oFuncoes:pegaTag(cXMLResp2, "cStat")
+      aRetorno['NF'+STRZERO(nI,2)+'_cStat']    := oFuncoes:pegaTag(cXMLResp2, "cStat") // <cStat>204</cStat>
       aRetorno['NF'+STRZERO(nI,2)+'_xMotivo']  := oFuncoes:pegaTag(cXMLResp2, "xMotivo")
       aRetorno['NF'+STRZERO(nI,2)+'_protNFe']  := "<protNFe "+cXMLResp2+"</protNFe>"
       EXIT
