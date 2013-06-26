@@ -1231,11 +1231,11 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    
    ::REGRAS_NFE(@aMSGvld,cChaveNFe,nItem)
    IF LEN(aMSGvld)>0
-      IF !ERROS_ALERTAS_NFE(aMSGvld)
+      *IF !ERROS_ALERTAS_NFE(aMSGvld) // NO VETOR RETORNAR TODOS OS ALERTAR E ERROS, A FUNÇÃO PARA LER OS RETORNO ESTÁ EM HWGUI, POR ISSO NAO FOI COMITADA NO PROJETO.
          aRetorno['OK'] := .F.
          aRetorno['MsgErro'] := ''
          RETURN(aRetorno)
-      ENDIF
+      *ENDIF
    ENDIF
    
    ************************************************************************************************
