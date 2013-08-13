@@ -376,8 +376,9 @@ LOCAL cIde, cEmit, cDest, cRetirada, cEntrega, cICMSTotal, cISSTotal, cRetTrib, 
    ::aCompra[ "xPed" ] := hbNFe_PegaDadosXML("infCpl", cCompra )
    ::aCompra[ "xCont" ] := hbNFe_PegaDadosXML("infCpl", cCompra )
 
-   //cInfProt := hbNFe_PegaDadosXML("infProt", ::cXML, "infProt" )
-   cInfProt := hbNFe_PegaDadosXML("infProt", ::cXML )
+   cInfProt := hbNFe_PegaDadosXML("infProt", ::cXML, "infProt" )
+   //cInfProt := hbNFe_PegaDadosXML("infProt", ::cXML )
+
    ::aInfProt := hash()
    ::aInfProt[ "nProt" ] := hbNFe_PegaDadosXML("nProt", cInfProt )
    ::aInfProt[ "dhRecbto" ] := hbNFe_PegaDadosXML("dhRecbto", cInfProt )
@@ -408,11 +409,20 @@ METHOD geraPDF() CLASS hbNFeDanfe
       ::oPdfFontCabecalhoBold := HPDF_GetFont( ::oPdf, "Courier-Bold", "CP1252" )
    ENDIF
    
+   &&  Alterado por Anderson Camilo em 06/11/2012
+
+   #ifdef __XHARBOUR__
+     if !file('fontes\Code128bWinLarge.afm') .or. !file('fontes\Code128bWinLarge.pfb')
+        ::aRetorno[ 'OK' ] := .F.
+        ::aRetorno[ 'MsgErro' ] := 'Arquivos: fontes\Code128bWinLarge, nao encontrados...!'
+        RETURN(.F.)
+     endif
+
       && Inserido por Anderson Camilo em 04/04/2012
    
    ::cFonteCode128 := HPDF_LoadType1FontFromFile(::oPdf, 'fontes\Code128bWinLarge.afm', 'fontes\Code128bWinLarge.pfb')   && Code 128
    ::cFonteCode128F := HPDF_GetFont( ::oPdf, ::cFonteCode128, "WinAnsiEncoding" )
-
+   #endif
    // final da criacao e definicao do objeto pdf
 
    ::nFolha := 1
@@ -753,6 +763,12 @@ LOCAL oImage, hZebra
       hbNFe_Box_Hpdf( ::oPdfPage,525, ::nLinhaPdf-16, 305, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-1   , 829, Nil, "PROTOCOLO DE AUTORIZA플O DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
       IF ::aInfProt[ "nProt" ] <> Nil
+   	     IF ::aInfProt[ "cStat" ] = '100'
+            hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-1   , 829, Nil, "PROTOCOLO DE AUTORIZA플O DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
+         ELSEIF ::aInfProt[ "cStat" ] = '101' .OR. ::aInfProt[ "cStat" ] = '135'
+            hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-1   , 829, Nil, "PROTOCOLO DE HOMOLOGA플O DO CANCELAMENTO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
+   	     ENDIF
+
          IF ::cFonteNFe == "Times"
             hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-6   , 829, Nil, ::aInfProt[ "nProt" ]+" "+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),9,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),6,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),1,4)+" "+SUBS(::aInfProt[ "dhRecbto" ],12,8) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
          ELSE
@@ -879,8 +895,17 @@ LOCAL oImage, hZebra
       hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-5  , 369, Nil, ::aIde[ "natOp" ] , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 10 )
       // PROTOCOLO
       hbNFe_Box_Hpdf( ::oPdfPage,370, ::nLinhaPdf-16, 220, 16, ::nLarguraBox )
-      hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-1   , 589, Nil, "PROTOCOLO DE AUTORIZA플O DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
+
+	  // Alterado por Anderson Camilo em 06/08/2013
+*      hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-1   , 589, Nil, "PROTOCOLO DE AUTORIZA플O DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
       IF ::aInfProt[ "nProt" ] <> Nil
+
+         IF ::aInfProt[ "cStat" ] = '100'
+            hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-1   , 589, Nil, "PROTOCOLO DE AUTORIZA플O DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
+         ELSEIF ::aInfProt[ "cStat" ] = '101' .OR. ::aInfProt[ "cStat" ] = '135'
+            hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-1   , 589, Nil, "PROTOCOLO DE HOMOLOGA플O DO CANCELAMENTO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
+         ENDIF
+
          IF ::cFonteNFe == "Times"
             hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-6   , 589, Nil, ::aInfProt[ "nProt" ]+" "+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),9,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),6,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),1,4)+" "+SUBS(::aInfProt[ "dhRecbto" ],12,8) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
          ELSE

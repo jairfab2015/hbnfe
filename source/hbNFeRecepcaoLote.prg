@@ -224,6 +224,11 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
             aRetorno['ret_OK'] := .F.
             aRetorno['ret_MsgErro'] := aRetornoRet['MsgErro']
          ELSE
+            IF nVezesRet < ::nVezesTentaRetorno             // Anderson Camilo  10/11/2011
+        		 	   IF aRetornoRet['cStat'] = '105'
+			               LOOP
+               ENDIF
+            ENDIF
             aRetorno['ret_tpAmb']    := aRetornoRet['tpAmb']
             aRetorno['ret_verAplic'] := aRetornoRet['verAplic']
             aRetorno['ret_nRec']     := aRetornoRet['nRec']
