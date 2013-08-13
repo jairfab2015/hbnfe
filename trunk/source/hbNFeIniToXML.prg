@@ -19,7 +19,8 @@ CLASS hbNFeIniToXML
    DATA cIniFile
    DATA cXMLFile
    DATA lValida    // Assina e Valida
-   
+   DATA lIniComando   // se .T. ele não vai ler arquivo, vai pegar o conteudo do cIniFile  // Anderson Camilo dia 30/07/2013
+
    DATA aIde
    DATA aRefNfe       // notas referenciadas - Mauricio Cruz - 18/01/2012
    DATA aEmit
@@ -79,10 +80,34 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       ::lValida := .F.
    ENDIF
 
-   IF !FILE( ::cIniFile )
-      aRetorno['OK'] := .F.
-      aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
-      RETURN(aRetorno)
+   IF ::lIniComando = Nil     // Anderson Camilo   30/07/2013
+      ::lIniComando := .F.
+   ENDIF
+
+   IF !::lIniComando          // Anderson Camilo   30/07/2013
+      IF !FILE( ::cIniFile )
+         aRetorno['OK'] := .F.
+         aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
+         RETURN(aRetorno)
+      ELSE
+   		    aRetorno['OK'] := .T.
+
+   		    cXML := MEMOREAD( ::cIniFile )
+   		    cComando := SUBS( cXML, 1, AT("(", cXML )-1)
+      ENDIF
+  	ELSE
+      cXML := ::cIniFile
+
+      IF At("[",cXML) = 0
+         aRetorno['OK'] := .F.
+         aRetorno['MsgErro'] := 'Conteudo do comando INI invalido ' + ::cIniFile
+         RETURN(aRetorno)
+      ENDIF
+
+      aRetorno['OK'] := .T.
+
+
+      cComando := SUBS( cXML, 1, AT("(", cXML )-1)
    ENDIF
 
    aRetorno['OK'] := .T.
