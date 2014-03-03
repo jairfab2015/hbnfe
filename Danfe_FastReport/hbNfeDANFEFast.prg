@@ -3,7 +3,6 @@
  * Arquivo: hbNfeDanfeFast.prg
  * Descrição: Módulo para impressão do DANFE em FastReport
  * Autor: Wilson Alves - CASTELO Porto Software - www.casteloporto.com.br
- * Ajustes: Leonardo Machado - 20/12/2012
  * Data: 06-09-2011
  */
 
@@ -11,7 +10,7 @@
 #include "hbclass.ch"
 #include "HBXML.ch"
 
-#define eMascFone  "@R (99) 9999-9999"
+#define eMascFone  "@R (99) 9999-99999"
 
 #ifndef __XHARBOUR__
    #include "hbcompat.ch"
@@ -49,8 +48,9 @@ CLASS hbNfeDANFEFast
    
 	  DATA cCancelada   // juliana - 22/11/2012           nota cancelada
 	  DATA cDenegada    // juliana - 22/11/2012           nota denegada
-
+	
    DATA cSHOWlogo INIT 'S'
+   DATA cTipTrib INIT 'CST' READONLY
    
    METHOD Executa()
    METHOD ExecutaFast()
@@ -133,7 +133,9 @@ METHOD Executa( Fast )
       Return(aRetorno)
    ENDIF
 
+//   HABILITA_TIMER(.F.)
    ::aVariaveis:={}
+   
    
    fastReport := frReportManager():new()
 
@@ -147,7 +149,6 @@ METHOD Executa( Fast )
    FastReport:AddFunction( "FUNCTION MaskCPF( uFone: String):String","CPS","Retorna conteúdo em formato CPF")
    FastReport:AddFunction( "FUNCTION MaskFone( uFone: String):String","CPS","Retorna conteúdo em formato como telefone")
    FastReport:AddFunction( "FUNCTION Empty(uValue: Variant = EmptyVar):Boolean", "CPS", "Funcao verificar se está vazio")
-
 /*
    IF hb_isNil( fastReport )
       if hb_isnil( fast )
@@ -185,6 +186,7 @@ METHOD Executa( Fast )
       ELSE
          aRetorno['OK']:=.F.
          aRetorno['MsgErro']:='ERRO: ARQUIVO FR3 não localizado'
+//         HABILITA_TIMER(.T.)
          Return(aRetorno)
       ENDIF
 
@@ -193,6 +195,8 @@ METHOD Executa( Fast )
 
    Nfe:InfNFE:IDE:DEmi := aaaammdd2Date( Nfe:InfNFE:IDE:DEmi  )
    Nfe:InfNFE:IDE:dSaiEnt := aaaammdd2Date( Nfe:InfNFE:IDE:dSaiEnt  )   // Mauricio Cruz - 04/10/2011
+   Nfe:InfNFE:IDE:hSaiEnt :=  ALLTRIM(Nfe:InfNFE:IDE:hSaiEnt)           // Mauricio Cruz - 18/10/2013
+   
 
    IF valtype(Nfe:InfNFE:IDE:NNF  )=='C'
       Nfe:InfNFE:IDE:NNF  := VAL( Nfe:InfNFE:IDE:NNF   )
@@ -424,8 +428,21 @@ METHOD Executa( Fast )
       ENDIF
 
       ::AdicionaVariavel( 'infProt'     , ObjInf:protNfe:infProt )
+      ::AdicionaVariavel( 'IDE'     , 'INFPROT'  , 'TEM' )
    ELSE
-      ::AdicionaVariavel( 'infProt'     , '' )
+
+      ::AdicionaVariavel( 'infProt'     , '')
+/*
+      ::AdicionaVariavel( 'infProt'     , 'NPROT'   , '' )
+      ::AdicionaVariavel( 'infProt'     , 'CSTAT'   , '' )
+      ::AdicionaVariavel( 'infProt'     , 'XMOTIVO' , '' )
+      ::AdicionaVariavel( 'infProt'     , 'TPAMB'   , '' )
+      ::AdicionaVariavel( 'infProt'     , 'VERAPLIC', '' )
+      ::AdicionaVariavel( 'infProt'     , 'CHNFE'   , '' )
+      ::AdicionaVariavel( 'infProt'     , 'DIGVAL'  , '' )
+*/      
+      ::AdicionaVariavel( 'IDE'     , 'INFPROT'  , 'NAO TEM' )
+
    ENDIF
 
 
@@ -434,6 +451,10 @@ METHOD Executa( Fast )
    ENDIF
 
    ::CarregaItems(cOBSfisc_COMPL)
+   
+   
+   ::AdicionaVariavel( 'IDE', 'TIP_TRIB'  , ::cTipTrib )
+   
 
    ::AdicionaVariavel( 'IDE', 'ChaveNFE'  , quoteStr( Subs(::ID , 4 )) )
    ::AdicionaVariavel( 'IDE', 'ChaveMask' , quoteStr( Trans( Subs( ::ID , 4 ) , "@R 9999 9999 9999 9999 9999 9999 9999 9999 9999 9999 9999") ) )
@@ -442,9 +463,10 @@ METHOD Executa( Fast )
    ::AdicionaVariavel( 'IDE','ImprimirHora', ::ImprimirHora )  // Mauricio Cruz - 05/10/2011
    ::AdicionaVariavel( 'IDE','cLogoMarca',   ::cLogoMarca )    // Mauricio Cruz - 25/10/2011
    ::AdicionaVariavel( 'IDE','cSHOWlogo',    ::cSHOWlogo )     // Mauricio Cruz - 14/12/2011
-  	::AdicionaVariavel( 'IDE','cCancelada',   ::cCancelada )     // juliana - 22/11/2012
-  	::AdicionaVariavel( 'IDE','cDenegada',    ::cDenegada )      // juliana - 22/11/2012
-
+	
+	::AdicionaVariavel( 'IDE','cCancelada',   ::cCancelada )     // juliana - 22/11/2012
+	::AdicionaVariavel( 'IDE','cDenegada',    ::cDenegada )      // juliana - 22/11/2012	
+   
    
    // Mauricio Cruz - 06/10/2011
    Try
@@ -458,10 +480,15 @@ METHOD Executa( Fast )
    
    AEval( ::aVariaveis, {|i| FastReport:AddVariable( i[1], i[2], quoteStr( i[3] )) } )
 
-   FastReport:SetTitle( 'DANFE ' + ::ID + ' Emitente ' + Nfe:infNFE:Emit:xNome  )
+   //FastReport:PreviewOptions:SetShowCaptions(.T.)
+   FastReport:SetProperty("MailExport", "ShowDialog", .f.)
+   FastReport:SetEventHandler("MailExport", "OnSendMail", {|| ShowMsg('Atenção !!!, Por essa opção apenas é enviado o DANFE em formato PDF'),MySendMail(FastReport)})
+   FastReport:SetIcon(1001)
+   FastReport:SetTitle( 'DANFE - Emitente ' + Nfe:infNFE:Emit:xNome  )
 
    ::ExecutaFast()
    ::FechaTemporarias()
+//   HABILITA_TIMER(.T.)
 
    aRetorno['OK']:=.T.
    
@@ -485,9 +512,10 @@ METHOD ExecutaFast()
          FastReport:PrepareReport()
          FastReport:Print( .T. )
       ELSE
-
          FastReport:PrepareReport()
          IF ::PreVisualizar
+            //FastReport:PreviewOptions:SetZoom(1.4) //mais zoom ou menos zoom
+            FastReport:PreviewOptions:SetZoomMode(2) // tamanho da pagina
             FastReport:ShowReport()
          ELSE
             FastReport:Print( Empty( ::Impressora ) )
@@ -571,13 +599,8 @@ METHOD CarregaItems(cOBSfisc_COMPL)
       (::produto)->CPROD := 'CONTI'
       //(::produto)->OBSCONT := cOBSfisc_COMPL
       (::produto)->NCM   := 'CONTINUA'
-
-      //SELECT(::produto)
-      //MY_BROWSE(NIL,'TESTE',.T.)
-      
    ENDIF
-   
-   
+
 Return Nil
 
 *********************************************************************************
@@ -621,7 +644,7 @@ Local aRetorno:=HASH()  // Mauricio Cruz - 25/10/2011
 Return Obj
 
 *********************************************
-STATIC Function XMLLeFilhos( oChild , oObj )
+Function XMLLeFilhos( oChild , oObj )
 *********************************************
 Local nPos
 Local objNew
@@ -748,6 +771,9 @@ Local oChild:=oICMS:oChild
 Do While oChild!=Nil
 
    IF !hb_isobject( oChild:oChild )
+      IF ALLTRIM(UPPER(oChild:cName))='CSOSN' .AND. !EMPTY(ALLTRIM(oChild:cData))
+         ::cTipTrib:='CSOSN'
+      ENDIF
       ::PutValue( oChild:cName, oChild:cData )
    ENDIF
 
@@ -761,18 +787,15 @@ METHOD PutValue( cName ,cData, cTag, cAlias )
 ****************************************************************
 Local nPos
 Local uValue,cType
-Local e
+Local oERRO
 Local aRetorno:=HASH()  // Mauricio Cruz - 25/10/2011
 
    cTag := IF(cTag=NIL, '',cTag)
    cAlias :=IF(cAlias==nil, ::produto, cAlias)
 
-
-
    nPos:=(cAlias)->(FieldPos(cTag+cName))
 
    IF nPos>0
-
       uValue:=cData
 
       cType:=(cAlias)->(FieldType( nPos ))
@@ -785,9 +808,9 @@ Local aRetorno:=HASH()  // Mauricio Cruz - 25/10/2011
 
       try
          (cAlias)->(FieldPut( nPos, uValue ))
-      catch e
-         aRetorno['OK']:=.F.
-         aRetorno['MsgErro']:=oERRO:description
+      catch oERRO
+         aRetorno['OK']     :=.F.
+         aRetorno['MsgErro']:=oERRO:description  //(oERRO:description,oERRO:operation,nPos,uValue,ctype)
       end
 
    ENDIF
@@ -803,7 +826,6 @@ Local cName
 While oChild!=Nil
 
    cName:=Upper(oChild:cName)
-
    IF cName=='ICMS'
       ::AdicionaICMS( oChild:oChild )
    ELSEIF cName=='IPI'
@@ -813,7 +835,6 @@ While oChild!=Nil
    ELSEIF cNAME<>'PIS' .AND. cNAME<>'COFINS'
       ::PutValue( cName, oChild:cData )
    ENDIF
-
    oChild:=oChild:oNEXT
 enddo
 
@@ -998,7 +1019,7 @@ IF nLen==7
 ENDIF
 
 IF ( nLen==8 )
-   uValue:=TransForm(uVAlue,"@R 99.999-999")
+   uValue:=TransForm(uVAlue,eMascCep)
 ENDIF
 
 Return uValue
@@ -1027,7 +1048,7 @@ IF nLen==8 .OR. nLen==7
    ENDIF
    Return Transform(uFone,eMascFone)
 ELSEIF nLen==11
-   Return Transform(uFone,"@R (99) 99999-9999")
+   Return Transform(uFone,eMascFone)
 ELSEIF nLen==10 .AND. Left(uFone,1)#0
    Return Transform(uFone,eMascFone)
 ELSEIF nLen==10
@@ -1061,13 +1082,14 @@ METHOD CriaTabelasTemporarias()
    AADD(aEstru,{'CFOP','C',4,0})
 
    AADD(aEstru,{'uCom','C',50,0})
-   AADD(aEstru,{'qCom','N',19,3})
+   AADD(aEstru,{'qCom','N',19,4})
    AADD(aEstru,{'vunCom','N',16,4})
    AADD(aEstru,{'vProd','N',19,2})
    AADD(aEstru,{'cEANTrib','C',16,0})
 
    AADD(aEstru,{'uTrib','C',6,0})
    AADD(aEstru,{'qTrib','N',19,5})
+   AADD(aEstru,{'nFCI' ,'C',36,0})
    AADD(aEstru,{'vunTrib','N',16,4})
    AADD(aEstru,{'vFrete','N',15,2})
    AADD(aEstru,{'vSeg','N',15,2})
@@ -1075,6 +1097,7 @@ METHOD CriaTabelasTemporarias()
 
    AADD(aEstru,{'CST','C',2,0})
    AADD(aEstru,{'orig','C',2,0})
+   AADD(aEstru,{'CSOSN','C',3,0})
    AADD(aEstru,{'vBC','N',15,2})
    AADD(aEstru,{'pICMS','N',5,2})
    AADD(aEstru,{'vICMS','N',15,2})
@@ -1091,8 +1114,8 @@ METHOD CriaTabelasTemporarias()
    AADD(aEstru,{'ISSVALIQ'  , 'N' ,15  , 2 } )
    AADD(aEstru,{'ISSVISSQN'  , 'N' ,15  , 2 } )
    AADD(aEstru,{'ISCMUNCFG'  , 'N' ,7  , 0 } )
-   //AADD(aEstru,{'OBSCONT'  , 'M' ,10  , 0 } )
    AADD(aEstru,{'vTotTrib'  , 'N' ,15  , 2 } )
+   //AADD(aEstru,{'OBSCONT'  , 'M' ,10  , 0 } )
 
    dbCreate(cTemp , aEstru  , 'DBFCDX' )
 
@@ -1142,7 +1165,14 @@ METHOD SavePDF(cFile )
      :PrepareReport()
      :SetProperty("PDFExport", "ShowDialog", .F.)
      :SetProperty("PDFExport", "FileName", cFile )
-     :SetProperty("PDFExport", "Compressed", .F. )
+
+     :SetProperty("PDFExport", "Compressed", .T. )
+*     :SetProperty("PDFExport", "EmbeddedFonts", .T. )
+*     :SetProperty("PDFExport", "Background", .T. )
+*     :SetProperty("PDFExport", "PrintOptimized", .T. )
+*     :SetProperty("PDFExport", "Author", _Usuario() )
+*     :SetProperty("PDFExport", "Subject", 'Arquivo gerado automaticamente pelo sistema: ' + _Tipo_Sis()  )
+
      :DoExport('PDFExport')
      :SetProperty("PDFExport", "ShowDialog", .T.)
    End Object
@@ -1196,7 +1226,7 @@ FOR mI:=1 TO LEN(cRET) // LENDO LETRA A LETRA
 *   ENDIF
 
    cRET:=StrTran( cRET, "'" )
-   //cRET:=StrTran( cRET, '"' )
+   // cRET:=StrTran( cRET, '"' )
    cRET:=StrTran( cRET, "´" )
    cRET:=StrTran( cRET, "-" )
 NEXT

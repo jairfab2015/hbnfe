@@ -210,15 +210,11 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    // acresentado as duas tag abaixo: Leonardo Machado - 28/06/2012
    aRetorno['retCancNFe']   := oFuncoes:pegaTag(cXMLResp, "retCancNFe")
    aRetorno['procEventoNFe']:= oFuncoes:pegaTag(cXMLResp, "procEventoNFe")
-   // acrescentado por Anderson Camilo 06/08/2013
-   aRetorno['retEventoNFe'] := oFuncoes:pegaTag(aRetorno['procEventoNFe'], "retEvento")
 
    // processa protNFe no xml
    IF !EMPTY( ::cNFeFile )
       IF aRetorno['cStat'] == '100' .OR.;  // autorizado o uso
-         aRetorno['cStat'] == '110' .OR.;  // denegado o uso
-         aRetorno['cStat'] == '101'        // NF-e Cancelada
-
+         aRetorno['cStat'] == '110'        // denegado o uso
          cXMLSai := cXMLFile
 
          //  nao estava trazendo o inicio da tag e o fim da tag, achei mais seguro colocar aqui do que mexer na classe pegaTag.
@@ -227,31 +223,18 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
             aRetorno['protNFe']:='<protNFe '+aRetorno['protNFe']+'</protNFe>'
          ENDIF
 
-		       if aRetorno['cStat'] == '101'        // NF-e Cancelada      Alterado por -> Anderson Camilo - 06/08/2013
+         // ADD tag "nfeProc" -> Mauricio Cruz - 03/10/2011
+         cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?><nfeProc versao="2.01" xmlns="http://www.portalfiscal.inf.br/nfe">'+;
+                    SUBS(cXMLSai,1,AT('/NFe>',cXMLSai)+4) + ;
+                    aRetorno['protNFe'] + '</nfeProc>'
 
-            if aRetorno['retEventoNFe'] != NIL
-			            aRetorno['dhRecbto'] := oFuncoes:pegaTag(aRetorno['retEventoNFe'], "dhRegEvento")
-               aRetorno['nProt']    := oFuncoes:pegaTag(aRetorno['retEventoNFe'], "nProt")
-            endif
-
-            cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?><nfeProc versao="2.00" xmlns="http://www.portalfiscal.inf.br/nfe">'+;
-                       SUBS(cXMLSai,AT('<NFe ',cXMLSai),AT('/NFe>',cXMLSai) - AT('<NFe ',cXMLSai) + 5) + ;
-               					   '<protNFe versao="2.00">' + ;
-               					   '<infProt><tpAmb>' + aRetorno['tpAmb'] + '</tpAmb>' + ;
-               					   '<verAplic>' + aRetorno['verAplic'] + '</verAplic>' + ;
-               					   '<chNFe>' + aRetorno['chNFe'] + '</chNFe>' + ;
-               					   '<dhRecbto>' + aRetorno['dhRecbto'] + '</dhRecbto>' + ;
-               					   '<nProt>' + aRetorno['nProt'] + '</nProt>' + ;
-               					   '<digVal>' + aRetorno['digVal'] + '</digVal>' + ;
-               					   '<cStat>' + aRetorno['cStat'] + '</cStat>' + ;
-               					   '<xMotivo>' + aRetorno['xMotivo'] + '</xMotivo></infProt></protNFe></nfeProc>'
-	        else
-            // ADD tag "nfeProc" -> Anderson Camilo - 23/11/2011
-            cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?><nfeProc versao="2.01" xmlns="http://www.portalfiscal.inf.br/nfe">'+;
-                       SUBS(cXMLSai,AT('<NFe ',cXMLSai),AT('/NFe>',cXMLSai) - AT('<NFe ',cXMLSai) + 5) + ;
-                       aRetorno['protNFe'] + '</nfeProc>'
-	        endif
-
+/*
+         cXMLSai := '<?xml version="1.0" encoding="UTF-8" ?>';
+                 + '<nfeProc versao="2.00" xmlns="http://www.portalfiscal.inf.br/nfe">';
+                 + '<NFe xmlns' + hbNFe_PegaDadosXML('NFe xmlns', cXMLSai, 'NFe' ) + '</NFe>';
+                 + aRetorno['protNFe'];
+                 + '</nfeProc>'
+*/                 
          TRY
             MEMOWRIT( ::cNFeFile, cXMLSai, .F. )
          CATCH

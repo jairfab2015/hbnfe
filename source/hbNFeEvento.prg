@@ -43,6 +43,8 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       oError, nI2, xXMLSai, cProtNFe, cXMLSai, cXMLFile, cXMLDadosMsg,;
       cId, cCondUso, cXMLResp2, cXMLResp3, cXMLResp4, oAssina, aRetornoAss, oValida, aRetornoVal, nPos
 
+aRetorno['cStat_1']:=''
+
 IF ::cUFWS = Nil
    ::cUFWS := ::ohbNFe:cUFWS
 ENDIF

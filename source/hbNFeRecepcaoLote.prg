@@ -85,7 +85,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
    cUrlWS := ::ohbNFe:getURLWS(_RECEPCAO)
    
-   //ShowMsg(cUrlWS)
+//ShowMsg_Edit(cUrlWS)
    
   IF ::ohbNFe:nSOAP = HBNFE_CURL
      aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
@@ -176,7 +176,6 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
       MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-rec.xml",cXMLResp,.F.)
    CATCH
    END
-   
    //cXMLResp := oFuncoes:pegaTag(cXMLResp, "nfeRecepcaoLote2Result")
    cXMLResp := oFuncoes:pegaTag(cXMLResp, "retEnviNFe")   // ajuste para NFe2 - Mauricio Cruz - 31/10/2012
 
@@ -224,11 +223,6 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
             aRetorno['ret_OK'] := .F.
             aRetorno['ret_MsgErro'] := aRetornoRet['MsgErro']
          ELSE
-            IF nVezesRet < ::nVezesTentaRetorno             // Anderson Camilo  10/11/2011
-        		 	   IF aRetornoRet['cStat'] = '105'
-			               LOOP
-               ENDIF
-            ENDIF
             aRetorno['ret_tpAmb']    := aRetornoRet['tpAmb']
             aRetorno['ret_verAplic'] := aRetornoRet['verAplic']
             aRetorno['ret_nRec']     := aRetornoRet['nRec']

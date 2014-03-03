@@ -102,7 +102,7 @@ LOCAL oP  := TPublic():New(.T.)
    op:Cidade     := "Londrina-PR"
    op:Celular    := "43 3026-7661"
    op:Empresa    := "CASTELO Porto Software"
-   op:Email	 := 'wilson@casteloporto.com.br'
+   op:Email	     := 'wilson@casteloporto.com.br'
    op:Site       := 'www.casteloporto.com.br'
 
    ? op:Nome,op:Endereco,op:Cidade,op:celular,op:empresa
