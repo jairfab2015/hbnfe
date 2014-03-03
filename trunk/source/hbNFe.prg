@@ -100,9 +100,9 @@ LOCAL oCertSelecao, oCertificados, oStore, oCertificates, cMsgErro := "", aRetor
       #endif
    CATCH
       IF lTentaRegistrar
-         ::UAC( 0 )
-         iif( file( "CAPICOM.DLL" ), RegisterServer( "CAPICOM.DLL" ), cMsgErro := "Nao foi instalado CAPICOM.DLL" )
-         ::UAC( 1 )
+         IF SN('Esta faltando arquivos para funcionamento da NF-e, deseja baixar agora ?')
+            MYRUN2(CAMINHO_EXE()+'\instala_nfe.bat')
+         ENDIF
       ENDIF
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := IF(EMPTY(cMsgErro),"Não registrado CAPICOM tente novamente",cMsgErro)
@@ -116,9 +116,9 @@ LOCAL oCertSelecao, oCertificados, oStore, oCertificates, cMsgErro := "", aRetor
       #endif
    CATCH
       IF lTentaRegistrar
-         ::UAC( 0 )
-         iif( file( "CAPICOM.DLL" ), RegisterServer( "CAPICOM.DLL" ), cMsgErro := "Nao foi instalado CAPICOM.DLL" )
-         ::UAC( 1 )
+         IF SN('Esta faltando arquivos para funcionamento da NF-e, deseja baixar agora ?')
+            MYRUN2(CAMINHO_EXE()+'\instala_nfe.bat')
+         ENDIF
   	   ENDIF
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := IF(EMPTY(cMsgErro),"Registrado CAPICOM tente novamente",cMsgErro)
@@ -190,7 +190,15 @@ Local SubjectName    := ::SubjectName
   IF oStore=nIL
      Return oResult
   ENDIF
-  oStore:open(_CAPICOM_CURRENT_USER_STORE,'My',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
+  TRY
+     oStore:open(_CAPICOM_CURRENT_USER_STORE,'My',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
+  CATCH
+
+  END
+  IF oStore=nIL
+     Return oResult
+  ENDIF
+
   oCertificados:=oStore:Certificates()
   FOR nI=1 TO oCertificados:Count()
      IF !EMPTY( cSerialCert )
@@ -249,9 +257,6 @@ LOCAL oStore, oCertificados, aRetorno := hash(), nI, cSerialCert
   #else
      oStore := win_oleCreateObject( "CAPICOM.Store" )
   #endif
-  IF oStore=NIL
-     RETURN(aRetorno)
-  ENDIF
   oStore:open(_CAPICOM_CURRENT_USER_STORE,'My',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
   oCertificados:=oStore:Certificates()
   aRetorno['OK'] := .F.
@@ -283,6 +288,19 @@ IF ::tpEmis == '3' .OR. ::tpEmis == '5' // SCAN  // NACIONAL
    aAdd( aUrlWS, { _EVENTO           , IIF( ::tpAmb='1' , 'https://www.scan.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'        , 'https://hom.nfe.fazenda.gov.br/SCAM/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
    aAdd( aUrlWS, { _DOWNLOADNFE      , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx'  , 'https://hom.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx' ) } )
    aAdd( aUrlWS, { _RECPEVENTO       , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'         , 'https://hom.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
+ELSEIF ::tpEmis == '6'   // SVC - AN
+   aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx'  , 'https://hom.svc.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx') } )
+   aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx'            , 'https://hom.svc.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx') } )
+   aAdd( aUrlWS, { _RECEPCAO         , IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx'            , 'https://hom.svc.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx') } )
+   aAdd( aUrlWS, { _RETRECEPCAO      , IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/NfeRetRecepcao2/NfeRetRecepcao2.asmx'      , 'https://hom.svc.fazenda.gov.br/NfeRetRecepcao2/NfeRetRecepcao2.asmx') } )
+   aAdd( aUrlWS, { _INUTILIZACAO     , IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/NfeInutilizacao2/NfeInutilizacao2.asmx'    , 'https://hom.svc.fazenda.gov.br/NfeInutilizacao2/NfeInutilizacao2.asmx') } )
+   aAdd( aUrlWS, { _EVENTO           , IIF( ::tpAmb='1' , 'https://www.svc.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'        , 'https://hom.svc.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
+ELSEIF ::tpEmis == '7'   // SVC - RS
+   aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeStatusServico/NfeStatusServico2.asmx'  , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeStatusServico/NfeStatusServico2.asmx') } )
+   aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeConsulta/NfeConsulta2.asmx'            , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeConsulta/NfeConsulta2.asmx') } )
+   aAdd( aUrlWS, { _RECEPCAO         , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/Nferecepcao/NFeRecepcao2.asmx'            , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/Nferecepcao/NFeRecepcao2.asmx') } )
+   aAdd( aUrlWS, { _RETRECEPCAO      , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeRetRecepcao/NfeRetRecepcao2.asmx'      , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeRetRecepcao/NfeRetRecepcao2.asmx') } )
+   aAdd( aUrlWS, { _EVENTO           , IIF( ::tpAmb='1' , 'https://nfe.sefaz.rs.gov.br/ws/recepcaoevento/recepcaoevento.asmx'              , 'https://homologacao.nfe.sefaz.rs.gov.br/ws/recepcaoevento/recepcaoevento.asmx' ) } )
 ELSEIF ::cUFWS $ "13" // AM
    aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://nfe.sefaz.am.gov.br/services2/services/NfeStatusServico2'         , 'https://homnfe.sefaz.am.gov.br/services2/services/NfeStatusServico2' ) } )
    aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://nfe.sefaz.am.gov.br/services2/services/NfeConsulta2'              , 'https://homnfe.sefaz.am.gov.br/services2/services/NfeConsulta2' ) } )
@@ -415,7 +433,31 @@ ELSEIF ::cUFWS == "31" // MG
    aAdd( aUrlWS, { _CONSULTANFEDEST  , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx'      , 'https://hom.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx') } )  
    aAdd( aUrlWS, { _DOWNLOADNFE      , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx' , 'https://hom.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx' ) } )
    aAdd( aUrlWS, { _RECPEVENTO       , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'        , 'https://hom.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
-ELSEIF ::cUFWS $ "32,21,15,22" // ES, MA, PA, PI  // SVAN
+ELSEIF ::cUFWS $ "32" // ES
+   IF DATE()<=CTOD('03/02/2014') // ATÉ ESSA DATA VAI USAR SVAN, DEPOIS MUDA PARA SVRS, DEPOIS QUE ALCANÇAR ESSA DATA PODEMOS DEIXAR TUDO NO IF LÁ DE BAIXO(SVRS)
+      aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx' , 'https://hom.sefazvirtual.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx') } )
+      aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx'           , 'https://hom.sefazvirtual.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx') } )
+      aAdd( aUrlWS, { _RECEPCAO         , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx'           , 'https://hom.sefazvirtual.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx') } )
+      aAdd( aUrlWS, { _RETRECEPCAO      , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeRetRecepcao2/NfeRetRecepcao2.asmx'     , 'https://hom.sefazvirtual.fazenda.gov.br/NfeRetRecepcao2/NfeRetRecepcao2.asmx') } )
+      aAdd( aUrlWS, { _CANCELAMENTO     , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeCancelamento2/NfeCancelamento2.asmx'   , 'https://hom.sefazvirtual.fazenda.gov.br/NfeCancelamento2/NfeCancelamento2.asmx') } )
+      aAdd( aUrlWS, { _INUTILIZACAO     , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeInutilizacao2/NfeInutilizacao2.asmx'   , 'https://hom.sefazvirtual.fazenda.gov.br/NfeInutilizacao2/NfeInutilizacao2.asmx') } )
+      aAdd( aUrlWS, { _EVENTO           , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'       , 'https://hom.sefazvirtual.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx') } )
+      aAdd( aUrlWS, { _CONSULTANFEDEST  , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx'              , 'https://hom.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx') } )
+      aAdd( aUrlWS, { _DOWNLOADNFE      , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx'         , 'https://hom.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx' ) } )
+      aAdd( aUrlWS, { _RECPEVENTO       , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'                , 'https://hom.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
+   ELSE
+      aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeStatusServico/NfeStatusServico2.asmx'    , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeStatusServico/NfeStatusServico2.asmx') } )
+      aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeConsulta/NfeConsulta2.asmx'              , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeConsulta/NfeConsulta2.asmx') } )
+      aAdd( aUrlWS, { _RECEPCAO         , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/Nferecepcao/NFeRecepcao2.asmx'              , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/Nferecepcao/NFeRecepcao2.asmx') } )
+      aAdd( aUrlWS, { _RETRECEPCAO      , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeRetRecepcao/NfeRetRecepcao2.asmx'        , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeRetRecepcao/NfeRetRecepcao2.asmx') } )
+      aAdd( aUrlWS, { _CANCELAMENTO     , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/NfeCancelamento/NfeCancelamento2.asmx'      , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/NfeCancelamento/NfeCancelamento2.asmx') } )
+      aAdd( aUrlWS, { _INUTILIZACAO     , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao2.asmx'      , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/nfeinutilizacao/nfeinutilizacao2.asmx') } )
+      aAdd( aUrlWS, { _EVENTO           , IIF( ::tpAmb='1' , 'https://nfe.sefazvirtual.rs.gov.br/ws/recepcaoevento/recepcaoevento.asmx'         , 'https://homologacao.nfe.sefazvirtual.rs.gov.br/ws/recepcaoevento/recepcaoevento.asmx') } )
+      aAdd( aUrlWS, { _CONSULTANFEDEST  , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx'              , 'https://hom.nfe.fazenda.gov.br/NFeConsultaDest/NFeConsultaDest.asmx') } )
+      aAdd( aUrlWS, { _DOWNLOADNFE      , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx'         , 'https://hom.sefazvirtual.fazenda.gov.br/NfeDownloadNF/NfeDownloadNF.asmx' ) } )
+      aAdd( aUrlWS, { _RECPEVENTO       , IIF( ::tpAmb='1' , 'https://www.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx'                , 'https://hom.nfe.fazenda.gov.br/RecepcaoEvento/RecepcaoEvento.asmx' ) } )
+   ENDIF
+ELSEIF ::cUFWS $ "21,15,22" // MA, PA, PI  // SVAN
    aAdd( aUrlWS, { _STATUSSERVICO    , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx' , 'https://hom.sefazvirtual.fazenda.gov.br/NfeStatusServico2/NfeStatusServico2.asmx') } )
    aAdd( aUrlWS, { _CONSULTAPROTOCOLO, IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx'           , 'https://hom.sefazvirtual.fazenda.gov.br/NfeConsulta2/NfeConsulta2.asmx') } )
    aAdd( aUrlWS, { _RECEPCAO         , IIF( ::tpAmb='1' , 'https://www.sefazvirtual.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx'           , 'https://hom.sefazvirtual.fazenda.gov.br/NfeRecepcao2/NfeRecepcao2.asmx') } )

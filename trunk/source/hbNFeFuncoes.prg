@@ -10,6 +10,7 @@
 #ifndef __XHARBOUR__
    #include "hbcompat.ch"
 #endif
+#include "HBXML.ch"
 
 CLASS hbNFeFuncoes
 *  // Funcoes de Texto
@@ -32,7 +33,7 @@ CLASS hbNFeFuncoes
    METHOD modulo11(cStr,nPeso1,nPeso2)
    METHOD BringToDate(cStr)
    Method RemoveAcentuacao(cText)
-   Method XMLnaArray(cXml)
+   Method XMLnaArray(cXml,cFirst)
 ENDCLASS
 
 METHOD BringToDate(cStr) CLASS hbNFeFuncoes
@@ -373,44 +374,60 @@ Return(dRet)
 
 
 
-Method XMLnaArray(cXml) CLASS hbNFeFuncoes
+Method XMLnaArray(cXml,cFirst) CLASS hbNFeFuncoes
 /*
    Retorna um XML na array
    Armando Pinto /  Mauricio Cruz - 31/05/2013
+    - cXml = caminho do arquivo xml
+    - cFirst = tag inicial que deseja comecar a ler
    {NOME DA TAG, CONTEUDO DA TAG, NIVEL}
 */
+LOCAL oXmlDoc := TXmlDocument():new()
+LOCAL oXmlNode, oXmlIter
+LOCAL aRetorno:={}, aTOK:={}
+LOCAL cPath:=''
+LOCAL CTe_GERAIS:=oCTe_GERAIS()
+HB_GCAll(.T.)
 
-Local oXMLNode, oXMLIter, oXMLFirst
-LOCAL aRetorno:={{'','','',''}}, aTOK:={}
-LOCAL cPath:='', cNOD:=''
+cXml:=Memoread( cXml )
+cXML:=LIMPA_STR_XML_HTML(cXML)
+cXML:=HtmlToAnsi(STRTRAN(STRTRAN( cXml ,'<![CDATA['),']]>'))
+cXML:=CTe_GERAIS:rgLimpaString( cXml )
+cXML:=LIMPA_STR_XML(cXML)
 
-ADEL(aRetorno,1,.T.)  
-
-IF cXml=NIL .OR. !FILE(cXml)
-   RETURN({})
+oXMlDoc:read(  CTe_GERAIS:rgLimpaString( cXml ) )
+IF oXMlDoc=NIL
+   RETURN(aRetorno)
 ENDIF
-   
-oXmlDoc := TXmlDocument():new()
-oXMlDoc:read( Memoread( cXML ) ) 
-   
-oXMLFirst := oXmlDoc:findFirst()
-oXMLIter := TXmlIterator():new( oXMLFirst )
-   
-Do While .T.
-   TRY
-      oXMLNode := oXMLIter:next()
-      cPath:=SUBSTR(STRTRAN(oXMLNode:Path(),'/','.'),2,LEN(oXMLNode:Path()))
-      aTOK:=HB_ATokens( cPath,".",.F.,.F.)
-      IF LEN(aTOK)>=2
-         cNOD:=aTOK[LEN(aTOK)-1]
-      ELSE
-         cNOD:=''
-      ENDIF
-      AADD(aRetorno, {oXMLNode:cName,oXMLNode:cData,cPath,cNOD })
-   CATCH
+
+oXmlNode:=oXmlDoc:findFirst(cFirst)
+IF oXmlNode=NIL
+   RETURN(aRetorno)
+ENDIF
+
+oXmlIter:=TXmlIterator():new( oXmlNode )
+IF oXmlNode=NIL
+   RETURN(aRetorno)
+ENDIF
+
+WHILE .T.
+   oXmlNode := oXmlIter:next()
+   IF oXmlNode == NIL
       EXIT
+   ENDIF
+   TRY
+      cPath:=SUBSTR(STRTRAN(oXMLNode:Path(),'/','.'),2,LEN(oXMLNode:Path()))
+   CATCH
+      cPath:=''
    END
-EndDo
+   aTOK:=HB_ATokens( cPath,".",.F.,.F.)
+   IF LEN(aTOK)>=2
+      cNOD:=aTOK[LEN(aTOK)-1]
+   ELSE
+      cNOD:=''
+   ENDIF
+   AADD(aRetorno, {oXMLNode:cName,oXMLNode:cData,cPath,cNOD })
+ENDDO
 
 Return(aRetorno)
 
@@ -551,12 +568,22 @@ IF CCPF !=PARTEA1+PARTEA2+PARTEA3+PARTEA4
 ENDIF
 RETURN .T.
 
-FUNCTION HBNFE_CODIGO_UF(cEST)
+FUNCTION CODIGO_UF(cEST,nORDRET)
 /*
    retorna o codigo do estado
    Mauricio Cruz - 21/09/2011
 */
-LOCAL aEST:={},cRET:=""
+LOCAL aEST:={},cRET:="", nBUSCA:=1
+
+IF nORDRET=NIL
+   nORDRET:=2
+ENDIF
+
+IF nORDRET=1
+   nBUSCA:=2
+ELSEIF nORDRET=2
+   nBUSCA:=1
+ENDIF
 
 //AADD(aEST,{ UF , Código UF , Unidade da Federação , Área (Km2) })
 
@@ -588,11 +615,53 @@ AADD(aEST,{'MT','51','Mato Grosso','903357908'})
 AADD(aEST,{'GO','52','Goiás','340086698'})
 AADD(aEST,{'DF','53','Distrito Federal','5801937'})
 
-nSCAN:=ASCAN(aEST,{|x| Upper(Alltrim(x[1]))=Upper(Alltrim(cEST)) })
+nSCAN:=ASCAN(aEST,{|x| Upper(Alltrim(x[nBUSCA]))=Upper(Alltrim(cEST)) })
 IF nSCAN>0
-   cRET:=aEST[nSCAN,2]
+   cRET:=aEST[nSCAN,nORDRET]
 ENDIF
 
 RETURN(cRET)
 
+FUNCTION LIMPA_STR_XML_HTML(cXML)
+/*
+   Remove conjuntos de caracteres em HTML que não pode ser convertido para não dar problema na leitura do XML
+   Mauricio Cruz - 13/02/2014
+*/
+cXML:=STRTRAN(cXML,'&gt;')
+cXML:=STRTRAN(cXML,'&lt;')
+RETURN(cXML)
 
+FUNCTION LIMPA_STR_XML(cXML)
+/*
+   Remove e corrige caracteres para a leitura do XML
+   Mauricio Cruz - 13/02/2014
+*/
+cXML:=STRTRAN(cXML,' >','>')
+cXML:=STRTRAN(cXML,'infA dic','infAdic')
+cXML:=STRTRAN(cXML,'Sig natureValue','SignatureValue')
+cXML:=STRTRAN(cXML,'<BR>',';')
+cXML:=STRTRAN(cXML,'<Br>',';')
+cXML:=STRTRAN(cXML,'<br>',';')
+cXML:=STRTRAN(cXML,'<bR>',';')
+cXML:=STRTRAN(cXML,'<bR>',';')
+cXML:=STRTRAN(cXML,CHR(10),';')
+cXML:=STRTRAN(cXML,CHR(13),';')
+cXML:=STRTRAN(cXML,CHR(10)+CHR(13),';')
+cXML:=STRTRAN(cXML,CHR(13)+CHR(10),';')
+cXML:=STRTRAN(cXML,'"2.00"xmlns','"2.00" xmlns')
+cXML:=STRTRAN(cXML,'NFexmlns','NFe xmlns')
+cXML:=STRTRAN(cXML,'infNFeId','infNFe Id')
+cXML:=STRTRAN(cXML,'"versao="2.00"','" versao="2.00"')
+cXML:=STRTRAN(cXML,'detnItem','det nItem')
+cXML:=STRTRAN(cXML,'CanonicalizationMethodAlgorithm','CanonicalizationMethod Algorithm')
+cXML:=STRTRAN(cXML,'ReferenceURI','Reference URI')
+cXML:=STRTRAN(cXML,'TransformAlgorithm','Transform Algorithm')
+cXML:=STRTRAN(cXML,'DigestMethodAlgorithm','DigestMethod Algorithm')
+cXML:=STRTRAN(cXML,'ReferenceURI','Reference URI')
+cXML:=STRTRAN(cXML,'Signaturexmlns','Signature xmlns')
+cXML:=STRTRAN(cXML,'protNFexmlns','protNFe xmlns')
+cXML:=STRTRAN(cXML,'infProtId','infProt Id')
+cXML:=STRTRAN(cXML,'SignedIn fo','SignedInfo')
+cXML:=STRTRAN(cXML,'ƒ')
+cXML:=STRTRAN(cXML,'/ xNome','/xNome')
+RETURN(cXML)

@@ -19,8 +19,7 @@ CLASS hbNFeIniToXML
    DATA cIniFile
    DATA cXMLFile
    DATA lValida    // Assina e Valida
-   DATA lIniComando   // se .T. ele não vai ler arquivo, vai pegar o conteudo do cIniFile  // Anderson Camilo dia 30/07/2013
-
+   
    DATA aIde
    DATA aRefNfe       // notas referenciadas - Mauricio Cruz - 18/01/2012
    DATA aEmit
@@ -80,34 +79,10 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       ::lValida := .F.
    ENDIF
 
-   IF ::lIniComando = Nil     // Anderson Camilo   30/07/2013
-      ::lIniComando := .F.
-   ENDIF
-
-   IF !::lIniComando          // Anderson Camilo   30/07/2013
-      IF !FILE( ::cIniFile )
-         aRetorno['OK'] := .F.
-         aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
-         RETURN(aRetorno)
-      ELSE
-   		    aRetorno['OK'] := .T.
-
-   		    cXML := MEMOREAD( ::cIniFile )
-   		    cComando := SUBS( cXML, 1, AT("(", cXML )-1)
-      ENDIF
-  	ELSE
-      cXML := ::cIniFile
-
-      IF At("[",cXML) = 0
-         aRetorno['OK'] := .F.
-         aRetorno['MsgErro'] := 'Conteudo do comando INI invalido ' + ::cIniFile
-         RETURN(aRetorno)
-      ENDIF
-
-      aRetorno['OK'] := .T.
-
-
-      cComando := SUBS( cXML, 1, AT("(", cXML )-1)
+   IF !FILE( ::cIniFile )
+      aRetorno['OK'] := .F.
+      aRetorno['MsgErro'] := 'Arquivo não encontrado '+::cIniFile
+      RETURN(aRetorno)
    ENDIF
 
    aRetorno['OK'] := .T.
@@ -258,14 +233,14 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    cChaveNFe += cDV
    
    ::aIde := hash()
-	::aIde[ "cUF" ] := ::ohbNFe:empresa_UF
-	::aIde[ "cNF" ] := STRZERO(VAL(hIniData['Identificacao']['Codigo']),8)
- ::aIde[ "natOp" ] := oFuncoes:parseEncode( hIniData['Identificacao']['NaturezaOperacao'] )
-	::aIde[ "indPag" ] := hIniData['Identificacao']['FormaPag']
-	::aIde[ "mod" ] := hIniData['Identificacao']['Modelo']
-	::aIde[ "serie" ] := hIniData['Identificacao']['Serie']
-	::aIde[ "nNF" ] := ALLTRIM(STR(VAL(hIniData['Identificacao']['Numero'])))
-	::aIde[ "dEmi" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYYY-MM-DD","-")
+  	::aIde[ "cUF" ] := ::ohbNFe:empresa_UF
+  	::aIde[ "cNF" ] := STRZERO(VAL(hIniData['Identificacao']['Codigo']),8)
+   ::aIde[ "natOp" ] := oFuncoes:parseEncode( hIniData['Identificacao']['NaturezaOperacao'] )
+  	::aIde[ "indPag" ] := hIniData['Identificacao']['FormaPag']
+  	::aIde[ "mod" ] := hIniData['Identificacao']['Modelo']
+  	::aIde[ "serie" ] := hIniData['Identificacao']['Serie']
+  	::aIde[ "nNF" ] := ALLTRIM(STR(VAL(hIniData['Identificacao']['Numero'])))
+  	::aIde[ "dEmi" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYYY-MM-DD","-")
    TRY
 	   ::aIde[ "dSaiEnt" ] := oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Saida']),"YYYY-MM-DD","-")
    CATCH
@@ -276,8 +251,8 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
       ::aIde[ "hSaiEnt" ] := ''
    END
-	::aIde[ "tpNF" ] := hIniData['Identificacao']['Tipo']
-	::aIde[ "cMunFG" ] := hIniData['Emitente']['CidadeCod'] //::ohbNFe:empresa_cMun // codigo ibge empresa
+  	::aIde[ "tpNF" ] := hIniData['Identificacao']['Tipo']
+  	::aIde[ "cMunFG" ] := hIniData['Emitente']['CidadeCod'] //::ohbNFe:empresa_cMun // codigo ibge empresa
    
    // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012
     ::aRefNfe:=hash()
@@ -305,7 +280,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 	::aIde[ "tpImp" ] := ::ohbNFe:empresa_tpImp // 1 - retrato 2-paisagem
 	::aIde[ "tpEmis" ] := ::ohbNFe:tpEmis  // 1-normal scan fsda...
    
-   IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5  // SE FOR MODO SCAN...
+   IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7  // SE FOR MODO SCAN / SVC...
       ::aIde[ "dhCont" ] := ALLTRIM(STR(YEAR(CTOD(hIniData['Identificacao']['dhCont']))))+'-'+;
                             ALLTRIM(STRZERO( MONTH(CTOD(hIniData['Identificacao']['dhCont'])),2 ))+'-'+;
                             ALLTRIM(STRZERO( DAY(CTOD(hIniData['Identificacao']['dhCont'])),2 )) +'T'+;
@@ -526,17 +501,21 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
        	::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['uTrib']
       CATCH
        	::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['Unidade']
-      END
+     END
     	TRY
       	::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := hIniData['Produto'+STRZERO(nItem,3)]['qTrib']
       CATCH
       	::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ]    := '0.00'
-      END
+     END
+    	TRY
+      	::aItem[ "item"+STRZERO(nItem,3)+"nFCI" ]    := hIniData['Produto'+STRZERO(nItem,3)]['nFCI']
+      CATCH
+     END
     	TRY
        	::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vUnTrib'] )
       CATCH
        	::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ]  := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['ValorUnitario'], 5 )
-      END
+     END
     	TRY
        	::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]   := oFuncoes:strTostrval( hIniData['Produto'+STRZERO(nItem,3)]['vFrete'] )
     	CATCH
@@ -951,7 +930,15 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
    	::aICMSTotal[ "vOutro" ] := '0.00'
    END
-  	::aICMSTotal[ "vNF" ] := oFuncoes:strTostrval( hIniData['Total']['ValorNota'] )
+   TRY
+  	   ::aICMSTotal[ "vNF" ] := oFuncoes:strTostrval( hIniData['Total']['ValorNota'] )
+   CATCH
+      ::aICMSTotal[ "vNF" ] := '0.00'
+      *SHOWMSG('Houve um erro ao tentar localizar o valor total da nota fiscal.')
+      *IF _USUARIO()='SYGECOM'
+      *   SHOWMSG_EDIT(VALTOPRG(hIniData))
+      *ENDIF
+   END
 
    IF ::lMostra_imp_danfe
       ::aICMSTotal[ "vTotTrib" ] := oFuncoes:strTostrval( hIniData['Total']['vTotTrib'] )
@@ -1106,7 +1093,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 	CATCH
 	END
 	TRY
-    IF !EMPTY( hIniData['Volume001']['nVol'] )
+    IF !EMPTY( hIniData['Volume001']['Numeracao'] )
        ::aTransp[ "nVol" ] := hIniData['Volume001']['Numeracao']
     ENDIF
 	CATCH
@@ -1256,7 +1243,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    
    ::REGRAS_NFE(@aMSGvld,cChaveNFe,nItem)
    IF LEN(aMSGvld)>0
-      *IF !ERROS_ALERTAS_NFE(aMSGvld) // NO VETOR RETORNAR TODOS OS ALERTAR E ERROS, A FUNÇÃO PARA LER OS RETORNO ESTÁ EM HWGUI, POR ISSO NAO FOI COMITADA NO PROJETO.
+      *IF !ERROS_ALERTAS_NFE(aMSGvld)
          aRetorno['OK'] := .F.
          aRetorno['MsgErro'] := ''
          RETURN(aRetorno)
@@ -1325,7 +1312,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	::incluiTag('finNFe'  ,::aIde[ "finNFe" ])
     	::incluiTag('procEmi' ,::aIde[ "procEmi" ])
     	::incluiTag('verProc' ,::aIde[ "verProc" ])
-      IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5
+      IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7
          ::incluiTag('dhCont' ,::aIde[ "dhCont" ])
          ::incluiTag('xJust' ,::aIde[ "xJust" ])
       ENDIF
@@ -1524,6 +1511,12 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                
          	::incluiTag('uTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ])
          	::incluiTag('qTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ])
+
+         	TRY
+            	::incluiTag('nFCI'   ,::aItem[ "item"+STRZERO(nItem,3)+"_nFCI" ])
+          CATCH
+          END
+
          	::incluiTag('vUnTrib'  ,::aItem[ "item"+STRZERO(nItem,3)+"_vUnTrib" ])
          	TRY
             	IF !EMPTY(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) .AND. VAL(::aItem[ "item"+STRZERO(nItem,3)+"_vFrete" ]) <> 0
@@ -1581,10 +1574,14 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                END
             ENDIF
             
-         	TRY
-            	::incluiTag('xPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ])
-            CATCH
-            END
+          TRY
+            ::incluiTag('xPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ])
+          CATCH
+          END
+          TRY
+            ::incluiTag('nItemPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_nItemPed" ])
+          CATCH
+          END
 				
 				TRY
 					IF VAL(::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])>0
@@ -2124,6 +2121,16 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       CATCH
       END
 
+      TRY
+         IF !EMPTY(::aReboque[ "placa" ])
+            ::incluiTag('reboque')
+               ::incluiTag('placa' ,::aReboque[ "placa" ])
+               ::incluiTag('UF'    ,::aReboque[ "UF" ])
+            ::incluiTag('/reboque')
+         ENDIF
+      CATCH
+      END
+
       IF aRetorno[ 'OK' ] = .F.
          RETURN( aRetorno )
       ENDIF
@@ -2177,6 +2184,15 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    END
 
    ::incluiTag('infAdic')
+
+   IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7
+      TRY
+         ::aInfAdic[ "infAdFisco" ]+=' Entrada em Contigencia em '+::aIde[ "dhCont" ]+' Justificativa: '+::aIde[ "xJust" ]
+      CATCH
+         ::aInfAdic[ "infAdFisco" ]:='Entrada em Contigencia em '+::aIde[ "dhCont" ]+' Justificativa: '+::aIde[ "xJust" ]
+      END
+   ENDIF
+
    TRY    // Mauricio Cruz - 05/10/2011
       ::incluiTag('infAdFisco',::aInfAdic[ "infAdFisco" ])
    CATCH
@@ -2510,7 +2526,7 @@ IF VAL(::aIde[ "tpEmis" ])=1
 ENDIF
 
 // GB22.1 | B22 | Se informada a TAG de tpEmis diferente de 1:dhCont e xJust devem ser informados                    | Obrig.  | 557 | Rej. | Rejeição: A Justificativa de entrada em contingência deve ser informada
-IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5
+IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7
    TRY
       IF EMPTY(::aIde[ "xJust" ]) .OR. EMPTY(::aIde[ "dhCont" ])
          AADD(aMSGvld,{.T.,'Rejeição: A Justificativa de entrada em contingência deve ser informada. '+CHR(10)+CHR(13)+'DICA: Favor entrar nas configurações da nota fiscal eletrônica e informar a justificativa do modo SCAN.'})
@@ -2575,7 +2591,7 @@ CATCH
 END
 
 // GB28   | B28 | Data de entrada em contingência deve ser menor ou igual à data de emissão                          | Facult. | 558 | Rej. | Rejeição: Data de entrada em contingência posterior a data de emissão
-IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5
+IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7
    IF CTOD(SUBSTR(::aIde[ "dhCont"],9,2)+'/'+;
            SUBSTR(::aIde[ "dhCont"],6,2)+'/'+;
            LEFT(::aIde[ "dhCont"],4) ) > CTOD(RIGHT(::aIde[ "dEmi" ],2)+'/'+;
@@ -2599,7 +2615,7 @@ ENDIF
 //GC02a.1| C02a| - CPF do Remetente de NF-e Avulsa com zeros, nulo ou DV inválido                                   | Obrig.  | 401 | Rej. | Rejeição: CPF do remetente inválido 
 //GC10   | C10 | Código do Município do Emitente com DV inválido (*1)                                               | Obrig.  | 272 | Rej. | Rejeição: Código Município do Emitente: dígito inválido 
 //GC10.1 | C10 | Código do Município do Emitente (2 primeiras posições) difere do Código da UF do emitente          | Obrig.  | 273 | Rej. | Rejeição: Código Município do Emitente: difere da UF do emitente
-IF LEFT( ALLTRIM(::aEmit[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aEmit[ "UF" ])
+IF LEFT( ALLTRIM(::aEmit[ "cMun" ]),2 )<>CODIGO_UF(::aEmit[ "UF" ],2)
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Emitente: difere da UF do emitente. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do emitente.'})
 ENDIF
 
@@ -2668,7 +2684,7 @@ END
 //GE10   | E10 | Se não é Operação com Exterior (UF Destinatário <> “EX”):
 //               - Código Município do destinatário com dígito verificador inválido                                 | Obrig.  | 274 | Rej. | Rejeição: Código Município do Destinatário: dígito inválido
 //GE10.1 | E10 | - Código Município do destinatário (2 primeiras posições) difere do Código da UF do destinatário   | Obrig.  | 275 | Rej. | Rejeição: Código Município do Destinatário: difere da UF do Destinatário
-IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aDest[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aDest[ "UF" ])
+IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aDest[ "cMun" ]),2 )<>CODIGO_UF(::aDest[ "UF" ],2)
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Destinatário: difere da UF do Destinatário. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do destinatário.'})
 ENDIF
 
@@ -2758,7 +2774,7 @@ END
 //GG07.2 | G07 | - Código Município do Local de Entrega (2 primeiras posições) difere do 
 //                 Código da UF do Local de Entrega                                                                 | Obrig.  | 279 | Rej. | Rejeição: Código Município do Local de Entrega:                 
 TRY
-   IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aEntrega[ "cMun" ]),2 )<>HBNFE_CODIGO_UF(::aEntrega[ "UF" ])
+   IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aEntrega[ "cMun" ]),2 )<>CODIGO_UF(::aEntrega[ "UF" ],2)
       AADD(aMSGvld,{.T.,'Rejeição: Código Município do Local de Entrega Difere do Código da Unidade Federativa da Entrega. '+CHR(10)+CHR(13)+'DICA: Favor a cidade e o estado do local de entrega.'})
    ENDIF
 CATCH

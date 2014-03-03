@@ -15,7 +15,7 @@
 CREATE CLASS hbNFeCreator
    DATA ohbNFe
    DATA oFuncoes
-   DATA lValida INIT .F.
+   DATA lValida       INIT .F.
    DATA cChave        AS STRING
    DATA Ide                      EXPORTED
    DATA Emi                      EXPORTED
@@ -24,16 +24,15 @@ CREATE CLASS hbNFeCreator
    DATA Entrega                  EXPORTED
    DATA Item                     EXPORTED
    DATA Totais                   EXPORTED
-   DATA Transp                   EXPORTED
-   DATA Cobr                     EXPORTED
-   DATA InfAdic                  EXPORTED
-   DATA ObsCont                  EXPORTED
-   DATA ObsFisco                 EXPORTED
-   DATA ProcRef                  EXPORTED
+	DATA Transp                   EXPORTED
+	DATA Cobr                     EXPORTED
+	DATA InfAdic                  EXPORTED
+	DATA ObsCont                  EXPORTED
+	DATA ObsFisco                 EXPORTED
+	DATA ProcRef                  EXPORTED
    DATA Exporta                  EXPORTED
-   DATA Compra                   EXPORTED
+	DATA Compra                   EXPORTED
 
-   DATA nItens
    DATA nDuplicatas
    DATA nObsCont
    DATA nObsFisco
@@ -51,7 +50,6 @@ ENDCLASS
 
 METHOD New() CLASS hbNFeCreator
    ::oFuncoes := hbNFeFuncoes()
-   ::nItens := 0
    ::Ide  := hbNFeCreatorIdentificacao():New(::ohbNFe)
    ::Emi  := hbNFeCreatorEmitente():New()
    ::Dest := hbNFeCreatorDestinatario():New()
@@ -117,7 +115,7 @@ METHOD New(ohbNFe) CLASS hbNFeCreatorIdentificacao
    ::hSaiEnt      := Nil
    ::tpNF         := Nil
    ::cMunFG       := ohbNFe:empresa_cMun
-   ::NFref        := hbNFeCreatorInfRef():New()
+   ::NFref        := hbNFeCreatorInfref():New()
    ::tpImp        := ohbNFe:empresa_tpImp
    ::tpEmis       := ohbNFe:tpEmis
    ::cDV          := Nil
@@ -127,86 +125,31 @@ METHOD New(ohbNFe) CLASS hbNFeCreatorIdentificacao
    ::verProc      := "1.0.0"
    ::dhCont       := Nil
    ::xJust        := Nil
-RETURN Self
+RETURN SELF
 
 *
 * CLASSE DA NF Ref.
-*                        && Alterado por Anderson Camilo em 13/08/2012
-CREATE CLASS hbNFeCreatorInfRef
-   DATA refNFe        EXPORTED
+*
+CREATE CLASS hbNFeCreatorInfref
+   DATA refNFe
    DATA refNF         EXPORTED
    DATA refNFP        EXPORTED
-   DATA refCTe        EXPORTED             
    DATA refECF        EXPORTED
-   DATA nItensRefNFe  
-   DATA nItensRefNF   
-   DATA nItensRefNFP  
-   DATA nItensRefCTe  
-   DATA nItensRefECF  
 
-   METHOD AddRefNFe() 
-   METHOD AddRefNF()  
-   METHOD AddRefNfP() 
-   METHOD AddRefCTe() 
-   METHOD AddRefECF() 
    METHOD New() CONSTRUCTOR
 ENDCLASS
 
-METHOD New() CLASS hbNFeCreatorInfRef        && Alterado por Anderson Camilo em 13/08/2012
-   ::refNFe       := hash()     &&   Nil   
-   ::refNF        := hash()     &&   hbNFeCreatorInfrefNF():New()     
-   ::refNFP       := hash()     &&   hbNFeCreatorInfrefNFP():New()    
-   ::refCTe       := hash()     
-   ::refECF       := hash()     &&  hbNFeCreatorInfrefECF():New()
-   ::nItensRefNFe := 0
-   ::nItensRefNF  := 0
-   ::nItensRefNFP := 0
-   ::nItensRefCTe := 0
-   ::nItensRefECF := 0
-
-RETURN Self
-
-METHOD AddRefNFe() CLASS hbNFeCreatorInfRef
-   ::nItensRefNFe ++
-   ::refNFe[::nItensRefNFe] := hbNFeCreatorInfRefNFe():New()
-RETURN Nil
-
-METHOD AddRefNF() CLASS hbNFeCreatorInfRef
-   ::nItensRefNF ++
-   ::refNF[::nItensRefNF] := hbNFeCreatorInfRefNF():New()
-RETURN Nil                     
-
-METHOD AddRefNFP() CLASS hbNFeCreatorInfRef
-   ::nItensRefNFP ++
-   ::refNFP[::nItensRefNFP] := hbNFeCreatorInfRefNFP():New()
-RETURN Nil                     
-
-METHOD AddRefCTe() CLASS hbNFeCreatorInfRef
-   ::nItensRefCTe ++
-   ::refCTe[::nItensRefCTe] := hbNFeCreatorInfRefCTe():New()
-RETURN Nil
-
-METHOD AddRefECF() CLASS hbNFeCreatorInfRef
-   ::nItensRefECF ++
-   ::refECF[::nItensRefECF] := hbNFeCreatorInfRefECF():New()
-RETURN Nil                     
-
+METHOD New() CLASS hbNFeCreatorInfref
+   ::refNFe       := Nil
+   ::refNF        := hbNFeCreatorInfrefNF():New()
+   ::refNFP       := hbNFeCreatorInfrefNFP():New()
+   ::refECF       := hbNFeCreatorInfrefECF():New()
+RETURN SELF
 
 *
 * CLASSE DA NF Ref. refNF
 *
-             
-CREATE CLASS hbNFeCreatorInfRefNFe
-   DATA nNFe
-
-   METHOD New() CONSTRUCTOR
-ENDCLASS
-
-METHOD New() CLASS hbNFeCreatorInfRefNFe
-   ::nNFe   := Nil
-RETURN Self
-
-CREATE CLASS hbNFeCreatorInfRefNF
+CREATE CLASS hbNFeCreatorInfrefNF
    DATA cUF
    DATA AAMM
    DATA CNPJ
@@ -217,19 +160,19 @@ CREATE CLASS hbNFeCreatorInfRefNF
    METHOD New() CONSTRUCTOR
 ENDCLASS
 
-METHOD New() CLASS hbNFeCreatorInfRefNF
+METHOD New() CLASS hbNFeCreatorInfrefNF
    ::cUF   := Nil
    ::AAMM  := Nil
    ::CNPJ  := Nil
    ::mod   := Nil
    ::serie := Nil
    ::nNF   := Nil
-RETURN Self
+RETURN SELF
 
 *
 * CLASSE DA NF Ref. refNFP
 *
-CREATE CLASS hbNFeCreatorInfRefNFP
+CREATE CLASS hbNFeCreatorInfrefNFP
    DATA cUF
    DATA AAMM
    DATA CNPJ
@@ -238,12 +181,12 @@ CREATE CLASS hbNFeCreatorInfRefNFP
    DATA mod
    DATA serie
    DATA nNF
-*  DATA refCTe        && Alterado por Anderson Camilo em 13/08/2012
+   DATA refCTe
 
    METHOD New() CONSTRUCTOR
 ENDCLASS
 
-METHOD New() CLASS hbNFeCreatorInfRefNFP
+METHOD New() CLASS hbNFeCreatorInfrefNFP
    ::cUF    := Nil
    ::AAMM   := Nil
    ::CNPJ   := Nil
@@ -252,23 +195,13 @@ METHOD New() CLASS hbNFeCreatorInfRefNFP
    ::mod    := Nil
    ::serie  := Nil
    ::nNF    := Nil
-*  ::refCTe := Nil     && Alterado por Anderson Camilo em 13/08/2012
-RETURN Self
-
-CREATE CLASS hbNFeCreatorInfRefCTe
-   DATA nCTe
-
-   METHOD New() CONSTRUCTOR
-ENDCLASS
-
-METHOD New() CLASS hbNFeCreatorInfRefCTe
-   ::nCTe   := Nil
-RETURN Self
+   ::refCTe := Nil
+RETURN SELF
 
 *
 * CLASSE DA NF Ref. refECF
 *
-CREATE CLASS hbNFeCreatorInfRefECF
+CREATE CLASS hbNFeCreatorInfrefECF
    DATA mod
    DATA nECF
    DATA nCOO
@@ -280,7 +213,7 @@ METHOD New() CLASS hbNFeCreatorInfrefECF
    ::mod    := Nil
    ::nECF   := Nil
    ::nCOO   := Nil
-RETURN Self
+RETURN SELF
 
 
 *
@@ -459,6 +392,7 @@ CREATE CLASS hbNFeCreatorItem
    DATA cEANTrib
    DATA uTrib
    DATA qTrib
+   DATA nFCI
    DATA vUnTrib
    DATA vFrete
    DATA vSeg
@@ -497,6 +431,7 @@ METHOD New() CLASS hbNFeCreatorItem
    ::cEANTrib  := Nil
    ::uTrib     := Nil
    ::qTrib     := Nil
+   ::nFCI      := NIL
    ::vUnTrib   := Nil
    ::vFrete    := Nil
    ::vSeg      := Nil
@@ -1092,7 +1027,6 @@ RETURN Self
 *
 * CLASSE DA PROCREF
 *
-
 CREATE CLASS hbNFeCreatorProcRef
    DATA nProc
    DATA indProc
@@ -1138,7 +1072,7 @@ METHOD New() CLASS hbNFeCreatorCompra
 RETURN Self
 
 METHOD geraXML() CLASS hbNFeCreator
-LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nItemDup, nItemDI, nItemADI, cDV, nDocRef
+LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nItemDup, nItemDI, nItemADI, cDV
    aRetorno[ 'OK' ] := .F.
     WITH OBJECT Self
        // TRATAMENTO DE DADOS
@@ -1203,106 +1137,33 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
         	::incluiTag('dEmi'    ,::oFuncoes:FormatDate( :dEmi,"YYYY-MM-DD","-") )
         	::incluiTag('dSaiEnt' ,::oFuncoes:FormatDate( :dSaiEnt,"YYYY-MM-DD","-") )
         	IF !EMPTY( :hSaiEnt )
-               ::incluiTag('hSaiEnt' ,:hSaiEnt )
-            ENDIF
+           	::incluiTag('hSaiEnt' ,:hSaiEnt )
+         ENDIF
         	::incluiTag('tpNF'    ,::valToStr( :tpNF ) )
         	::incluiTag('cMunFG'  ,::valToStr( :cMunFG ) )
-			
-			&& Alterado por Anderson Camilo em 14/08/2013
-			
-                    && NF-e referenciadas
-            WITH OBJECT :NFref				
-               IF :nItensRefNFe > 0
-		          FOR nDocRef = 1 TO :nItensRefNFe
-                      ::incluiTagGrupo('NFref')
-                      WITH OBJECT :refNFe[nDocRef]
-                         ::incluiTag('refNFe'  ,:nNFe )
-                      END WITH			  
-                     ::incluiTagGrupo('/NFref')
-                  NEXT nDocRef
-               ENDIF			
-		  	 
-                       && Notas Modelo 01 referenciadas
-               IF :nItensRefNF > 0
-		          FOR nDocRef = 1 TO :nItensRefNF
-                     ::incluiTagGrupo('NFref')
-                     ::incluiTagGrupo('refNF')
-                     WITH OBJECT :refNF[nDocRef]
-		     	         ::incluiTag('cUF'   ,::valToStr( :cUF ) )
-                        IF :AAMM = Nil
-                            aRetorno[ 'MsgErro' ] := 'Tag AAMM da refNF invalida'
-                            RETURN(aRetorno)
-                        ENDIF
-                        ::incluiTag('AAMM'  ,:AAMM )
-                        ::incluiTag('CNPJ'  ,:CNPJ )
-                        ::incluiTag('mod'   ,::valToStr( :mod ) )
-                        ::incluiTag('serie' ,ALLTRIM( ::valToStr( :serie ) ) )
-                        ::incluiTag('nNF'   ,::valToStr( :nNF ) )
-                     END WITH
-                     ::incluiTagGrupo('/refNF')
-                     ::incluiTagGrupo('/NFref')
-                  NEXT nDocRef
-               ENDIF		 
-		  	 
-                       && Notas Mdelo Produtor Rural referenciadas
-               IF :nItensRefNFP > 0
-		          FOR nDocRef = 1 TO :nItensRefNFP
-                      ::incluiTagGrupo('NFref')
-                      ::incluiTagGrupo('refNFP')
-                      WITH OBJECT :refNFP[nDocRef]
-		     	         ::incluiTag('cUF'   ,::valToStr( :cUF ) )
-                         IF :AAMM = Nil
-                            aRetorno[ 'MsgErro' ] := 'Tag AAMM da refNFP invalida'
-                            RETURN(aRetorno)
-                         ENDIF
-                         ::incluiTag('AAMM'  ,:AAMM )
-                         TRY
-                           if !empty( :CNPJ )
-                              ::incluiTag('CNPJ'  ,:CNPJ )
-		                    else
-                              ::incluiTag('CPF'  ,:CPF )
-                           endif  						 
-                          CATCH
-                              ::incluiTag('CPF', '' )
-                         END
-                         ::incluiTag('IE'  ,:IE )
-                         ::incluiTag('mod'   ,::valToStr( :mod ) )
-                         ::incluiTag('serie' ,ALLTRIM( ::valToStr( :serie ) ) )
-                         ::incluiTag('nNF'   ,::valToStr( :nNF ) )
-                      END WITH
-                      ::incluiTagGrupo('/refNFP')
-                      ::incluiTagGrupo('/NFref')
-                  NEXT nDocRef
-               ENDIF		 
-            
-                       && CT-e referenciadas
-               IF :nItensRefCTe > 0
-		          FOR nDocRef = 1 TO :nItensRefCTe
-                      ::incluiTagGrupo('NFref')
-                      WITH OBJECT :refCTe[nDocRef]
-                         ::incluiTag('refCTe'  ,:nCTe )
-                      END WITH			  
-                     ::incluiTagGrupo('/NFref')
-                  NEXT nDocRef
-               ENDIF			
 
-                       && Cupons Fiscais Referenciados
-               IF :nItensRefECF > 0
-		          FOR nDocRef = 1 TO :nItensRefECF
-                     ::incluiTagGrupo('NFref')
-                     ::incluiTagGrupo('refECF')
-                     WITH OBJECT :refECF[nDocRef]
-                        ::incluiTag('mod'   ,::valToStr( :mod ) )
-                        ::incluiTag('nECF'  ,:nECF )
-                        ::incluiTag('nCOO'  ,:nCOO )
-                     END WITH
-                     ::incluiTagGrupo('/refECF')
-                     ::incluiTagGrupo('/NFref')
-					 
-                  NEXT nDocRef
-               ENDIF		 
-			
-            END WITH
+         IF :NFref:refNFe <> Nil
+           	::incluiTagGrupo('NFref')
+              	::incluiTag('refNFe'  ,:NFref:refNFe )
+           	   IF :NFref:refNF:cUF <> Nil
+                  WITH OBJECT :NFref:refNF
+                   	::incluiTagGrupo('refNF')
+                       	::incluiTag('cUF'   ,::valToStr( :cUF ) )
+                       	IF :AAMM = Nil
+                       	   aRetorno[ 'MsgErro' ] := 'Tag AAMM da refNF invalida'
+                       	   RETURN(aRetorno)
+                       	ENDIF
+                       	::incluiTag('AAMM'  ,:AAMM )
+                       	::incluiTag('CNPJ'  ,:CNPJ )
+                       	::incluiTag('mod'   ,::valToStr( :mod ) )
+                       	::incluiTag('serie' ,ALLTRIM( ::valToStr( :serie ) ) )
+                       	::incluiTag('nNF'   ,::valToStr( :nNF ) )
+                    	::incluiTagGrupo('/refNF')
+                  END WITH
+              	ENDIF
+           	::incluiTagGrupo('/NFref')
+          ENDIF
+
         	::incluiTag('tpImp'   ,::valToStr( :tpImp ) )
         	::incluiTag('tpEmis'  ,::valToStr( :tpEmis ) )
         	::incluiTag('cDV'     ,::valToStr( SUBS(::cChave,44,1) ) )
@@ -1436,6 +1297,7 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
            	::incluiTagGrupo('det nItem="'+ALLTRIM(STR(nItem))+'"')
                  ::incluiTagGrupo('prod')
                  	::incluiTag('cProd'    ,::valToStr( :cProd ) )
+
                   TRY
                      IF ::oFuncoes:validaEan(:cEAN)[1] = .T.
                         ::incluiTag('cEAN'     ,:cEAN)   //<cEAN />
@@ -1444,13 +1306,13 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
                         aRetorno['MsgErro'] := 'Problema ao validar EAN ' + ::oFuncoes:validaEan(:cEAN)[2]
                      ENDIF
                   CATCH
-*                     aRetorno['OK'] := .F.
-*                     aRetorno['MsgErro'] := 'Problema ao validar EAN'
-                     ::incluiTag('cEAN'     ,'')   //<cEAN />
+                     aRetorno['OK'] := .F.
+                     aRetorno['MsgErro'] := 'Problema ao validar EAN'
                   END
                   IF aRetorno['OK'] = .F.
                      RETURN(aRetorno)
                   ENDIF
+
                  	::incluiTag('xProd'    ,:xProd )
                  	::incluiTag('NCM'      ,:NCM )
                  	IF :EXTIPI <> Nil
@@ -1476,20 +1338,23 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
                      IF aRetorno['OK'] = .F.
                         RETURN(aRetorno)
                      ENDIF
-                   ELSE
+                  ELSE
                     	::incluiTag('cEANTrib' ,'' ) //<cEANTrib />
-                   ENDIF
+                  ENDIF
                  	IF :cEANTrib <> Nil
                     	::incluiTag('uTrib'    ,:uTrib )
                    ELSE
                     	::incluiTag('uTrib'    ,:uCom )
                    ENDIF
-                 	IF :cEANTrib <> Nil
+                 	 IF :cEANTrib <> Nil
                     	::incluiTag('qTrib'    ,::valToStr( :qTrib ) )
                    ELSE
                     	::incluiTag('qTrib'    ,'0.00' )
                    ENDIF
-                 	IF :cEANTrib <> Nil
+                   IF !EMPTY(:nFCI)
+                      ::incluiTag('nFCI'    , :nFCI )
+                   ENDIF
+                 	 IF :cEANTrib <> Nil
                     	::incluiTag('vUnTrib'  ,::valToStr( :vUnTrib ) )
                    ELSE
                     	::incluiTag('vUnTrib'  ,'0.00' )
@@ -1533,10 +1398,10 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
                              	::incluiTag('vDescDI'     ,::valToStr( :vDescDI, 2 ), HBNFE_NAOEXIGIDA )
                              	IF :xPed <> Nil
                                 	::incluiTag('xPed'        ,:xPed )
-                                ENDIF
+                              ENDIF
                              	IF :nItemPed <> Nil
                                 	::incluiTag('nItemPed'    ,::valToStr( :nItemPed ) )
-                                ENDIF
+                              ENDIF
                              END WITH
                           	::incluiTagGrupo('/adi' )
                           NEXT
@@ -1992,18 +1857,19 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
           END WITH
           WITH OBJECT :veicTransp
              IF :placa <> Nil
-             	::incluiTagGrupo('veicTransp')
-                  IF !::oFuncoes:validaPlaca( :placa )
-                     aRetorno[ 'OK' ] := .F.
-                     aRetorno[ 'MsgErro' ] := 'Placa inválida ' + :placa
-                     RETURN( aRetorno )
-                  ENDIF
-                	::incluiTag('placa' ,:placa )
-                	::incluiTag('UF'    ,:UF )
-                	IF :RNTC <> Nil
-                	::incluiTag('RNTC'    ,:RNTC )
-                	ENDIF
-             	::incluiTagGrupo('/veicTransp')
+               	::incluiTagGrupo('veicTransp')
+                IF !::oFuncoes:validaPlaca( :placa )
+                   aRetorno[ 'OK' ] := .F.
+                   aRetorno[ 'MsgErro' ] := 'Placa inválida ' + :placa
+                   RETURN( aRetorno )
+                ENDIF
+
+               	::incluiTag('placa' ,:placa )
+               	::incluiTag('UF'    ,:UF )
+               	IF :RNTC <> Nil
+               	::incluiTag('RNTC'    ,:RNTC )
+               	ENDIF
+               	::incluiTagGrupo('/veicTransp')
              ENDIF
           END WITH
           WITH OBJECT :vol

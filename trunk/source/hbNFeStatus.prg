@@ -62,6 +62,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
   cXML := cXML +     '</nfeDadosMsg>'
   cXML := cXML +   '</soap12:Body>'
   cXML := cXML +'</soap12:Envelope>'    
+  
   cFileEnvRes := oFuncoes:formatDate( DATE(), "YYMMDD")+SUBS(TIME(),1,2)+SUBS(TIME(),4,2)+SUBS(TIME(),7,2)
   TRY
      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-ped-sta.xml",cXMLDadosMsg,.F.)
