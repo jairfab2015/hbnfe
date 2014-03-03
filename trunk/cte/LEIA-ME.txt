@@ -1,0 +1,136 @@
+- Primeiro passo a ser feita é registrar as DLL que está na pasta DLL, para isso pode usar os .BAT que seguem em anexo, preste 
+atenção na hora de executar os .BAT por que as vez o usuário não tem permissão nas pastas do windows para copiar as dll
+para system32 ou SysWOW64 ai acaba por não registrar as DLL, e as vez tem que desativar o controle de usuario do windows
+conforme mostra a imagem dentro da pasta DLL.
+
+- Segundo passo é gravar em um arquivo INI os dados do certificado e o restante das configurações que precisara usar
+na NFE ou CTE, esse arquivo INI deve ser gravado em maquina local, por que o certificado geralmente fica em cada
+maquina mesmo quando o sistema está rodando em rede. Na pasta: exemplo_certificado segue um arquivo HBNFE.INI que é o exemplo onde 
+guarda as informações para NFE e CTE, e segue também um print de uma tela de exemplo como visualmente pode ser feita a tela 
+para configurar os dados do certificado. 
+
+- Terceiro e mais importante passo é entender a criação do XML e transmissão, para isso vai usar três rotinas: 
+CTE_Gerar_XML()         // pega os dados do INI( certificado ) , gera o XML e envia para o Sefaz
+CTE_ConsultarRecibo()   // consulta o status do recibo de envio, para saber se foi transmitida ou não
+CTE_ConsultaStat()      // por ultimo a consulta da situaçao da cte, para saber se foi autorizado o uso não. 
+ 
+- Junto segue os fontes das telas que usamos para gerar nossos CTe, os fontes de transmissão, assinatura e validação com schemas,
+segue também alguns print das telas do nosso sistema de envio que é o resultado dos fontes.
+
+- Nomes de Tabelas e estruturas usada no exemlo:
+
+-----INICIO DAS TABELAS
+AADD(aStruct,{'TIPSERV'                      ,.F.,'CADASTRO DOS TIPOS DE SERVIÇOS PRESTADOS',.F.,nil } )
+   AADD(aStruct,{ 'CODSERV'   ,'N',  6,  0,'TIPSERV'      ,'CODIGO DO CADASTRO DE SERVIÇO'      , .F. , .F. , {} , .F. , .T. , .T.  } )
+   AADD(aStruct,{ 'SERVICO'   ,'C', 30,  0,'TIPSERV'      ,'DESCRIÇÃO DO SERVICO'               , .F. , .F. , {} , .F. , .T. , .T.  } )
+   AADD(aStruct,{ 'VALOR'     ,'N', 17,  2,'TIPSERV'      ,'VALOR DO SERVIÇO'                   , .F. , .F. , {} , .F. , .T. , .T.  } )
+   AADD(aStruct,{ 'OBS'       ,'C', 10,  0,'TIPSERV'      ,'OBSERVAÇÃO DO SERVIÇO'              , .F. , .F. , {} , .F. , .T. , .T.  } )
+   AADD(aStruct,{ 'EMPRESA'   ,'C', 10,  0,'TIPSERV'      ,'FILIAL A QUAL PERTENCE O CADASTRO'  , .F. , .F. , {} , .F. , .T. , .T.  } )
+   AADD(aStruct,{ 'CTA_PAG_REC','N',01,  0,'TIPO DE CONTA','GERAR CONTAS 1=A RECEBER, 2 A PAGAR', .F. , .F. , {} , .F. , .T. , .T.  } )
+
+AADD(aStruct,{'SAGI_CTE_PRESTACAO_SERVICO'   ,.F.,'CADASTRO DE PRESTAÇÃO DE SERVIÇOS NO CONHECIMENTO DE TRANSPORTE ELETRONICO',.T.,nil} )
+   AADD(aStruct,{ 'CTE_PRESTACAO_SERVICO_ID'  ,'N',10,   0,'IDENTIFICACAO'                 ,'CODIGO DA PRESTACAO DE SERVICOS' , .T. , .T. , {}, .T. , .T. , .T.   } )
+   AADD(aStruct,{ 'PREST_ID_CTE'              ,'N',10,   0,'FK CTE_ID'                     ,'PREST_CTE_ID FK'                 , .F. , .F. , {'sagi_cte','cte_id'}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'PREST_ID_CTE_CAD_SERVICO'  ,'N',10,   0,'FK CTE_CAD_SERVICO_ID'         ,'PREST_CAD_SERVICO_ID FK'         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'PREST_QUANT'               ,'N',17,   2,'QUANTIDADE_PRESTACAO'          ,'QUANTIDADE DA PRESTACAO SERVICOS', .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'PREST_VALOR'               ,'N',17,   2,'VALOR_PRESTACAO'               ,'VALOR DA PRESTACAO SERVICOS'     , .F. , .F. , {}, .F. , .T. , .T.   } )
+
+AADD(aStruct,{'SAGI_CTE_DOCS'                ,.F.,'CADASTRO DO DOCUMENTOS NO CONHECIMENTO DE TRANSPORTE ELETRONICO',.T.,nil} )
+   AADD(aStruct,{ 'CTE_DOCS_ID'             ,'N',10,   0,'IDENTIFICACAO'                   ,'CODIGO DOS DOCUMENTOS NA CT-e'   , .T. , .T. , {}, .T. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_ID_CTE'             ,'N',10,   0,'FK CTE_ID'                       ,'CTE_ID FK'                       , .F. , .F. , {'sagi_cte','cte_id'}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_TIPO'               ,'C',10,   0,'TIPO'                            ,'TIPO DO DOCUMENTO (NF,NF-e)'     , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_MOD'                ,'N',02,   0,'MODELO'                          ,'MODELO NF'                       , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_SERIE'              ,'C',03,   0,'SERIE'                           ,'SERIE NF'                        , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_NDOC'               ,'C',20,   0,'NUMERO_DOCUEMNTO'                ,'NUMERO DOCUMENTO NF'             , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_DEMI'               ,'D',08,   0,'DATA_EMISSAO'                    ,'DATA EMISSAO NF'                 , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VBC'                ,'N',17,   2,'VALOR_BASE_CALCULO'              ,'VALOR BASE CALCULO NF'           , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VICMS'              ,'N',17,   2,'VALOR_ICMS'                      ,'VALOR ICMS NF'                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VBCST'              ,'N',17,   2,'VALOR_BASE_CALCULO_SUBS_TRIB'    ,'VALOR DA BASE DE CALCULO NF'     , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VST'                ,'N',17,   2,'VALOR_SUBST_TRIB'                ,'VALOR DA SUBST TRIB NF'          , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VPROD'              ,'N',17,   2,'VALOR_PRODUTOS'                  ,'VALOR TOTAL DOS PRODUTOS'        , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_VNF'                ,'N',17,   2,'VALOR_NOTA_FISCAL'               ,'VALOR TOTAL DA NF'               , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_NCFOP'              ,'N',04,   0,'CFOP_PREDOMINANTE'               ,'CFOP PREDOMINANTE NF'            , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_NPESO'              ,'N',17,   3,'PESO_KG'                         ,'PESO EM KG'                      , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_CHAVENFE'           ,'C',44,   0,'CHAVE_NFE'                       ,'CHAVE NFE'                       , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DOCS_DESCRICAOOUTROS'    ,'C',100,  0,'DESCRICAO_OUTROS'                ,'DESCRICAO DE TIPOS=99'           , .F. , .F. , {}, .F. , .T. , .T.   } )
+
+AADD(aStruct,{'SAGI_CTE_ANEXO'               ,.F.,'CADASTRO DE ANEXOS NO CONHECIMENTO DE TRANSPORTE ELETRONICO',.T.,nil} )
+   AADD(aStruct,{ 'CTE_ANEXO_ID'      ,'N', 10,  0,'IDENTIFICACAO'   ,'CODIGO DO ANEXO DO CT-e'                , .T. , .T. , {}, .T. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_ID_CTE'      ,'N', 10,  0,'FK CTE_ID'       ,'SEGUR_ID_CAG_CRE FK'                    , .F. , .F. , {'sagi_cte','cte_id'}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'ANEXO_SITUACAO'    ,'N',  1,  0,'SITUACAO'        ,'VERIFICAR CAMPO DE MESMO NOME SAGI_CT-e', .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_NOME'        ,'C',250,  0,'NOME'            ,'NOME DO ANEXO'                          , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_ARQUIVO'     ,'M', 10,  0,'ARQUIVO'         ,'CONTEUDO DO ARQUIVO'                    , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_DATA'        ,'D',  8,  0,'DATA'            ,'DATA'                                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_HORA'        ,'C',  8,  0,'HORA'            ,'HORA'                                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'ANEXO_USUARIO'     ,'C', 30,  0,'USUARIO'         ,'USUARIO'                                , .F. , .F. , {}, .F. , .T. , .T.   } )
+
+AADD(aStruct,{'SAGI_CTE'                     ,.F.,'CADASTRO DE CONHECIMENTO DE TRANSPORTE ELETRONICO',.T.,nil} )
+   AADD(aStruct,{ 'CTE_ID'                    ,'N',10,   0,'IDENTIFICAO'                           ,'CODIGO DO CT-e'                                                  , .T. , .T. , {}, .T. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_SITUACAO'              ,'N', 1,   0,'SITUACAO'                              ,'USE:1-Autorizado,2-Denegado,3-Inutilizado,4-Correcao,5-Cancelada,6-Recibo'      , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'EMPRESA'                   ,'C',10,   0,'EMPRESA'                               ,'EMPRESA'                                                         , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_MODALIDADE'            ,'N',2,    0,'MODALIDADE'                            ,'USE:01-RODOV,02-AEREO,03-AQUAVIARIO,04-FERROV,05-DUTOVIARIO'     , .F. , .F. , {}, .F. , .T. , .T.   } )      
+   AADD(aStruct,{ 'CTE_MODELO'                ,'N',2,    0,'MODELO'                                ,'MODELO DA DACT-e'                                                , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_SERIE'                 ,'N',3,    0,'SERIE'                                 ,'SERIE DA DACT-e'                                                 , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_NUMERODACTE'           ,'N',10,   0,'NUMERO_DACTE'                          ,'NUMERO DA DACT-e'                                                , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_DATAEMISSAO'           ,'D',8,    0,'DATA_EMISSAO'                          ,'DATA EMISSAO CT-e'                                               , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_HORAEMISSAO'           ,'C',8,    0,'HORA_EMISSAO'                          ,'HORA EMISSAO CT-e'                                               , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_TIPO'                  ,'N',1,    0,'TIPO'                                  ,'USE:0-NORMAL,1-COMPLEMENTO,2-ANULACAO,3-SUBST'                   , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_TIPOSERVICO'           ,'N',1,    0,'TIPO_SERVICO'                          ,'USE:0-NORMAL,1-SUBCONTRAT,2-REDESPACHO,3-REDESPACHO INTERM.'     , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_TOMADORSERVICO'        ,'N',1,    0,'TOMADOR_SERVICO'                       ,'USE:0-REMETENTE,1-EXPEDIDOR,2-RECEBEDOR,3-DESTINATARIO'          , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_FORMAPAGAMENTO'        ,'N',1,    0,'FORMA_PAGAMENTO'                       ,'USE:0-PAGO,1-A PAGAR,2-OUTROS'                                   , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CFOP_ID'                   ,'N',10,   0,'FK CFOP_ID'                            ,'PREST_ID_CTE FK'                                                 , .F. , .F. , {}, .F. , .T. , .T.   } ) //Não foi utilizado FK pq a tabela CFOP nao tem PK
+   AADD(aStruct,{ 'CTE_DATAAUTORIZACAO'       ,'D',8,    0,'DATA_AUTORIZACAO'                      ,'DATA AUTORIZACAO CT-e'                                           , .F. , .F. , {}, .F. , .T. , .T.   } )      
+   AADD(aStruct,{ 'CTE_CHAVEACESSO'           ,'C',44,   0,'CHAVE ACESSO'                          ,'CHAVE DE ACESSO DA CT-e'                                         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PROTOCOLO'             ,'C',50,   0,'PROTOCOLO'                             ,'PROTOCOLO DA CT-e'                                               , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_RECIBO'                ,'C',44,   0,'RECIBO'                                ,'RECIBO DA CT-e'                                                  , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_IBGEORIGEMPRESTACAO'   ,'N',10,   0,'CODIGO_IBGE_ORIGEM_PRESTACAO'          ,'CTE_ORIGEMPRESTACAO FK'                                          , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_IBGEDESTINOPRESTACAO'  ,'N',10,   0,'CODIGO_IBGE_DESTINO_PRESTACAO'         ,'CTE_DESTINOPRESTACAO FK'                                         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'REMETENTE_ID'              ,'N',10,   0,'FK REMETENTE_ID'                       ,'REMETENTE_ID FK'                                                 , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'DESTINATARIO_ID'           ,'N',10,   0,'FK DESTINATARIO_ID'                    ,'DESTINATARIO_ID FK'                                              , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'TOMADOR_ID'                ,'N',10,   0,'FK TOMADOR_ID'                         ,'TOMADOR_ID FK'                                                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'SEGURADORA'                ,'C',30,   0,'SEGURADORA'                            ,'SEGURADORA'                                                      , .F. , .F. , {}, .F. , .T. , .T.   } )  
+   AADD(aStruct,{ 'CTE_DESCRICAOPREDOMINANTE' ,'C',40,   0,'DESCRICAO_PREDOMINANTE'                ,'DESCRICAO DO PRODUTO PREDOMINANTE'                               , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_OUTRASCARACTER'        ,'C',40,   0,'OUTRAS_CARACTERISTICAS'                ,'OUTRAS CARACTERISTICAS'                                          , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VALORTOTALMERCAD'      ,'N',17,   2,'VALOR_MERCADORIA'                      ,'VALOR TOTAL DA MERCADORIA'                                       , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PESOBRUTO'             ,'N',12,   4,'PESO_BRUTO'                            ,'PESO BRUTO'                                                      , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PESOBASECALC'          ,'N',12,   4,'PESO_BASE_CALCULO'                     ,'PESO BASE CALCULO'                                               , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PESOAFERIDO'           ,'N',12,   4,'PESO_AFERIDO'                          ,'PESO AFERIDO'                                                    , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_CUBAGEM'               ,'N',12,   4,'CUBAGEM'                               ,'PESO CUBAGEM'                                                    , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VOLUMES'               ,'N',12,   4,'VOLUME'                                ,'VOLUMES'                                                         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_RESPONSAVEL_SEGURO'    ,'N',1,    0,'RESPONSAVEL_SEGURO'                    ,'RESPONSAVEL PELO SEGURO'                                         , .F. , .F. , {}, .F. , .T. , .T.   } )  
+   AADD(aStruct,{ 'CTE_VALORSERVICO'          ,'N',17,   2,'VALOR_SERVICO'                         ,'VALOR SERVICO PRESTADO'                                          , .F. , .F. , {}, .F. , .T. , .T.   } )  
+   AADD(aStruct,{ 'CTE_VALORRECEBER'          ,'N',17,   2,'VALOR_RECEBER'                         ,'VALOR RECEBIDO PELO SERVICO PRESTADO'                            , .F. , .F. , {}, .F. , .T. , .T.   } )  
+   AADD(aStruct,{ 'CTE_APOLICE_SEGURO'        ,'C',20,   0,'APOLICE_SEGURO'                        ,'APOLICE DO SEGURO'                                               , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_AVERBACAO_SEGURO'      ,'C',20,   0,'AVERBACAO_SEGURO'                      ,'NUMERO DA AVERBACAO'                                             , .F. , .F. , {}, .F. , .T. , .T.   } )  
+   AADD(aStruct,{ 'CTE_VALORCARGA_AVERBACAO'  ,'N',17,   2,'VALOR_CARGA_AVERBACAO'                 ,'VALOR DA CARGA DESTINADO A AVERBACAO'                            , .F. , .F. , {}, .F. , .T. , .T.   } )     
+   AADD(aStruct,{ 'CTE_IMPOSTO'               ,'N',2,    0,'IMPOSTO'                               ,'IMPOSTO'                                                         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_ICMSBASECALC'          ,'N',17,   3,'ICMS_BASE_CALCULO'                     ,'VALOR DA BASE DE CALCULO DO ICMS'                                , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_ICMSALIQ'              ,'N',17,   3,'ALIQUOTA_ICMS'                         ,'VALOR DA ALIQUOTA ICMS EM PERCENTUAL'                            , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_ICMSVALOR'             ,'N',17,   3,'VALOR_ICMS'                            ,'VALOR DO ICMS'                                                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_ICMSREDUCAOBC'         ,'N',17,   3,'VALOR_ALIQ_ICMS_BASE_CALC'             ,'VALOR DA ALIQUOTA DE ICMS DE REDUCAO NA BASE DE CALCULO'         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VBCSTRET'              ,'N',17,   3,'VALOR_BASE_CALC_ICMS_RETIDO'           ,'VALOR DA BASE DE CALCULO DO ICMS ST RETIDO'                      , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VICMSSTRET'            ,'N',17,   3,'VALOR_ICMS_SUBST_TRIB_RETIDO'          ,'VALOR DO ICMS ST RETIDO'                                         , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PICMSSTRET'            ,'N',17,   3,'ALIQUOTA_ICMS_SUBST_TRIB_RETIDO'       ,'VALOR DO % DA ALIQUOTA DO ICMS ST RETIDO'                        , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VCRED'                 ,'N',17,   3,'VALOR_CREDITO'                         ,'VALOR DO CREDITO OUTORGADO/PRESUMIDO'                            , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VBC'                   ,'N',17,   3,'VALOR_BASE_CALCULO'                    ,'VALOR DA BASE DE CALCULO DO ICMS'                                , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PREDBCOUTRAUF'         ,'N',17,   3,'VALOR_REDUCAO_BASE_CALC_OUTRA_UF'      ,'ALIQUOTA DE REDUÇÃO DA BC'                                       , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VBCOUTRAUF'            ,'N',17,   3,'VALOR_BASE_CALC_OUTRA_UF'              ,'VALOR DA BC DO ICMS OUTRA UF'                                    , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_PICMSOUTRAUF'          ,'N',17,   3,'ALIQUOTA_ICMS_OUTRA_UF'                ,'ALIQUOTA DO ICMS OUTRA UF'                                       , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_VICMSOUTRAUF'          ,'N',17,   3,'VALOR_ICMS_OUTRA_UF'                   ,'VALOR DO ICMS DEVIDO OUTRA UF'                                   , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_OBSERVACAO'            ,'M',10,   0,'OBSERVACAO'                            ,'OBSERVACAO DA CT-e'                                              , .F. , .F. , {}, .F. , .T. , .T.   } )   
+   AADD(aStruct,{ 'CTE_RNTRC'                 ,'C',10,   0,'RNTRC'                                 ,'RNTRC / ANTT'                                                    , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_LOTACAO'               ,'L',1,    0,'LOTACAO'                               ,'CASO A CARGA TRANSPORTADA SEJA A LOTACAO DO VEICULO'             , .F. , .F. , {}, .F. , .T. , .T.   } )
+   AADD(aStruct,{ 'CTE_DATAPREVISTAENTREGA'   ,'D',8,    0,'DATA_PREVISTA_ENTREGA'                 ,'DATA PREVISTA DA ENTREGA'                                        , .F. , .F. , {}, .F. , .T. , .T.   } )
+
+-----FIM DAS TABELAS
+
+Notas importante:
+
+-Precisa registrar as DLL(capicom.dll, msxml6.dll e msxml6r.dll) uma vez nos windows que for usar o sistema de CTe, são DLL Free da Propria Microsoft
+-Atualmente temos impressão do DACTE apenas com FASTREPORT
+-Atualmente o projeto CTe está compatível apenas com xHarbour
+-Compatível com a versão do CTe 1.04c e 2.00
+-As telas de exemplo, estão usando a LIB hwgui, mas as classes de transmissão, geração de xml, e validação dos schemas rodam independentes
+de qualquer lib gráfica.
+-Não é compatível para usar nativamente no Linux e Mac
+-Não é necessário nenhuma DLL de terceiro além das DLL mencionadas acima que são de dominio publico e disponibilizadas pela Microsoft
