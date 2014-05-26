@@ -27,7 +27,7 @@ DEPENDENCIAS:
      PARA SYSTEM32 OU SYSWOW64 AI ACABA POR NÃO REGISTRAR AS DLL, E AS VEZ TEM QUE DESATIVAR O CONTROLE DE USUARIO DO WINDOWS
      CONFORME MOSTRA A IMAGEM DENTRO DA PASTA DLL.
    - PRECISA REGISTRAR AS DLL(CAPICOM.DLL, MSXML6.DLL E MSXML6R.DLL) UMA VEZ NOS WINDOWS QUE FOR USAR O SISTEMA DE CTE.   
-   - ATUALMENTE TEMOS IMPRESSÃO DO DACTE APENAS COM FASTREPORT:  SAGI_DACTE.FR3
+   - ATUALMENTE TEMOS IMPRESSÃO DO DACTE APENAS COM FASTREPORT:  SAGI.FR3
 */
 
 #include "common.ch"
@@ -54,7 +54,7 @@ Class oCTe_SEFAZ
    DATA cCte_FONE
    DATA cCte_Chave
    
-   DATA cCte_DACTE     READONLY  INIT PEGA_ARQUIVO_SAGI(387) // CAMINHO DO ARQUIVO FR3 DO DACTE
+   DATA cCte_DACTE     READONLY  INIT 'dacte.fr3' // CAMINHO DO ARQUIVO FR3 DO DACTE
    DATA cCte_FAST_LANG READONLY  INIT 'res\brazil.xml'            // CAMINHO DO ARQUIVO DE LINGUA PARA O FASTREPORT
    
    DATA tpEmis
@@ -74,7 +74,8 @@ Class oCTe_SEFAZ
    DATA xml_cfop_id                         
    DATA xml_formapagamento              
    DATA xml_modelo                      
-   DATA xml_serie                       
+   DATA xml_serie  
+   DATA xml_tpCTe
    DATA xml_dataemissao                 
    DATA xml_horaemissao                 
    DATA xml_ibgeorigemprestacao         
@@ -160,13 +161,17 @@ Class oCTe_SEFAZ
    DATA xml_Tipo_Servico
    DATA xml_unidade
    DATA xml_tipo_medida
+   DATA xml_chave_comple
 
    DATA xml_modal_rntrc
    DATA xml_modal_dataprevistaentrega
    DATA xml_modal_lotacao
-   
+
    DATA xml_DOCUMENTOS
    DATA xml_SERVICOS
+
+   DATA xml_VEICULOS
+   DATA xml_pedagio
    
    DATA aCte_INUTILIZAR  //{NUMERO,SERIE,MODELO}
    DATA cCte_MOTIVO
@@ -256,7 +261,7 @@ cXML+=   '<tpImp>1</tpImp>'   // ESTA FIXO RETRATO - DEVE SER IMPLEMENTADO NO AR
 cXML+=   '<tpEmis>'+::tpEmis+'</tpEmis>'
 cXML+=   '<cDV>'+::cCte_DV+'</cDV>'
 cXML+=   '<tpAmb>'+::tpAmb+'</tpAmb>'
-cXML+=   '<tpCTe>0</tpCTe>'   // FIXO 0-NOMAL, PRECISA SER IMPLEMENTADO OUTRAS OPCOES
+cXML+=   '<tpCTe>'+ALLTRIM(STR(::xml_tpCTe))+'</tpCTe>'
 cXML+=   '<procEmi>0</procEmi>'   // FIXO 0-EMISSO DO CONTRIBUINTE
 cXML+=   '<verProc>'+::versaoApp+'</verProc>'
 cXML+=   '<cMunEnv>'+ALLTRIM(STR(::oCTe_GERAIS:rgRetorna_municipio(::cCte_Cidade,2,::oCTe_GERAIS:rgRetorna_uf(::cCte_Estado,2))))+'</cMunEnv>'
@@ -583,78 +588,86 @@ cXML+=   '</ICMS>'
 cXML+='</imp>'
 
 // INFO. DO CT NORMAL E SUBSTITUTO
-cXML+='<infCTeNorm>'
-cXML+=   '<infCarga>'
-cXML+=      '<vCarga>'+ALLTRIM(STR(::xml_valortotalmercad))+'</vCarga>'
-cXML+=      '<proPred>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_descricaopredominante),60))+'</proPred>'
-cXML+=      '<xOutCat>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(ALLTRIM(::xml_outrascaracter)),30))+'</xOutCat>'
-cXML+=      '<infQ>'
-cXML+=         '<cUnid>'+LEFT(::xml_unidade,2)+'</cUnid>'
-cXML+=         '<tpMed>'+ALLTRIM(LEFT(::xml_tipo_medida,20))+'</tpMed>'
-cXML+=         '<qCarga>'+ALLTRIM(STR(ROUND(::xml_peso_bruto,4)))+'</qCarga>'
-cXML+=      '</infQ>'
-cXML+=   '</infCarga>'
+IF ::xml_tpCTe=0
+   cXML+='<infCTeNorm>'
+   cXML+=   '<infCarga>'
+   cXML+=      '<vCarga>'+ALLTRIM(STR(::xml_valortotalmercad))+'</vCarga>'
+   cXML+=      '<proPred>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_descricaopredominante),60))+'</proPred>'
+   cXML+=      '<xOutCat>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(ALLTRIM(::xml_outrascaracter)),30))+'</xOutCat>'
+   cXML+=      '<infQ>'
+   cXML+=         '<cUnid>'+LEFT(::xml_unidade,2)+'</cUnid>'
+   cXML+=         '<tpMed>'+ALLTRIM(LEFT(::xml_tipo_medida,20))+'</tpMed>'
+   cXML+=         '<qCarga>'+ALLTRIM(STR(ROUND(::xml_peso_bruto,4)))+'</qCarga>'
+   cXML+=      '</infQ>'
+   cXML+=   '</infCarga>'
 
-// DOCUMENTOS
-IF ::cVersao_CTe='2.00'
-   cXML+=   '<infDoc>'
-   FOR mI:=1 TO LEN(::xml_DOCUMENTOS)
-      IF ::xml_DOCUMENTOS[mI,1]='NF'
-         cXML+='<infNF>'
-         cXML+=   '<mod>'+STRZERO(::xml_DOCUMENTOS[mI,2],2)+'</mod>'
-         cXML+=   '<serie>'+ALLTRIM(::xml_DOCUMENTOS[mI,3])+'</serie>'
-         cXML+=   '<nDoc>'+ALLTRIM(::xml_DOCUMENTOS[mI,4])+'</nDoc>'
-         cXML+=   '<dEmi>'+::oFuncoes:FormatDate(::xml_DOCUMENTOS[mI,5],'YYYY-MM-DD','-')+'</dEmi>'
-         cXML+=   '<vBC>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,6]))+'</vBC>'
-         cXML+=   '<vICMS>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,7]))+'</vICMS>'
-         cXML+=   '<vBCST>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,8]))+'</vBCST>'
-         cXML+=   '<vST>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,9]))+'</vST>'
-         cXML+=   '<vProd>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,10]))+'</vProd>'
-         cXML+=   '<vNF>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,11]))+'</vNF>'
-         cXML+=   '<nCFOP>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,12]))+'</nCFOP>'
-         cXML+=   '<nPeso>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,13]))+'</nPeso>'
-         cXML+='</infNF>'
-      ELSEIF ::xml_DOCUMENTOS[mI,1]='NF-e'
-         cXML+='<infNFe>'
-         cXML+=   '<chave>'+ALLTRIM(::xml_DOCUMENTOS[mI,14])+'</chave>'
-         cXML+='</infNFe>'
-      ELSEIF ::xml_DOCUMENTOS[mI,1]='OUTROS'
-         cXML+='<infOutros>'
-         cXML+=   '<tpDoc>99</tpDoc>'  // FIXO OUTROS
-         cXML+=   '<descOutros>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(ALLTRIM(::xml_DOCUMENTOS[mI,15])),100))+'</descOutros>'
-         cXML+=   '<nDoc>'+ALLTRIM(::xml_DOCUMENTOS[mI,4])+'</nDoc>'
-         cXML+=   '<dEmi>'+::oFuncoes:FormatDate(::xml_DOCUMENTOS[mI,5],'YYYY-MM-DD','-')+'</dEmi>'
-         cXML+=   '<vDocFisc>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,11]))+'</vDocFisc>'
-         cXML+='</infOutros>'
-      ENDIF
-   NEXT
-   cXML+=   '</infDoc>'
+   // DOCUMENTOS
+   IF ::cVersao_CTe='2.00'
+      cXML+=   '<infDoc>'
+      FOR mI:=1 TO LEN(::xml_DOCUMENTOS)
+         IF ::xml_DOCUMENTOS[mI,1]='NF'
+            cXML+='<infNF>'
+            cXML+=   '<mod>'+STRZERO(::xml_DOCUMENTOS[mI,2],2)+'</mod>'
+            cXML+=   '<serie>'+ALLTRIM(::xml_DOCUMENTOS[mI,3])+'</serie>'
+            cXML+=   '<nDoc>'+ALLTRIM(::xml_DOCUMENTOS[mI,4])+'</nDoc>'
+            cXML+=   '<dEmi>'+::oFuncoes:FormatDate(::xml_DOCUMENTOS[mI,5],'YYYY-MM-DD','-')+'</dEmi>'
+            cXML+=   '<vBC>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,6]))+'</vBC>'
+            cXML+=   '<vICMS>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,7]))+'</vICMS>'
+            cXML+=   '<vBCST>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,8]))+'</vBCST>'
+            cXML+=   '<vST>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,9]))+'</vST>'
+            cXML+=   '<vProd>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,10]))+'</vProd>'
+            cXML+=   '<vNF>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,11]))+'</vNF>'
+            cXML+=   '<nCFOP>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,12]))+'</nCFOP>'
+            cXML+=   '<nPeso>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,13]))+'</nPeso>'
+            cXML+='</infNF>'
+         ELSEIF ::xml_DOCUMENTOS[mI,1]='NF-e'
+            cXML+='<infNFe>'
+            cXML+=   '<chave>'+ALLTRIM(::xml_DOCUMENTOS[mI,14])+'</chave>'
+            cXML+='</infNFe>'
+         ELSEIF ::xml_DOCUMENTOS[mI,1]='OUTROS'
+            cXML+='<infOutros>'
+            cXML+=   '<tpDoc>99</tpDoc>'  // FIXO OUTROS
+            cXML+=   '<descOutros>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(ALLTRIM(::xml_DOCUMENTOS[mI,15])),100))+'</descOutros>'
+            cXML+=   '<nDoc>'+ALLTRIM(::xml_DOCUMENTOS[mI,4])+'</nDoc>'
+            cXML+=   '<dEmi>'+::oFuncoes:FormatDate(::xml_DOCUMENTOS[mI,5],'YYYY-MM-DD','-')+'</dEmi>'
+            cXML+=   '<vDocFisc>'+ALLTRIM(STR(::xml_DOCUMENTOS[mI,11]))+'</vDocFisc>'
+            cXML+='</infOutros>'
+         ENDIF
+      NEXT
+      cXML+=   '</infDoc>'
+   ENDIF
+
+*1212 aqui vai as novas tag: DOCANT que passou a ser obrigatório quando for subcontratação
+
+   // SEGURO
+   cXML+=   '<seg>'
+   cXML+=      '<respSeg>'+ALLTRIM(STR(::xml_responsavel_seguro))+'</respSeg>'
+   cXML+=      '<xSeg>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_seguradora),30))+'</xSeg>'
+   cXML+=      '<nApol>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_apolice_seguro),20))+'</nApol>'
+   IF !EMPTY(::xml_averbacao_seguro)
+      cXML+=   '<nAver>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_averbacao_seguro),20))+'</nAver>'
+   ENDIF
+   IF ::xml_valorcarga_averbacao>0
+      cXML+=      '<vCarga>'+ALLTRIM(STR(::xml_valorcarga_averbacao))+'</vCarga>'
+   ENDIF
+   cXML+=   '</seg>'
+
+   // modal
+   cXML+=   '<infModal versaoModal="'+::cVersao_Modal_RODOVIARIO+'">'
+   aRET:=::ctXMLRodoviario()
+   IF !aRET['STATUS']
+      RETURN(aRET)
+   ENDIF
+   cXML+=      aRET['XML']
+   cXML+=   '</infModal>'
+
+   cXML+='</infCTeNorm>'
+ELSEIF ::xml_tpCTe=1
+   cXML+='<infCteComp>'
+   cXML+=   '<chave>'+ALLTRIM(::xml_chave_comple)+'</chave>'
+   cXML+='</infCteComp>'
 ENDIF
 
-
-// SEGURO
-cXML+=   '<seg>'
-cXML+=      '<respSeg>'+ALLTRIM(STR(::xml_responsavel_seguro))+'</respSeg>'
-cXML+=      '<xSeg>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_seguradora),30))+'</xSeg>'
-cXML+=      '<nApol>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_apolice_seguro),20))+'</nApol>'
-IF !EMPTY(::xml_averbacao_seguro)
-   cXML+=   '<nAver>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_averbacao_seguro),20))+'</nAver>'
-ENDIF
-IF ::xml_valorcarga_averbacao>0
-   cXML+=      '<vCarga>'+ALLTRIM(STR(::xml_valorcarga_averbacao))+'</vCarga>'
-ENDIF
-cXML+=   '</seg>'
-
-// modal
-cXML+=   '<infModal versaoModal="'+::cVersao_Modal_RODOVIARIO+'">'
-aRET:=::ctXMLRodoviario()
-IF !aRET['STATUS']
-   RETURN(aRET)
-ENDIF
-cXML+=      aRET['XML']
-cXML+=   '</infModal>'
-
-cXML+='</infCTeNorm>'
 cXML+='</infCte>'
 cXML+='<Signature></Signature>'
 cXML+='</CTe>'
@@ -673,11 +686,43 @@ Method ctXMLRodoviario() Class oCTe_SEFAZ
 */
 LOCAL cXML:=''
 LOCAL aRET:=HASH()
+LOCAL mI:=0
 
 cXML+='<rodo>'
 cXML+=   '<RNTRC>'+ALLTRIM(LEFT(::oCTe_GERAIS:rgLimpaString(::xml_modal_rntrc),8))+'</RNTRC>'
 cXML+=   '<dPrev>'+::oFuncoes:FormatDate(::xml_modal_dataprevistaentrega,'YYYY-MM-DD','-')+'</dPrev>'
 cXML+=   '<lota>'+ALLTRIM(STR(::xml_modal_lotacao))+'</lota>'
+
+IF LEN(::xml_pedagio)>0
+   cXML+='<valePed>'
+   FOR mI:=1 TO LEN(::xml_pedagio)
+      cXML+='<CNPJForn>'+ALLTRIM(::xml_pedagio[mI,1])+'</CNPJForn>'
+      cXML+='<nCompra>'+ALLTRIM(::xml_pedagio[mI,2])+'</nCompra>'
+      IF !EMPTY(::xml_pedagio[mI,3])
+         cXML+='<CNPJPg>'+ALLTRIM(::xml_pedagio[mI,3])+'</CNPJPg>'
+      ENDIF
+      cXML+='<vValePed>'+ALLTRIM(STR(::xml_pedagio[mI,4]))+'</vValePed>'
+   NEXT
+   cXML+='</valePed>'
+ENDIF
+
+If ::xml_modal_lotacao = 1 .And. Len(::xml_VEICULOS) > 0
+   cXML+='<veic>'
+   For  mI := 1 to Len(::xml_VEICULOS)
+      cXML+='<cInt>'+ALLTRIM(::xml_VEICULOS[mI,1])+'</cInt>'
+      cXML+='<RENAVAM>'+ALLTRIM(::xml_VEICULOS[mI,2])+'</RENAVAM>'
+      cXML+='<placa>'+ALLTRIM(::xml_VEICULOS[mI,3])+'</placa>'
+      cXML+='<tara>'+ALLTRIM(Str(::xml_VEICULOS[mI,4]))+'</tara>'
+      cXML+='<capKG>'+ALLTRIM(Str(::xml_VEICULOS[mI,5]))+'</capKG>'
+      cXML+='<capM3>'+ALLTRIM(Str(::xml_VEICULOS[mI,6]))+ '</capM3>'
+      cXML+='<tpProp>'+ALLTRIM(::xml_VEICULOS[mI,7])+ '</tpProp>'
+      cXML+='<tpVeic>'+ALLTRIM(Str(::xml_VEICULOS[mI,8]))+'</tpVeic>'
+      cXML+='<tpRod>'+ALLTRIM(Strzero(::xml_VEICULOS[mI,9],2))+'</tpRod>'
+      cXML+='<tpCar>'+ALLTRIM(Strzero(::xml_VEICULOS[mI,10],2))+'</tpCar>'
+      cXML+='<UF>'+ALLTRIM(::xml_VEICULOS[mI,11])+'</UF>'
+   Next
+   cXML+='</veic>'
+Endif
 cXML+='</rodo>'
 
 aRET:=::ctValidaXML(strtran(cXML,'<rodo>','<rodo xmlns="http://www.portalfiscal.inf.br/cte">'))
@@ -765,7 +810,7 @@ IF !FILE(cSchemaFilename)
 ENDIF
 
 TRY
-  IF '</Signature>' $ cXML .AND. !'</enviCTe>' $ cXML .AND. !'</rodo>' $ cXML .AND. !'</inutCTe>'$cXML .AND. !'</cancCTe>'$cXML .AND. !'</eventoCTe>'$cXML
+  IF '</Signature>' $ cXML .AND. !'</enviCTe>' $ cXML .AND. !'</rodo>' $ cXML .AND. !'</inutCTe>'$cXML .AND. !'</cancCTe>'$cXML .AND. !'</eventoCTe>'$cXML.AND. !'</CTe>'$cXML
       oSchema:add( 'http://www.w3.org/2000/09/xmldsig#', cSchemaFilename )
    ELSE
       oSchema:add( 'http://www.portalfiscal.inf.br/cte', cSchemaFilename )
@@ -1163,6 +1208,16 @@ IF ::tpEmis='7' .OR. ::cCte_Estado='AC' .OR. ::cCte_Estado='AL'.OR. ::cCte_Estad
    ::cCte_Estado='GO' .OR. ::cCte_Estado='MA' .OR. ::cCte_Estado='PA' .OR. ::cCte_Estado='PB' .OR.;
    ::cCte_Estado='PI' .OR. ::cCte_Estado='RJ' .OR. ::cCte_Estado='RN' .OR. ::cCte_Estado='RO' .OR.;
    ::cCte_Estado='SC' .OR. ::cCte_Estado='SE' .OR. ::cCte_Estado='TO' // SVRS
+
+   EXECUTA_SQL('select servico, '+;
+               '       versao, '+;
+               '       link_producao, '+;
+               '       link_homologacao '+;
+               '  from sagi_sefaz_webservice '+;
+               " where tipo_servico='CTE' "+;
+               "   and tpemis='7' ",,,@aWEB)
+
+/*
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://cte.sefaz.rs.gov.br/ws/cterecepcao/CteRecepcao.asmx'            ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cterecepcao/CteRecepcao.asmx'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteretrecepcao/CteRetRecepcao.asmx'      ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteretrecepcao/CteRetRecepcao.asmx'})
    AADD(aWEB,{'CteCancelamento'      ,'1.00','https://cte.sefaz.rs.gov.br/ws/ctecancelamento/ctecancelamento.asmx'    ,'https://homologacao.cte.sefaz.rs.gov.br/ws/ctecancelamento/ctecancelamento.asmx'})
@@ -1170,13 +1225,32 @@ IF ::tpEmis='7' .OR. ::cCte_Estado='AC' .OR. ::cCte_Estado='AL'.OR. ::cCte_Estad
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'            ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'  ,'https://homologacao.cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'})
    AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx','https://homologacao.cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx'})         
+*/
 ELSEIF ::tpEmis='8' .OR. ::cCte_Estado='AP' .OR. ::cCte_Estado='PE' .OR. ::cCte_Estado='RR'  // SVSP
+   EXECUTA_SQL('select servico, '+;
+               '       versao, '+;
+               '       link_producao, '+;
+               '       link_homologacao '+;
+               '  from sagi_sefaz_webservice '+;
+               " where tipo_servico='CTE' "+;
+               "   and tpemis='8' ",,,@aWEB)
+/*
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcao.asmx'       ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteRecepcao.asmx'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/CteRetRecepcao.asmx'    ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteRetRecepcao.asmx'})
    AADD(aWEB,{'CteCancelamento'      ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/CteCancelamento.asmx'   ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteCancelamento.asmx'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/CteConsulta.asmx'       ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteConsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/CteStatusServico.asmx'  ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteStatusServico.asmx'})
    AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/CteRecepcaoEvento.asmx' ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/CteRecepcaoEvento.asmx'})
+*/
+ELSE
+   EXECUTA_SQL('select servico, '+;
+               '       versao, '+;
+               '       link_producao, '+;
+               '       link_homologacao '+;
+               '  from sagi_sefaz_webservice '+;
+               " where tipo_servico='CTE' "+;
+               '   and ufws='+cs(::cCte_Estado),,,@aWEB)
+/*
 ELSEIF ::cCte_Estado='MT'
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteRecepcao'      ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteRecepcao'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteRetRecepcao'   ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteRetRecepcao'})
@@ -1225,6 +1299,7 @@ ELSEIF ::cCte_Estado='SP'
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteConsulta.asmx'      ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteConsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteStatusServico.asmx' ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteStatusServico.asmx'})
    AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx','https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx'})   
+*/   
 ENDIF
 
 nSCAN:=ASCAN(aWEB,{|x| x[1]=cServ})
@@ -1582,7 +1657,7 @@ Method ctImprimeFastReport(cArqXml,lDESIGN,cARQpdf,lCANC) Class oCTe_SEFAZ
 */
 LOCAL oFrPrn
 LOCAL hRetorno:=HASH()
-LOCAL mI:=0, nSCAN:=0, nFr:=0, nDetComp:=0, nDetInfNF:=0, nDetVeic:=0, nDetValePed:=0, nDetMot:=0, nDetLacRodo:=0
+LOCAL mI:=0, nSCAN:=0, nFr:=0, nDetComp:=0, nDetInfNF:=0, nDetVeic:=0, nDetValePed:=0, nDetMot:=0, nDetLacRodo:=0, nTotPed:=0
 LOCAL aXML:={}, aREL:={}, aCOMP:={}, aInfNF:={}, aVeic:={}, aValePed:={}, aMot:={}, aLacRodo:={}
 LOCAL cSitTrib:='', cVERSAO:='', cXML:=''
 
@@ -1754,7 +1829,6 @@ AADD(aREL,{'ObsFisco.xTexto',''})
 AADD(aREL,{'infProt.chCTe',''})
 AADD(aREL,{'infProt.nProt',''}) 
 
-
 aXML:=::oFuncoes:XMLnaArray(cArqXml,'cteProc')
 
 IF LEN(aXML)<=0
@@ -1903,8 +1977,8 @@ FOR mI:=1 TO LEN(aXML)
    // Informações referente ao vale pedagio
    IF 'CTe.infCte.infCTeNorm.infModal.rodo.valePed' $ aXML[mI,3] .AND.aXML[mI,4]='rodo'
       nDetValePed++
-      AADD(aValePed,{nDetValePed,'','',''})
-      //                  1      2  3  4
+      AADD(aValePed,{nDetValePed,'','','',0})
+      //                  1      2  3  4  5
    ENDIF
    IF aXML[mI,4]='valePed'
       nSCAN:=ASCAN(aValePed,{|x| x[1]=nDetValePed  })
@@ -1915,10 +1989,12 @@ FOR mI:=1 TO LEN(aXML)
             aValePed[nSCAN,3]:=aXML[mI,2]
          ELSEIF aXML[mI,1]='CNPJPg'
             aValePed[nSCAN,4]:=aXML[mI,2]
+         ELSEIF aXML[mI,1]='vValePed'
+            aValePed[nSCAN,5]:=aXML[mI,2]
+            nTotPed+=VAL(aXML[mI,2])
          ENDIF
       ENDIF
    ENDIF
-   
 
    // Identificação do motorista
    IF 'cteProc.CTe.infCte.infCTeNorm.infModal.rodo.mot' $ aXML[mI,3] .AND. aXML[mI,4]='rodo'
@@ -1936,7 +2012,7 @@ FOR mI:=1 TO LEN(aXML)
          ENDIF
       ENDIF
    ENDIF
-   
+
    // Identificação dos lacres em transito
    IF 'cteProc.CTe.infCte.infCTeNorm.infModal.rodo.lacRodo' $ aXML[mI,3] .AND. aXML[mI,4]='rodo'
       nDetLacRodo++
@@ -1969,6 +2045,12 @@ FOR mI:=1 TO LEN(aXML)
       cSitTrib:='Simples Nacional'
    ENDIF
 NEXT
+
+IF nTotPed>0
+   AADD(aREL,{'valePed.nTotPed',STR(nTotPed)}) 
+ELSE
+   AADD(aREL,{'valePed.nTotPed',''}) 
+ENDIF
 
 oFrPrn:=frReportManager():new()
 

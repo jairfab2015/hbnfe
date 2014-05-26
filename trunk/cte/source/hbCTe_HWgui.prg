@@ -180,7 +180,8 @@ ESTRUTURA DAS TABELAS:
    CTE_VALPEDAGIO              N          17       2      .F.         .F.                             .F.       .T.       .T.        VALOR DO PEDAGIO
    CTE_OUTROS                  N          17       2      .F.         .F.                             .F.       .T.       .T.        OUTROS VALORES
    CTE_COD_PRAZO               N          10       0      .F.         .F.                             .F.       .T.       .T.        CODIGO DO PRAZO DE PAGAMENTO
-   CTE_FRETE_RESPONSA           C          01       0      .F.         .F.                             .F.       .T.       .T.        RESPONSABILIDADE DO FRETE
+   CTE_FRETE_RESPONSA          C          01       0      .F.         .F.                             .F.       .T.       .T.        RESPONSABILIDADE DO FRETE
+   CTE_CHAVE_COMPLETA          C          44       0      .F.         .F.                             .F.       .T.       .T.        CHAVE DA CTE COMPLEMENTAR
 
 
    TABELA: SAGI_CTE_PRESTACAO_SERVICO
@@ -272,6 +273,24 @@ ESTRUTURA DAS TABELAS:
    CTE_OBS                        M       10       0       .F.         .F.                             .F.      .T.        .T.       OBS
 
    
+   TABELA: SAGI_CTE_VEICULOS Detalhes de lotação
+
+   CAMPO                       TIPO  TAMANHO DECIMAL   UNICIDADE  CHAVE PRIMARIA  CHAVE ESTRANGEIRA  SERIAL  NOT NULL  SET DEFAULT   DESCRICAO
+   --------------------------- ----- ------- --------- ---------- --------------- ------------------ ------- --------- ------------- -------------------------------------------
+   VEIC_ID                        N     10         0       .T.         .T.                             .T.      .T.        .T.       CODIGO DO VEICULO DO CT-e
+   CTE_ID                         N     10         0       .F.         .F.          sagi_cte.cte_id    .F.      .F.        .F.       SEGUR_ID_CAG_CRE FK
+   VEIC_CODIGO                    C     10         0       .F.         .F.                             .F.      .F.        .F.       CODIGO DO VEICULO
+   VEIC_RENAVAM                   C     11         0       .F.         .F.                             .F.      .F.        .F.       RENAVAM DO VEICULO
+   VEIC_PLACA                     C     07         0       .F.         .F.                             .F.      .F.        .F.       PLACA DO VEICULO
+   VEIC_TARA                      N     06         0       .F.         .F.                             .F.      .F.        .F.       TARA DO VEICULO
+   VEIC_CAPAC_KG                  N     06         0       .F.         .F.                             .F.      .F.        .F.       CAPACIDADE EM KG DO VEICULO
+   VEIC_CAPAC_M3                  N     03         0       .F.         .F.                             .F.      .F.        .F.       CAPACIDADE EM M3 DO VEICULO
+   VEIC_TP_PROPR                  C     01         0       .F.         .F.                             .F.      .F.        .F.       TIPO DE PROPRIETARIO DO VEICULO
+   VEIC_TP_VEICULO                N     01         0       .F.         .F.                             .F.      .F.        .F.       TIPO DO VEICULO
+   VEIC_TP_RODADO                 N     02         0       .F.         .F.                             .F.      .F.        .F.       TIPO DE RODADO DO VEICULO
+   VEIC_TP_CARROC                 N     02         0       .F.         .F.                             .F.      .F.        .F.       TIPO DE CARROCERIA DO VEICULO
+   VEIC_UF_LICENC                 C     02         0       .F.         .F.                             .F.      .F.        .F.       UF DE LICENCIAMENTO DO VEICULO
+   
 */
 
 #include "common.ch"
@@ -280,8 +299,8 @@ ESTRUTURA DAS TABELAS:
 #include "HBXML.ch"
 #include "hbCTe.ch"
 
-#define  x_BLUE  16711680
-#define  x_BLACK 0
+#define x_BLUE  16711680
+#define x_BLACK 0
 #define aLISTA_UF {'AC','AL','AP','AM','BA','CE','DF','GO','ES','MA','MT','MS','MG','PA','PB','PR','PE','PI','RN','RS','RJ','RO','RR','SC','SP','SE','TO','EX'}
 
 Class oCTe_HWgui
@@ -415,15 +434,17 @@ Class oCTe_HWgui
    Method uiRelatorioGeral()                       //  Relatorio geral de CTe
    Method uiPegaRetornoCTe(oOBJ)                   //  pega o retorno da pesquisa das CTe selecionadas 
    Method uiPegaCte(oNUM,oMOD,oSER,oEMI,oCOD_REM,oNOM_REM,oCOD_DES,oNOM_DES)  // pega uma ou mais CTe
-   Method uiSalvaCCCTe(oOBJ)                       //  Salva a carta de correcao da CT-e
+   Method uiSalvaCCCTe(oOBJ)                       // Salva a carta de correcao da CT-e
    Method uiCarregaAnexos(oOBJ,nCTE_ID)            // Carrega os anexos
    Method uiIncluiArquivoCTe(oOBJ,nCTE_ID)         // Inclui um arquivo para a CTe
    Method uiExcluiArquivoCTe(oOBJ,nCTE_ID)         // Remove um arquivo da CTe
    Method uiAbreArquivoCTe(oOBJ,nCTE_ID)           // Abre o arquivo da CTe
    Method uiExportaArquivoCTe(oOBJ,nCTE_ID)        // Exporta um arquivo da CTe
    Method uiConfiguraHorario()                     // Configura o horario de verao / inver / UTC
-   Method uiCartaCorrecao200(oOBJ,nCTE_ID)            // Carta de correcao 2.00
-   
+   Method uiCartaCorrecao200(oOBJ,nCTE_ID)         // Carta de correcao 2.00
+   Method uiPegaChaveCteComple(oCTE_COMPLE)        // Pega a chave de uma Cte
+   Method uiCad_pedagio(oOBJ,cLAN)                 // Cadastro/Alteração dos dados de pedágio
+   Method uiDel_pedagio(oOBJ)                      // Excluir um dado de pedágio
    
    // Metodos de comunicacao com o sefaz
    Method ctTransmite(nCTE_ID)                     //  Transmissão da CTe
@@ -444,7 +465,7 @@ Class oCTe_HWgui
    Method uiPega_Servico(nCOD,cDES,oCOD,oDES) INLINE PEGA_SERVICO(@nCOD,@cDES,oCOD,oDES) 
    
    //SUBSTITUIR POR ROTINA DE TELA DE BUSCA DE CFOP
-   Method uiPega_Cfop(nCFOP,cDES_CFOP,oCFOP,oDES_CFOP) INLINE PEGACFOP(@nCFOP,@cDES_CFOP,oCFOP,oDES_CFOP)
+   Method uiPega_Cfop(nCFOP,cDES_CFOP,oCFOP,oDES_CFOP) INLINE PEGACFOP(@nCFOP,@cDES_CFOP,oCFOP,oDES_CFOP,'S')
    
    // SUBSTITUIR POR ROTINA DE BUSCA DE TRANSPORTADORA
    Method uiPegaTrp(nCOD,cTRP,oTRP,oCNP,oINS,oFON,oEND,oEST,oCID,oCEP,oCOD) INLINE PEGA_TRP(nCOD,cTRP,oTRP,oCNP,oINS,oFON,oEND,oEST,oCID,oCEP,oCOD)
@@ -454,6 +475,10 @@ Class oCTe_HWgui
    
    // SUBSTITUIR POR METHODO PROPRIO DE BUSCA DE NOTA FISCAL E AUTO PREENCHIMENTO DA TELA (TEM DE REFAZER)
    Method uiImporta_NF(oOBJ,lCCe)
+
+   Method uiCadLota(oOBJ)
+   Method uiDelLota(oOBJ)
+   Method uiSalvaLotacao(oOBJ,oOBJ2,cLAN)
    
 
 EndClass
@@ -1245,6 +1270,8 @@ LOCAL cARQxml:='', cARQpdf:='', cARQzip:='', cEMAIL:=''
 LOCAL mI:=0, cI:=0, nNUM:=0, nSER:=0, nMOD:=0
 LOCAL aCTE:={}, aSQL:={}, aARQzip:={}
 LOCAL aRET:=HASH()
+// Ana Brock - Mantis 2802 - 25/04/2014
+LOCAL cNUM:='',cSER:='',cMOD:='',lPDF:=.F.
 
 IF oOBJ<>NIL
    WITH OBJECT oOBJ:oBr1
@@ -1272,9 +1299,16 @@ ELSEIF nCTE_ID<>NIL
    ENDIF
    AADD(aCTE,{nCTE_ID,aSQL[1,1],aSQL[1,2],aSQL[1,3]})
 ENDIF   
+
 IF LEN(aCTE)<=0
    RETURN(.F.)
 ENDIF
+
+IF MsgYesNo('Deseja enviar o PDF de cada nota junto ?')
+   lPDF:=.T.
+ENDIF
+
+// Ana Brock - Mantis 2802 - 25/04/2014
 FOR mI:=1 TO LEN(aCTE)
    IF aCTE[mI,2]=8
       cARQpdf:=::cPastaEnvRes+'\CT_'+STRZERO(aCTE[mI,4],10)+'_'+ALLTRIM(STR(aCTE[mI,3]))+'_'+ALLTRIM(STR(aCTE[mI,2]))+'.pdf'
@@ -1294,8 +1328,6 @@ FOR mI:=1 TO LEN(aCTE)
                                   ' where a.anexo_id_cte='+::oCTe_GERAIS:rgConcat_sql(aCTE[mI,1]),,,@aSQL)
       FOR cI:=1 TO LEN(aSQL)
          cARQxml:=::cPastaEnvRes+'\'+ALLTRIM(aSQL[cI,7])+'_'+ALLTRIM(aSQL[cI,4])
-         cARQpdf:=::cPastaEnvRes+'\'+STRTRAN(LOWER(ALLTRIM(aSQL[cI,4])),'.xml','.pdf')
-         cARQzip:=::cPastaEnvRes+'\'+STRZERO(aSQL[cI,1],10)+'_'+ALLTRIM(STR(aSQL[cI,2]))+'_'+ALLTRIM(STR(aSQL[cI,3]))+'.zip'
          IF FILE(cARQxml)
             FERASE(cARQxml)
          ENDIF
@@ -1306,33 +1338,71 @@ FOR mI:=1 TO LEN(aCTE)
          ENDIF
          AADD(aARQzip,{cARQxml})
 
-         cEMAIL:=aSQL[cI,6]
-         nNUM:=aSQL[cI,1]
-         nSER:=aSQL[cI,2]
-         nMOD:=aSQL[cI,3]
+         If lPDF = .T.
+            cARQpdf:=::cPastaEnvRes+'\'+STRTRAN(LOWER(ALLTRIM(aSQL[cI,4])),'.xml','.pdf')
+            IF aSQL[cI,7]='CTE' 
+               IF FILE(cARQpdf)
+                  FERASE(cARQpdf)
+               ENDIF
+               // Aqui da ERRO na primeira EXECUÇÃO, mas não impede de executar e nem deixa de criar o PDF
+               aRET:=::oCTe_SEFAZ:ctImprimeFastReport(cARQxml,.F.,cARQpdf)
 
-         IF aSQL[cI,7]='CTE' 
-            IF FILE(cARQpdf)
-               FERASE(cARQpdf)
+               IF !aRET['STATUS']
+                  ::oCTe_GERAIS:uiAviso(aRET['MSG'])
+                  RETURN(.F.)
+               ENDIF
+               AADD(aARQzip,{cARQpdf})
             ENDIF
-            aRET:=::oCTe_SEFAZ:ctImprimeFastReport(cARQxml,.F.,cARQpdf)
-            IF !aRET['STATUS']
-               ::oCTe_GERAIS:uiAviso(aRET['MSG'])
-               RETURN(.F.)
-            ENDIF
-            AADD(aARQzip,{cARQpdf})
-         ENDIF
+
+         Endif
+
+         cARQzip:=::cPastaEnvRes+'\'+STRZERO(aSQL[cI,1],10)+'_'+ALLTRIM(STR(aSQL[cI,2]))+'_'+ALLTRIM(STR(aSQL[cI,3]))+'.zip'
+         
+         // c.'+::tCte_CLIENTE['email']+'
+         If !Alltrim(cEMAIL) $ Alltrim(aSQL[cI,6])
+            If Empty(Alltrim(cEMAIL))
+               cEMAIL := Alltrim(aSQL[cI,6])
+            Else
+               cEMAIL += ';'+Alltrim(aSQL[cI,6])
+            Endif
+         Endif
+         // b.cte_numerodacte
+         If !Alltrim(cNUM) $ Alltrim(Str(aSQL[cI,1],10))
+            If Empty(Alltrim(cNUM))
+               cNUM := Alltrim(Str(aSQL[cI,1],10))
+            Else
+               cNUM += ','+Alltrim(Str(aSQL[cI,1],10))
+            Endif
+         Endif
+         // b.cte_serie
+         If !Alltrim(cSER) $ Alltrim(Str(aSQL[cI,2],3))
+            If Empty(Alltrim(cSER))
+               cSER := Alltrim(Str(aSQL[cI,2],3))
+            Else
+               cSER += ','+Alltrim(Str(aSQL[cI,2],3))
+            Endif
+         Endif
+         // b.cte_modelo
+         If !Alltrim(cMOD) $ Alltrim(Str(aSQL[cI,3],2))
+            If Empty(Alltrim(cMOD))
+               cMOD := Alltrim(Str(aSQL[cI,3],2))
+            Else
+               cMOD += ','+Alltrim(Str(aSQL[cI,3],2))
+            Endif
+         Endif
+
       NEXT
       //hb_zipfile( cARQzip,aARQzip, 9,{|cFile,nPos| HW_Atualiza_Dialogo2( 'Compactando arquivos para envio...' + cFile ) },.T.,,.F.,.F., )
    ENDIF
 
-   VAIEMAIL(NIL,NIL,NIL,cEMAIL,'Arquivos da CT-e Nº '+STRZERO(nNUM,10)+;
-                               ' série '+ALLTRIM(STR(nSER))+;
-                               ' de '+::cCte_RAZAO,;
-                               'Segue em anexo os arquivo da transmissão da CT-e Nº '+STRZERO(nNUM,10)+;
-                               ' série '+ALLTRIM(STR(nSER))+;
-                               ' de '+::cCte_RAZAO,.T.,aARQzip)
-NEXT
+Next
+
+VAIEMAIL(NIL,NIL,NIL,cEMAIL,'Arquivos da CT-e Nº '+cNUM+;
+                            ' série '+cSER+;
+                            ' de '+::cCte_RAZAO,;
+                            'Segue em anexo os arquivo da transmissão da CT-e Nº '+cNUM+;
+                            ' série '+cSER+;
+                            ' de '+::cCte_RAZAO,.T.,aARQzip)
 
 RETURN(.T.)
 
@@ -1424,24 +1494,25 @@ LOCAL oLabel31, oLabel32, oLabel33, oLabel34, oLabel35, oLabel36, oLabel37, oLab
 LOCAL oMODALIDADE, oMODELO, oSERIE, oTIPO_CT, oNUMCTE, oTIP_SERVICO, oCFOP, oDES_CFOP, oCIDADE_ORIGEM, oTOMADOR, oUF_ORIGEM, oUF_DESTINO, oCIDADE_DESTINO, oCOD_CLIENTE, oNOM_CLIENTE
 LOCAL oCOD_DESTINATARIO, oNOM_DESTINATARIO, oCODPRO, oSUBCOD, oPRODUTO, oVAL_MERCADORIA, oPESO_BASE_CALC, oPESO_AFERIDO, oVAL_AVERBACAO, oVOLUMES, oRESPONSAVEL, oPESO_BRUTO, oCUBAGEM
 LOCAL oAPOLICE, oAVERBACAO, oNOM_SEGURADORA, oOUT_CARACTERISTICAS, oBr1, oTIP_TRIBUTACAO, oBASE_CALCULO, oPER_ALIQ_ICMS, oVAL_ICMS, oPER_RED_BC, oVAL_BC_ST_RET, oVAL_ICMS_ST_RET, oTOT_ITENS
-LOCAL oPER_ALI_BC_ST_RET, oVAL_CRE_OUT, oPER_RED_BC_OUT_UF, oVAL_BC_ICMS_OUT_UF, oPER_ALI_ICMS_OUT_UF, oVAL_ICMS_DEV_OUT_UF, oBr2, oOBS, oRNTRC, oLOTACAO, oENTREGa, oTOTAL, oTOT_SERVICO, oFOR_PGT
-LOCAL oESPECIE, oPLACA, oVAL_FRETE, oVAL_PEDAGIO, oVAL_OUTROS, oCOD_PRAZO, oDES_PRAZO, oFRT_CONTA, oCOD_EXPEDIDOR, oNOM_EXPEDIDOR, oCOD_RECEBEDOR, oNOM_RECEBEDOR
-LOCAL oBr3, oUNI, oTIPmed
+LOCAL oPER_ALI_BC_ST_RET, oVAL_CRE_OUT, oPER_RED_BC_OUT_UF, oVAL_BC_ICMS_OUT_UF, oPER_ALI_ICMS_OUT_UF, oVAL_ICMS_DEV_OUT_UF, oBr2, oOBS, oRNTRC, oENTREGa, oTOTAL, oTOT_SERVICO, oFOR_PGT
+LOCAL oESPECIE, oPLACA, oVAL_FRETE, oVAL_OUTROS, oCOD_PRAZO, oDES_PRAZO, oFRT_CONTA, oCOD_EXPEDIDOR, oNOM_EXPEDIDOR, oCOD_RECEBEDOR, oNOM_RECEBEDOR
+LOCAL oBr3, oUNI, oTIPmed, oCTE_COMPLE, oBr4, oBr5
 LOCAL oOwnerbutton1, oOwnerbutton2, oOwnerbutton3, oOwnerbutton4, oOwnerbutton5, oOwnerbutton6, oOwnerbutton7
 LOCAL oButtonex1, oButtonex2, oButtonex3, oButtonex4, oButtonex5, oButtonex6, oButtonex7, oButtonex8, oButtonex9, oButtonex10, oButtonex11, oButtonex12, oButtonex13
+LOCAL oButtonex14, oButtonex15, oButtonex16, oButtonex17, oButtonex18, oButtonex19
 LOCAL nNUMCTE:=0, nCFOP:=0, nCOD_CLIENTE:=0, nCOD_DESTINATARIO:=0, nVAL_MERCADORIA:=0, nCOD_PRAZO:=0, nCOD_EXPEDIDOR:=0, nCOD_RECEBEDOR:=0
-LOCAL nPESO_BASE_CALC:=0, nPESO_AFERIDO:=0, nVAL_AVERBACAO:=0, nVOLUMES:=0, nPESO_BRUTO:=0, nCUBAGEM:=0, nAPOLICE:=0, nBASE_CALCULO:=0, nVAL_PEDAGIO:=0
+LOCAL nPESO_BASE_CALC:=0, nPESO_AFERIDO:=0, nVAL_AVERBACAO:=0, nVOLUMES:=0, nPESO_BRUTO:=0, nCUBAGEM:=0, nAPOLICE:=0, nBASE_CALCULO:=0  //, nVAL_PEDAGIO:=0
 LOCAL nPER_ALIQ_ICMS:=0, nVAL_ICMS:=0, nPER_RED_BC:=0, nVAL_BC_ST_RET:=0, nVAL_ICMS_ST_RET:=0, nPER_ALI_BC_ST_RET:=0, nVAL_CRE_OUT:=0, nPER_RED_BC_OUT_UF:=0
 LOCAL nVAL_BC_ICMS_OUT_UF:=0, nPER_ALI_ICMS_OUT_UF:=0, nVAL_ICMS_DEV_OUT_UF:=0, nTOT_SERVICO:=0, nTOTAL:=0, nTOT_ITENS:=0, mI:=0, nVAL_FRETE:=0, nVAL_OUTROS:=0
 LOCAL cDES_CFOP:='', cCIDADE_ORIGEM:=::cCte_Cidade, cUF_ORIGEM:=::cCte_Estado, cUF_DESTINO:=::cCte_Estado, cCIDADE_DESTINO:=::cCte_Cidade, cNOM_CLIENTE:='', cNOM_DESTINATARIO:='', cTOMADOR:='0', cTIP_TRIBUTACAO:='00', cAVERBACAO:=''
 LOCAL cCODPRO:='', cSUBCOD:='', cPRODUTO:='', cOUT_CARACTERISTICAS:='TRANSPORTE', cRESPONSAVEL:='', cNOM_SEGURADORA:=LEFT(eNOME_EMPRESA,30), cOBS:='', cSERIE:='1', cMODELO:='', cTIPO_CT:='0', cMODALIDADE:='0', cTIP_SERVICO:='0', cFOR_PGT:='1', cRNTRC:=''
-LOCAL cESPECIE:='', cPLACA:='', cDES_PRAZO:='', cFRT_CONTA:='', cNOM_EXPEDIDOR:='', cNOM_RECEBEDOR:=''
+LOCAL cESPECIE:='', cPLACA:='', cDES_PRAZO:='', cFRT_CONTA:='', cNOM_EXPEDIDOR:='', cNOM_RECEBEDOR:='', cCTE_COMPLE:=''
 LOCAL cUNI:='01-KG', cTIPmed:='PESO DECLARADO'
-LOCAL lLOTACAO:=.F.
 LOCAL dENTREGa:=DATE()
 LOCAL aSQL:={}, aSERIE:={}, aCIDADE_ORIGEM:=::oCTe_GERAIS:rgRecarrega_combo_uf(cUF_ORIGEM,NIL,aCIDADE_ORIGEM), aCIDADE_DESTINO:=::oCTe_GERAIS:rgRecarrega_combo_uf(cUF_DESTINO,NIL,aCIDADE_DESTINO)
 LOCAL aMODELO:=IF(::lCte_ELETRONICO,{'57','08'},{'08'})  , aITN_SERV:={{0,'DELETA',0,0}}, aDOCS:={{'DELETA','DELETA','DELETA','DELETA',DATE(),0,0,0,0,0,0,0,'DELETA',0,'DELETA','DELETA'}}
-LOCAL aUfCid:={}
+LOCAL aUfCid:={}, aLotacao := {{'','DELETA','',0,0,0,'',0,0,0,''}}, aPEDAGIO:={{0,'DELETA','DELETA',0,'DELETA',0,'DELETA','DELETA'}}
+
 
 IF nCTE_ID=NIL
    nCTE_ID:=0
@@ -1519,7 +1590,8 @@ ELSE
                                '           a.recebedor_id, '+;                  // 52
                                '           a.cte_numerodacte, '+;               // 53
                                '           a.cte_unidade, '+;                   // 54
-                               '           a.cte_tipo_medida '+;                // 55
+                               '           a.cte_tipo_medida, '+;               // 55
+                               '           a.cte_chave_completa '+;             // 56
                                '  from sagi_cte a'+;
                                '  left join '+::tCte_PRAZO['prazo']+' b on b.'+::tCte_PRAZO['codigo']+'=a.cte_cod_prazo '+;
                                ' where a.cte_id='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID),,,@aSQL)
@@ -1579,20 +1651,21 @@ ELSE
    nPER_ALI_ICMS_OUT_UF:=aSQL[1,36]
    nVAL_ICMS_DEV_OUT_UF:=aSQL[1,37]
    cRNTRC:=aSQL[1,38]
-   lLOTACAO:=aSQL[1,39]
+   //lLOTACAO:=aSQL[1,39]
    dENTREGa:=aSQL[1,40]
    cFOR_PGT:=ALLTRIM(STR(aSQL[1,41]))
    cOBS:=aSQL[1,42]
    cESPECIE:=aSQL[1,43]
    cPLACA:=aSQL[1,44]
    nVAL_FRETE:=aSQL[1,45]
-   nVAL_PEDAGIO:=aSQL[1,46]
+   //nVAL_PEDAGIO:=aSQL[1,46]
    nVAL_OUTROS:=aSQL[1,47]
    nCOD_PRAZO:=aSQL[1,48]
    cDES_PRAZO:=aSQL[1,49]
    cFRT_CONTA:=aSQL[1,50]
    cUNI := aSQL[1,54]
    cTIPmed := aSQL[1,55]
+   cCTE_COMPLE := aSQL[1,56]
 
    ::oCTe_GERAIS:rgExecuta_Sql('select a.prest_id_cte_cad_servico, '+;
                                '       b.'+::tCte_SERVICO['servico']+', '+;
@@ -1631,6 +1704,36 @@ ELSE
    FOR mI:=1 TO LEN(aDOCS)
       aDOCS[mI,2]:=STRZERO(aDOCS[mI,2],2)
    NEXT
+   
+   cSQL := 'Select VEIC_CODIGO, VEIC_RENAVAM, VEIC_PLACA, VEIC_TARA, VEIC_CAPAC_KG, VEIC_CAPAC_M3, VEIC_TP_PROPR, VEIC_TP_VEICULO, VEIC_TP_RODADO, VEIC_TP_CARROC, VEIC_UF_LICENC '
+   cSQL +=   'From SAGI_CTE_VEICULOS '
+   cSQL +=  'Where CTE_ID = '+Concat_Sql(nCTE_ID)
+   Executa_SQL(cSQL,,,@aSQL)
+   If Len(aSql) > 0
+      IF LEN(aLotacao)=1 .AND. aLotacao[1,2]='DELETA'
+         ADEL(aLotacao,1,.T.)
+      Endif
+   Endif
+   For nLoop := 1 to Len(aSQL)
+      aAdd(aLotacao, {aSQL[nLoop,01],aSQL[nLoop,02],aSQL[nLoop,03],aSQL[nLoop,04],aSQL[nLoop,05],aSQL[nLoop,06],aSQL[nLoop,07],aSQL[nLoop,08],aSQL[nLoop,09],aSQL[nLoop,10],aSQL[nLoop,11]  }  )
+   Next
+
+   
+   ::oCTe_GERAIS:rgExecuta_Sql('select a.pedagio_fornecedor, '+;
+                               '       b.fornecedor, '+;
+                               '       a.pedagio_comprovante, '+;
+                               '       a.pedagio_responsavel, '+;
+                               '       c.cliente, '+;
+                               '       a.pedagio_valor, '+;
+                               '       a.pedagio_cnpj_for, '+;
+                               '       a.pedagio_cnpj_res '+;
+                               '  from sagi_cte_pedagio a '+;
+                               '  left join cag_for b on b.codfor=a.pedagio_fornecedor '+;
+                               '  left join cag_cli c on c.codcli=a.pedagio_responsavel '+;
+                               ' where a.cte_id='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID),,,@aPEDAGIO)
+   IF LEN(aPEDAGIO)<=0
+      aPEDAGIO:={{0,'DELETA','DELETA',0,'DELETA',0,'DELETA','DELETA'}}
+   ENDIF
 ENDIF   
 
 ::oCTe_GERAIS:rgExecuta_Sql('select '+::tCte_SERIES['serie']+;
@@ -1670,7 +1773,7 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
              TOOLTIP 'Selecionar a modalidade'
 
    @ 535,041 SAY oLabel4 CAPTION "Tipo CT"  TRANSPARENT SIZE 51,21  
-   @ 535,061 GET COMBOBOX oTIPO_CT VAR cTIPO_CT ITEMS {"0-CT-e normal"} SIZE 138,24 TEXT; 
+   @ 535,061 GET COMBOBOX oTIPO_CT VAR cTIPO_CT ITEMS {'0-CT-e normal','1-CT-e de Complemento de Valores'} SIZE 138,24 TEXT;   //,'2-CT-e de Anulação','3-CT-e Substituto'
              TOOLTIP 'Selecione o tipo de CT'
 
    @ 676,041 SAY oLabel6 CAPTION "Tipo de Serviço"  TRANSPARENT SIZE 94,21
@@ -1856,7 +1959,7 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
 
    
    @ 002,388 TAB oPage2 ITEMS {} SIZE 1013,194
-   BEGIN PAGE 'Itens da Prestação de Serviço' OF oPage2 
+   BEGIN PAGE 'Prestação de Serviço' OF oPage2 
       @ 004,30 BROWSE oBr1 ARRAY SIZE 1005,129 STYLE WS_TABSTOP;
                ON INIT{|| IF(LEN(oBr1:aArray)=1 .AND. oBr1:aArray[1,2]='DELETA',ADEL(oBr1:aArray,1,.T.),.T.), ::uiCalcula_totais(oDlg) };
                ON CLICK{|| ::uiCad_prest_servico(oDlg,'A'), ::uiCalcula_totais(oDlg)  }
@@ -1941,7 +2044,7 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
       @ 859,159 GET oVAL_ICMS_DEV_OUT_UF VAR nVAL_ICMS_DEV_OUT_UF SIZE 145,24  PICTURE '@E 999,999,999.99' MAXLENGTH 12 STYLE IF(lCCe,WS_DISABLED,0); 
                 TOOLTIP 'Informe o valor do ICMS devido de outras UFs'
    END PAGE OF oPage2
-   BEGIN PAGE 'Documentos Originários do CT' OF oPage2 
+   BEGIN PAGE 'Documentos Originários' OF oPage2 
       @ 004,030 BROWSE oBr2 ARRAY SIZE 1005,129 STYLE WS_TABSTOP FONT HFont():Add( '',0,-11,400,,,);
                 ON INIT{|| IF(LEN(oBr2:aArray)=1 .AND. oBr2:aArray[1,1]='DELETA',ADEL(oBr2:aArray,1,.T.),.T.) };
                 ON CLICK{||  ::uiCad_doc_orig(oDlg,'A',NIL,lCCe) }
@@ -2010,16 +2113,17 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
                 ON CLICK{||  ::uiDel_doc_orig(oDlg) }
 
    END PAGE OF oPage2
-   BEGIN PAGE 'Informações sobre a carga' OF oPage2
+   BEGIN PAGE 'Carga' OF oPage2
       @ 005,039 SAY oLabel39 CAPTION "RNTRC/ANTT da Empresa:"  TRANSPARENT SIZE 160,21  
       @ 165,036 GET oRNTRC VAR cRNTRC SIZE 166,24  PICTURE '@!' MAXLENGTH 10  ; 
                 TOOLTIP 'Informe o RNTRC da empresa'
 
-      @ 005,069 GET CHECKBOX oLOTACAO VAR lLOTACAO CAPTION "Lotação"  TRANSPARENT SIZE 74,22  ; 
-                TOOLTIP 'Ativar esta opção caso a lotação da carga seja desta CT'
+      // Marco Barcelos, 14/03/2014
+      *@ 005,069 GET CHECKBOX oLOTACAO VAR lLOTACAO CAPTION "Lotação"  TRANSPARENT SIZE 74,22  ;
+      *          TOOLTIP 'Ativar esta opção caso a lotação da carga seja desta CT'
 
-      @ 099,070 SAY oLabel40 CAPTION "Data prevista entrega:"  TRANSPARENT SIZE 129,21  
-      @ 232,067 GET DATEPICKER oENTREGa VAR dENTREGa SIZE 98,24  ; 
+      @ 005,070 SAY oLabel40 CAPTION "Data prevista entrega:"  TRANSPARENT SIZE 129,21
+      @ 138,067 GET DATEPICKER oENTREGa VAR dENTREGa SIZE 98,24  ;
                 TOOLTIP 'Informe a data prevista da entrega'
                 
       @ 005,101 SAY 'Forma de pagamento:' TRANSPARENT SIZE 136,021
@@ -2038,17 +2142,117 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
       @ 780,039 SAY 'Valor do frete:' SIZE 120,21 TRANSPARENT
       @ 867,036 GET oVAL_FRETE VAR nVAL_FRETE SIZE 120,22 PICTURE '@E 999,999,999.99' STYLE IF(lCCe,WS_DISABLED,0);
                 TOOLTIP 'Informe o valor do frete'
-      
+      /*
       @ 355,070 SAY 'Valor pedágio:' SIZE 120,21 TRANSPARENT
       @ 442,067 GET oVAL_PEDAGIO VAR nVAL_PEDAGIO SIZE 120,22 PICTURE '@E 999,999,999.99' STYLE IF(lCCe,WS_DISABLED,0);
                 TOOLTIP 'Informe o valor do pedágio'
-
+*/
       @ 580,070 SAY 'Valor outros:' SIZE 120,21 TRANSPARENT
       @ 659,067 GET oVAL_OUTROS VAR nVAL_OUTROS SIZE 120,22 PICTURE '@E 999,999,999.99' STYLE IF(lCCe,WS_DISABLED,0);
                 TOOLTIP 'Informe outros valores'
 
    END PAGE OF oPage2
-   BEGIN PAGE 'Dados da Cobrança' OF oPage2 
+   
+   BEGIN PAGE 'Pedágio' OF oPage2
+      @ 004,030 BROWSE oBr5 ARRAY SIZE 1005,129 STYLE WS_TABSTOP FONT HFont():Add( '',0,-11,400,,,);
+                ON INIT{|| IF(LEN(oBr5:aArray)=1 .AND. oBr5:aArray[1,2]='DELETA',ADEL(oBr5:aArray,1,.T.),.T.) };
+                ON CLICK{|| ::uiCad_pedagio(oDlg,'A') }
+                       oBr5:lESC := .T.
+                       oBr5:aArray := aPEDAGIO
+                       CreateArList( oBr5, aPEDAGIO )
+
+                       oBr5:aColumns[1]:heading := 'Código'
+                       oBr5:aColumns[2]:heading := 'Fornecedor'
+                       oBr5:aColumns[3]:heading := 'Comprovante'
+                       oBr5:aColumns[4]:heading := 'Código'
+                       oBr5:aColumns[5]:heading := 'Responsável'
+                       oBr5:aColumns[6]:heading := 'R$ Valor'
+
+                       oBr5:aColumns[1]:length := 10
+                       oBr5:aColumns[2]:length := 40
+                       oBr5:aColumns[3]:length := 20
+                       oBr5:aColumns[4]:length := 10
+                       oBr5:aColumns[5]:length := 40
+                       oBr5:aColumns[6]:length := 15
+
+                       oBr5:aColumns[1]:picture:='9999999999'
+                       oBr5:aColumns[2]:picture:='@!'
+                       oBr5:aColumns[3]:picture:='@!'
+                       oBr5:aColumns[4]:picture:='9999999999'
+                       oBr5:aColumns[5]:picture:='@!'
+                       oBr5:aColumns[6]:picture:='@E 999,999,999.99'
+
+                       oBr5:DelColumn( 7 )
+                       oBr5:DelColumn( 8 )
+
+      @ 004,160 BUTTONEX oButtonex17 CAPTION "&Incluir"   SIZE 98,32 STYLE BS_CENTER +WS_TABSTOP+IF(lCCe,WS_DISABLED,0);
+                ON CLICK{|| ::uiCad_pedagio(oDlg,'C') }
+                
+      @ 101,160 BUTTONEX oButtonex18 CAPTION "&Alterar"   SIZE 98,32 STYLE BS_CENTER +WS_TABSTOP;
+                ON CLICK{|| ::uiCad_pedagio(oDlg,'A') }
+                
+      @ 198,160 BUTTONEX oButtonex19 CAPTION "&Remover"   SIZE 98,32 STYLE BS_CENTER +WS_TABSTOP+IF(lCCe,WS_DISABLED,0);
+                ON CLICK{|| ::uiDel_pedagio(oDlg) }
+
+   END PAGE OF oPage2
+
+   // Marco Barcelos, 14/03/2014
+   BEGIN PAGE 'Lotação' OF oPage2
+
+      @ 004,30 BROWSE oBr4 ARRAY SIZE 1005,129 STYLE WS_TABSTOP  FONT HFont():Add( '',0,-11,400,,,);
+               ON INIT{|| IF(LEN(oBr4:aArray)=1 .AND. oBr4:aArray[1,2]='DELETA',ADEL(oBr4:aArray,1,.T.),.T.) };
+               ON CLICK{|| ::uiCadLota(oDlg,'A',nCTE_ID)  }
+      oBr4:aArray := aLotacao
+      CreateArList( oBr4, aLotacao )
+
+      oBr4:aColumns[01]:heading := 'Código'
+      oBr4:aColumns[02]:heading := 'RENAVAM'
+      oBr4:aColumns[03]:heading := 'Placa'
+      oBr4:aColumns[04]:heading := 'Tara'
+      oBr4:aColumns[05]:heading := 'Capacidade KG'
+      oBr4:aColumns[06]:heading := 'Capacidade M3'
+      oBr4:aColumns[07]:heading := 'Tipo Propriedade'
+      oBr4:aColumns[08]:heading := 'Tipo Veículo'
+      oBr4:aColumns[09]:heading := 'Tipo rodado'
+      oBr4:aColumns[10]:heading := 'Tipo carroceria'
+      oBr4:aColumns[11]:heading := 'UF Licenciamento'
+
+      oBr4:aColumns[01]:length := 10
+      oBr4:aColumns[02]:length := 11
+      oBr4:aColumns[03]:length := 07
+      oBr4:aColumns[04]:length := 06
+      oBr4:aColumns[05]:length := 06
+      oBr4:aColumns[06]:length := 03
+      oBr4:aColumns[07]:length := 01
+      oBr4:aColumns[08]:length := 02
+      oBr4:aColumns[09]:length := 02
+      oBr4:aColumns[10]:length := 02
+      oBr4:aColumns[11]:length := 02
+
+      oBr4:aColumns[01]:picture:='@!'
+      oBr4:aColumns[02]:picture:='@!'
+      oBr4:aColumns[03]:picture:='@R XXX-9999'
+      oBr4:aColumns[04]:picture:='@E 999999'
+      oBr4:aColumns[05]:picture:='@E 999999'
+      oBr4:aColumns[06]:picture:='@E 999'
+      oBr4:aColumns[07]:picture:='@!'
+      oBr4:aColumns[08]:picture:='@E 9'
+      oBr4:aColumns[09]:picture:='@E 99'
+      oBr4:aColumns[10]:picture:='@E 99'
+      oBr4:aColumns[11]:picture:='@!'
+
+      @ 004,160 BUTTONEX oButtonex14 CAPTION "&Incluir"   SIZE 98,32 STYLE BS_CENTER+WS_TABSTOP+IF(lCCe,WS_DISABLED,0);
+                ON CLICK{|| ::uiCadLota(oDlg,'C',nCTE_ID)  }
+
+      @ 101,160 BUTTONEX oButtonex15 CAPTION "&Alterar"   SIZE 98,32 STYLE BS_CENTER+WS_TABSTOP;
+                ON CLICK{|| ::uiCadLota(oDlg,'A',nCTE_ID)  }
+
+      @ 198,160 BUTTONEX oButtonex16 CAPTION "&Remover"   SIZE 98,32 STYLE BS_CENTER +WS_TABSTOP+IF(lCCe,WS_DISABLED,0);
+                ON CLICK{|| ::uiDelLota(oDlg) }
+
+   END PAGE OF oPage2
+
+   BEGIN PAGE 'Cobrança' OF oPage2
       @ 005,039 SAY 'Forma de Cobrança: ' SIZE 120,21 TRANSPARENT
       @ 127,036 GET oCOD_PRAZO VAR nCOD_PRAZO SIZE 80,22 PICTURE '9999999999' STYLE IF(lCCe,WS_DISABLED,0);
                 VALID{|| IF(nCOD_PRAZO>0, ::oCTe_GERAIS:rgPegaPrazo(cDES_PRAZO,oCOD_PRAZO,oDES_PRAZO) ,.T.) };
@@ -2068,12 +2272,21 @@ BEGIN PAGE 'Cadastro de Conhecimento de Transporte' OF oPage1
                 TOOLTIP 'Selecione por quem ficará a responsabilidade do frete'
 
    END PAGE OF oPage2
+   BEGIN PAGE 'Complementado' OF oPage2 
+      @ 005,039 SAY 'Chave do CT-e Complementado: ' SIZE 50,22 TRANSPARENT
+      @ 005,065 GET oCTE_COMPLE VAR cCTE_COMPLE SIZE 400,24 PICTURE '@R 9999.9999.9999.9999.9999.9999.9999.9999.9999.9999.9999'
+      
+      @ 407,065 OWNERBUTTON SIZE 24,24 FLAT;
+          ON CLICK {|| ::uiPegaChaveCteComple(oCTE_COMPLE) };
+          BITMAP ::nCte_Img_Buscar FROM RESOURCE TRANSPARENT;
+          TOOLTIP 'Localizar uma CT-e'
+   END PAGE OF oPage2
    BEGIN PAGE 'Observações' OF oPage2 
       @ 004,030 GET oOBS VAR cOBS SIZE 1005,160  PICTURE '@!';
                 STYLE ES_MULTILINE+ES_AUTOVSCROLL+WS_VSCROLL+ES_WANTRETURN
    END PAGE OF oPage2
 
-   @ 359,591 SAY oLabel41 CAPTION "Total Serviço:"  TRANSPARENT SIZE 80,21  
+   @ 359,591 SAY oLabel41 CAPTION "Total Serviço:"  TRANSPARENT SIZE 80,21
    @ 438,589 GET oTOT_SERVICO VAR nTOT_SERVICO SIZE 140,24 ;
              STYLE WS_DISABLED  PICTURE '@E 999,999,999.99'  
 
@@ -2442,10 +2655,10 @@ Method uiSalva_cte(oOBJ,nCTE_ID,oOBJ2,lCCe) Class oCTe_HWgui
    salva a CT-e
    Mauricio Cruz - 17/07/2013
 */
-LOCAL nTOT_SERVICO:=0, mI:=0, nNUMCTE:=0
-LOCAL aSQL:={}
+LOCAL nTOT_SERVICO:=0, mI:=0, nNUMCTE:=0, nTOTpedagio:=0
+LOCAL aSQL:={}, cSQL := ''
 LOCAL cOUT_CARACT:=''
-LOCAL lTRANSMITIDO:=.F., lGERA_CTEAREC:=.T.
+LOCAL lTRANSMITIDO:=.F., lGERA_CTEAREC:=.F.
 
 WITH OBJECT oOBJ:oPage1
    IF ::lCte_ELETRONICO .AND. LEFT(:oMODELO:GETTEXT(),2)<>'57'
@@ -2619,7 +2832,7 @@ WITH OBJECT oOBJ:oPage1
       ENDIF
    ENDIF
 
-   IF :oVOLUMES:VARGET()<=0
+   IF LEFT(:oTIPO_CT:GETTEXT(),1)='0' .AND. :oVOLUMES:VARGET()<=0
       ::oCTe_GERAIS:uiAviso('Valor do(s) volumes em branco ou negativo, Favor Revisar!')
       :oVOLUMES:SETFOCUS()
       RETURN(.F.)
@@ -2630,12 +2843,12 @@ WITH OBJECT oOBJ:oPage1
       RETURN(.F.)
    ENDIF
 
-   IF :oVAL_MERCADORIA:VARGET()<=0
+   IF LEFT(:oTIPO_CT:GETTEXT(),1)='0' .AND. :oVAL_MERCADORIA:VARGET()<=0
       ::oCTe_GERAIS:uiAviso('Valor da mercadoria em branco ou negativo, Favor Revisar!')
       :oVAL_MERCADORIA:SETFOCUS()
       RETURN(.F.)
    ENDIF
-   IF :oPESO_BRUTO:VARGET()<=0 
+   IF LEFT(:oTIPO_CT:GETTEXT(),1)='0' .AND. :oPESO_BRUTO:VARGET()<=0 
       ::oCTe_GERAIS:uiAviso('Valor do peso bruto em branco ou negativo, Favor Revisar!')
       :oPESO_BRUTO:SETFOCUS()
       RETURN(.F.)
@@ -2651,7 +2864,7 @@ WITH OBJECT oOBJ:oPage1
       RETURN
    ENDIF
    WITH OBJECT :oPage2
-      IF LEN(:oBr1:aARRAY)<=0
+      IF LEFT(oOBJ:oPage1:oTIPO_CT:GETTEXT(),1)='0' .AND. LEN(:oBr1:aARRAY)<=0
          ::oCTe_GERAIS:uiAviso('Itens da prestação de serviços em branco, Favor Revisar!')
          RETURN(.F.)
       ENDIF      
@@ -2740,6 +2953,11 @@ WITH OBJECT oOBJ:oPage1
       RETURN(.F.)
    ENDIF
 
+   IF LEFT(:oTIPO_CT:GETTEXT(),1)='1' .AND. EMPTY(:oPage2:oCTE_COMPLE:VARGET())
+      ::oCTe_GERAIS:uiAviso('Favor informar a chave do CT-e de complemento.')
+      RETURN(.F.)
+   ENDIF
+   
    WITH OBJECT :oPage2:oBr1
       FOR mI:=1 TO LEN(:aArray)
          nTOT_SERVICO+=:aArray[mI,4]*:aArray[mI,3]
@@ -2752,6 +2970,12 @@ WITH OBJECT oOBJ:oPage1
       ENDIF
       RETURN(.T.)
    ENDIF
+   
+   WITH OBJECT :oPage2:oBr5
+      FOR mI:=1 TO LEN(:aArray)
+         nTOTpedagio+=:aArray[mI,6]
+      NEXT
+   END
 
    ::oCTe_GERAIS:rgBeginTransaction()
    IF nCTE_ID<=0
@@ -2816,7 +3040,7 @@ WITH OBJECT oOBJ:oPage1
                                    'cte_averbacao_seguro='+::oCTe_GERAIS:rgConcat_sql(:oAVERBACAO:VARGET())+','+;
                                    'cte_rntrc='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oRNTRC:VARGET())+','+;
                                    'cte_dataprevistaentrega='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oENTREGa:GETVALUE())+','+;
-                                   'cte_lotacao='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oLOTACAO:GETVALUE())+','+;
+                                   'cte_lotacao='+::oCTe_GERAIS:rgConcat_sql(Len(:oPage2:oBr4:aArray)>0)+','+;
                                    'cte_imposto='+::oCTe_GERAIS:rgConcat_sql(VAL(LEFT(:oPage2:oTIP_TRIBUTACAO:GETTEXT(),2)))+','+;
                                    'cte_icmsbasecalc='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oBASE_CALCULO:VARGET())+','+;
                                    'cte_icmsaliq='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oPER_ALIQ_ICMS:VARGET())+','+;
@@ -2824,7 +3048,7 @@ WITH OBJECT oOBJ:oPage1
                                    'cte_icmsreducaobc='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oPER_RED_BC:VARGET())+','+;
                                    'cte_observacao='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oOBS:VARGET())+','+;
                                    'cte_valorservico='+::oCTe_GERAIS:rgConcat_sql(nTOT_SERVICO)+','+;
-                                   'cte_valorreceber='+::oCTe_GERAIS:rgConcat_sql(nTOT_SERVICO)+','+;
+                                   'cte_valorreceber='+::oCTe_GERAIS:rgConcat_sql(nTOT_SERVICO +nTOTpedagio )+','+;
                                    'cte_vbcstret='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_BC_ST_RET:VARGET())+','+;
                                    'cte_vicmsstret='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_ICMS_ST_RET:VARGET())+','+;
                                    'cte_picmsstret='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oPER_ALI_BC_ST_RET:VARGET())+','+;
@@ -2836,11 +3060,12 @@ WITH OBJECT oOBJ:oPage1
                                    'cte_valorcarga_averbacao='+::oCTe_GERAIS:rgConcat_sql(:oVAL_AVERBACAO:VARGET())+','+;
                                    'cte_especie='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oESPECIE:VARGET())+','+;
                                    'cte_placa='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oPLACA:VARGET())+','+;
-                                   'cte_valfrete='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_FRETE:VARGET())+','+;
-                                   'cte_valpedagio='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_PEDAGIO:VARGET())+','+;
+                                   'cte_valfrete='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_FRETE:VARGET())+','+;     
+                                   'cte_valpedagio='+::oCTe_GERAIS:rgConcat_sql(nTOTpedagio)+','+;   //:oPage2:oVAL_PEDAGIO:VARGET()
                                    'cte_outros='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oVAL_OUTROS:VARGET())+','+;
                                    'cte_cod_prazo='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oCOD_PRAZO:VARGET())+','+;
-                                   'cte_frete_responsa='+::oCTe_GERAIS:rgConcat_sql(LEFT(:oPage2:oFRT_CONTA:GETTEXT(),1))+;
+                                   'cte_frete_responsa='+::oCTe_GERAIS:rgConcat_sql(LEFT(:oPage2:oFRT_CONTA:GETTEXT(),1))+','+;
+                                   'cte_chave_completa='+::oCTe_GERAIS:rgConcat_sql(:oPage2:oCTE_COMPLE:VARGET())+;
                             ' where cte_id='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID)) 
 
    WITH OBJECT :oPage2:oBr1
@@ -2891,8 +3116,59 @@ WITH OBJECT oOBJ:oPage1
                                                                                    ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,16])+') ')  // 16
       NEXT
    END
-   ::oCTe_GERAIS:rgEndTransaction()   
-   
+
+   // Marco Barcelos - 17/03/2014
+   WITH OBJECT :oPage2:oBr4
+     ::oCTe_GERAIS:rgExecuta_Sql('delete from SAGI_CTE_VEICULOS where CTE_ID='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID))
+      FOR mI:=1 TO LEN(:aArray)
+         cSQL := 'insert into SAGI_CTE_VEICULOS( VEIC_CODIGO, '
+         cSQL +=                                'VEIC_RENAVAM, '
+         cSQL +=                                'VEIC_PLACA, '
+         cSQL +=                                'VEIC_TARA, '
+         cSQL +=                                'VEIC_CAPAC_KG, '
+         cSQL +=                                'VEIC_CAPAC_M3, '
+         cSQL +=                                'VEIC_TP_PROPR, '
+         cSQL +=                                'VEIC_TP_VEICULO, '
+         cSQL +=                                'VEIC_TP_RODADO, '
+         cSQL +=                                'VEIC_TP_CARROC, '
+         cSQL +=                                'VEIC_UF_LICENC, '
+         cSQL +=                                'CTE_ID )'
+         cSQL +=                       ' values('+::oCTe_GERAIS:rgConcat_sql(:aArray[mI,01])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,02])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,03])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,04])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,05])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,06])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,07])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,08])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,09])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,10])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,11])+','
+         cSQL +=                                  ::oCTe_GERAIS:rgConcat_sql(nCTE_ID)+')'
+         ::oCTe_GERAIS:rgExecuta_Sql(cSQL)
+      NEXT
+   END
+
+   WITH OBJECT :oPage2:oBr5
+      ::oCTe_GERAIS:rgExecuta_Sql('delete from sagi_cte_pedagio where cte_id='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID))
+      FOR mI:=1 TO LEN(:aArray)
+         ::oCTe_GERAIS:rgExecuta_Sql('insert into sagi_cte_pedagio (cte_id, '+;               // 01
+                                                                   'pedagio_fornecedor, '+;   // 02
+                                                                   'pedagio_comprovante, '+;  // 03
+                                                                   'pedagio_responsavel, '+;  // 04
+                                                                   'pedagio_valor, '+;        // 05
+                                                                   'pedagio_cnpj_for, '+;     // 06
+                                                                   'pedagio_cnpj_res) values ( '+::oCTe_GERAIS:rgConcat_sql(nCTE_ID)+','+;         // 01
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,01])+','+;  // 02
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,03])+','+;  // 03
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,04])+','+;  // 04
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,06])+','+;  // 05
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,07])+','+;  // 06
+                                                                                                 ::oCTe_GERAIS:rgConcat_sql(:aArray[mI,08])+') ')  // 07
+      NEXT
+   END
+   ::oCTe_GERAIS:rgEndTransaction()
+
    IF nNUMCTE<>:oNUMCTE:VARGET()
       ::oCTe_GERAIS:uiAviso('O número da CT-e mudou para '+ALLTRIM(STR(nNUMCTE)) )
 
@@ -2905,10 +3181,11 @@ WITH OBJECT oOBJ:oPage1
       ENDIF
    ENDIF
 
-   IF LEFT(:oTIP_SERVICO:GETTEXT(),1)<>'0'
-      lGERA_CTEAREC:=::oCTe_GERAIS:uiSN('Deseja gerar contas a receber desta CT-e?')
-   ENDIF
-   
+   if _RegEmpresa()<>779 // repram
+      IF LEFT(:oTIP_SERVICO:GETTEXT(),1)<>'0'
+         lGERA_CTEAREC:=::oCTe_GERAIS:uiSN('Deseja gerar contas a receber desta CT-e?')
+      ENDIF
+   endif
 END 
 
 // gera os contas a receber
@@ -3776,7 +4053,9 @@ LOCAL aSQL:={}
                             '       e.'+::tCte_CLIENTE['email']+', '+;                                                     // 87
                             '       a.cte_tiposervico, '+;                                                                 // 88
                             '       a.cte_unidade, '+;                                                                     // 89
-                            '       a.cte_tipo_medida '+;                                                                  // 90
+                            '       a.cte_tipo_medida, '+;                                                                 // 90
+                            '       a.cte_tipo, '+;                                                                        // 91
+                            '       a.cte_chave_completa '+;                                                               // 92
                             '  from sagi_cte a '+;
                             ' left join '+::tCte_CLIENTE['cag_cli']+' b on b.'+::tCte_CLIENTE['codcli']+'=a.remetente_id '+;
                             ' left join '+::tCte_CLIENTE['cag_cli']+' c on c.'+::tCte_CLIENTE['codcli']+'=a.destinatario_id '+;
@@ -3880,7 +4159,8 @@ ENDIF
 ::oCTe_SEFAZ:xml_Tipo_Servico                 := aSQL[1,88]
 ::oCTe_SEFAZ:xml_unidade                      := aSQL[1,89]
 ::oCTe_SEFAZ:xml_tipo_medida                  := aSQL[1,90]
-
+::oCTe_SEFAZ:xml_tpCTe                        := aSQL[1,91]
+::oCTe_SEFAZ:xml_chave_comple                 := aSQL[1,92]
 
 ::oCTe_GERAIS:rgExecuta_Sql('select a.cte_rntrc, '+;
                             '       a.cte_dataprevistaentrega, '+;
@@ -3917,6 +4197,17 @@ ENDIF
                             '  from sagi_cte_prestacao_servico a '+;
                             '  left join tipserv b on b.codserv=a.prest_id_cte_cad_servico '+;
                             'where prest_id_cte='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID),,,@::oCTe_SEFAZ:xml_SERVICOS)
+
+::oCTe_GERAIS:rgExecuta_Sql('Select VEIC_CODIGO, VEIC_RENAVAM, VEIC_PLACA, VEIC_TARA, VEIC_CAPAC_KG, VEIC_CAPAC_M3, VEIC_TP_PROPR, VEIC_TP_VEICULO, VEIC_TP_RODADO, VEIC_TP_CARROC, VEIC_UF_LICENC '+;
+                            'From SAGI_CTE_VEICULOS ' +;
+                            'Where CTE_ID = '+Concat_Sql(nCTE_ID),,,@::oCTe_SEFAZ:xml_VEICULOS)
+                             
+::oCTe_GERAIS:rgExecuta_Sql('select a.pedagio_cnpj_for, '+;
+                            '       a.pedagio_comprovante, '+;
+                            '       a.pedagio_cnpj_res, '+;
+                            '       a.pedagio_valor '+;
+                            '  from sagi_cte_pedagio a '+;
+                            ' where a.cte_id='+::oCTe_GERAIS:rgConcat_sql(nCTE_ID),,,@::oCTe_SEFAZ:xml_pedagio)
 
 RETURN(.T.)
 
@@ -4000,8 +4291,8 @@ IF !::uiCarregaDados(nCTE_ID)
 ENDIF
 
 IF !EMPTY(aSQL[1,4])
-   IF !::oCTe_GERAIS:uiSN('A CT-e selecionada já esta recebida no SEFAZ.'+HB_OsNewLine()+;
-              'Deseja consultar o processo agora ?')
+   IF !::oCTe_GERAIS:uiSN('A CT-e selecionada já esta recpcionada no SEFAZ.'+HB_OsNewLine()+;
+                          'Deseja consultar o processo agora ?')
       RETURN(.F.)
    ENDIF
    aRET:=::oCTe_SEFAZ:ctRetornoRecepcao(aSQL[1,4])
@@ -4354,6 +4645,9 @@ FOR mI:=1 TO LEN(aINU)
                                                                                       ::oCTe_GERAIS:rgConcat_sql(DATE())+','+;
                                                                                       ::oCTe_GERAIS:rgConcat_sql(aINU[mI,2])+"$$,'cte_id');",,,@aSQL)
       aINU[mI,4]:=aSQL[1,1]
+      IF VALTYPE(aINU[mI,4])='C'
+         aINU[mI,4]:=VAL(aINU[mI,4])
+      ENDIF
    ENDIF
    
    ::oCTe_GERAIS:rgExecuta_Sql('update sagi_cte set cte_prot_inut='+::oCTe_GERAIS:rgConcat_sql(aRET['nProt'])+;
@@ -4926,9 +5220,11 @@ WITH OBJECT oOBJ:oPage1
          AADD(aDIF,{'RNTRC/ANTT','rodo','RNTRC',ALLTRIM(STR(:oRNTRC:VARGET())),0})
       ENDIF
 
+      /*  Marco Barcelos - 17/03/2014
       IF :oLOTACAO:GETVALUE()<>aCTE[1,16]
          AADD(aDIF,{'Lotação','rodo','lota',IF(:oLOTACAO:GETVALUE(),'1','0'),0})
       ENDIF
+      */
 
       IF :oENTREGa:GETVALUE()<>aCTE[1,17]
          AADD(aDIF,{'Data Prevista da Entrega','rodo','dPrev',::oFuncoes:FormatDate(:oENTREGa:GETVALUE(),'YYYY-MM-DD','-'),0})
@@ -5129,5 +5425,389 @@ RETURN(.T.)
 
 
 
+Method uiDelLota(oOBJ) Class oCTe_HWgui
+/*
+   Cadastrar dados da lotação
+   Marco Barcelos -14/03/2014
+*/
+WITH OBJECT oOBJ:oPage1:oPage2:oBr4
+   IF LEN(:aArray)<=0 .OR. !::oCTe_GERAIS:uiSN('Confirmar a remoção do veículo selecionado ?')
+      RETURN(.F.)
+   ENDIF
+   ADEL(:aArray,:nCurrent,.T.)
+   :REFRESH()
+END
+RETURN(.T.)
+
+
+Method uiPegaChaveCteComple(oCTE_COMPLE) Class oCTe_HWgui
+/*
+   Pega a chave de uma CT-e
+   Mauricio Cruz - 17/03/2014
+*/
+LOCAL aCTE:=LISTA_CTE('PESQ')
+LOCAL aSQL:={}
+
+IF LEN(aCTE)<=0
+   RETURN(.F.)
+ENDIF
+
+EXECUTA_SQL('select cte_chaveacesso '+;
+            '  from sagi_cte '+;
+            ' where cte_id='+cs(aCTE[1]),,,@aSQL)
+
+IF LEN(aSQL)<=0 .OR. EMPTY(aSQL[1,1])
+   SHOWMSG('Não foi possível localizar a chave da CT-e desejada.')
+   RETURN(.F.)
+ENDIF
+
+IF oCTE_COMPLE<>NIL
+   oCTE_COMPLE:SETTEXT(aSQL[1,1])
+   oCTE_COMPLE:REFRESH()
+ENDIF
+
+/* -------------------------------
+   Cadastrar dados da lotação
+   Marco Barcelos - 14/03/2014
+ -------------------------------*/
+Method uiCadLota(oOBJ, cLan, nCTE_ID) Class oCTe_HWgui
+
+LOCAL oDlg
+LOCAL oGroup1
+LOCAL oLabel1, oLabel2, oLabel3, oLabel4, oLabel5, oLabel6, oLabel7, oLabel8, oLabel9, oLabel10, oLabel11
+LOCAL oCod, oRenavam, oPlaca, oTara, oCapKg, oCapM3
+LOCAL oOwnerbutton1
+LOCAL oButtonex1, oButtonex2, oButtonex3
+LOCAL cCod:='', cRenavam:='', cPlaca:='', nTara:=0, nCapKg:=0, nCapM3:=0
+Local oRadiogroup1, oRadiobutton1, oRadiobutton2, oRadiogroup2, oRadiobutton3, oRadiobutton4, oCombo1, oCombo2, oCombo3
+Local nRadiogroup1 := .T., nRadiogroup2 := .F.
+Local cCombo1, cCombo2, cCombo3, cSQL := '', aSQL := {}, nLoop := 0
+
+IF cLAN='A'
+   WITH OBJECT oOBJ:oPage1:oPage2:oBr4
+      IF LEN(:aArray)<=0
+         RETURN(.F.)
+      ENDIF
+      cCod      := :aArray[:nCurrent,01]
+      cRenavam  := :aArray[:nCurrent,02]
+      cPlaca    := :aArray[:nCurrent,03]
+      nTara     := :aArray[:nCurrent,04]
+      nCapKg    := :aArray[:nCurrent,05]
+      nCapM3    := :aArray[:nCurrent,06]
+      nRadiogroup1 := If(:aArray[:nCurrent,07]='P',1,2)
+      nRadiogroup2 := :aArray[:nCurrent,08]+1
+      cCombo1   := :aArray[:nCurrent,09]
+      cCombo2   := :aArray[:nCurrent,10]+1
+      cCombo3   := :aArray[:nCurrent,11]
+   END
+ENDIF
+
+INIT DIALOG oDlg TITLE "Veículo" AT 0,0 SIZE 800,229 FONT HFont():Add( '',0,-13,400,,,) CLIPPER NOEXIT;
+     ON INIT{||.T. };
+     STYLE DS_CENTER+WS_VISIBLE+WS_CAPTION+WS_MINIMIZEBOX+WS_SYSMENU ICON HIcon():AddResource(::nCte_Icont)
+
+   @ 004,000 GROUPBOX oGroup1 CAPTION "Dados do Veículo"  SIZE 790,180 STYLE BS_LEFT COLOR x_BLUE
+
+   @ 010,025 SAY oLabel1 CAPTION "Código"  SIZE 63,21
+   @ 010,050 GET oCod VAR cCod SIZE 80,24  PICTURE '9999999999' MAXLENGTH 10  ;
+        TOOLTIP 'Informe o código do veículo'
+
+   @ 117,025 SAY oLabel2 CAPTION "Renavam"  SIZE 76,21
+   @ 119,050 GET oRenavam VAR cRenavam SIZE 114,24      MAXLENGTH 11;
+   VALID{|| !Empty(cRenavam) };
+        TOOLTIP 'Informe o número do Renavam do veículo'
+
+   @ 248,025 SAY oLabel3 CAPTION "Placa" SIZE 53,21
+   @ 247,050 GET oPlaca VAR cPlaca SIZE 87,24  PICTURE '@!R AAA-9999'  MAXLENGTH 7  ;
+   VALID{|| !Empty(cPlaca) };
+        TOOLTIP 'Informe a placa do veículo'
+
+   @ 374,025 SAY oLabel4 CAPTION "Tara"  SIZE 44,21
+   @ 376,050 GET oTara VAR nTara SIZE 82,24      MAXLENGTH 6;
+   VALID{|| nTara > 0 };
+        TOOLTIP 'Informe a tara do veículo'
+
+   @ 495,025 SAY oLabel5 CAPTION "Capacidade Kg"  SIZE 118,19
+   @ 499,050 GET oCapKg VAR nCapKg SIZE 119,24  MAXLENGTH 6 ;
+   VALID{|| nCapKg > 0 };
+        TOOLTIP 'Informe a capacidade do veículo em Kg'
+
+   @ 649,025 SAY oLabel6 CAPTION "Capacidade M3"  SIZE 118,21
+   @ 646,050 GET oCapM3 VAR nCapM3 SIZE 131,24     MAXLENGTH 3 ;
+   VALID{|| nCapM3 > 0 };
+        TOOLTIP 'Informe a capacidade do veículo em M3'
+
+   @ 13,86 GET RADIOGROUP oRadiogroup1 VAR nRadiogroup1  ;
+        CAPTION "Tipo de Propriedade"  SIZE 152,80 ;
+        STYLE BS_LEFT
+        @ 22,111 RADIOBUTTON oRadiobutton1 CAPTION "Próprio"  SIZE 90,22
+        @ 22,135 RADIOBUTTON oRadiobutton2 CAPTION "Terceiros"  SIZE 90,22
+   END RADIOGROUP
+   //oRadiogroup1 SELECTED 1
+
+   @ 183,86 GET RADIOGROUP oRadiogroup2 VAR nRadiogroup2  ;
+        CAPTION "Tipo de veículo"  SIZE 130,80 ;
+        STYLE BS_LEFT
+        @ 197,110 RADIOBUTTON oRadiobutton3 CAPTION "Tração"  SIZE 90,22
+        @ 196,137 RADIOBUTTON oRadiobutton4 CAPTION "Reboque"  SIZE 90,22
+   END RADIOGROUP
+   //oRadiogroup2 SELECTED 1
+
+   @ 335,85 SAY oLabel7 CAPTION "Tipo de rodado"  SIZE 110,21
+   @ 336,107 GET COMBOBOX oCombo1 VAR cCombo1  ITEMS {'01 - Truck','02 - Toco','03 - Cavalo Mecânico','04 - VAN','05 - Utilitários','06 - Outros'}  ;
+        SIZE 110,24  ;
+        TOOLTIP 'Selecione o tipo de rodado do veículo'
+
+   @ 485,86 SAY oLabel8 CAPTION "Tipo de carroceria"  SIZE 135,21
+   @ 486,109 GET COMBOBOX oCombo2 VAR cCombo2  ITEMS {'00 - Não aplicável','01 - Aberta','02 - Fechada/Baú','03 - Granelera','04 - Porta Container','05 - Sider'}  ;
+        SIZE 110,24  ;
+        TOOLTIP 'Selecione o tipo de carroceria do veículo'
+
+   @ 641,87 SAY oLabel9 CAPTION "UF do licenciamento"   SIZE 149,21
+   @ 642,108 GET COMBOBOX oCombo3 VAR cCombo3  ITEMS {"AC","AL","AP","AM","BA","CE","DF","GO","ES","MA","MT","MS","MG","PA","PB","PR","PE","PI","RN","RS","RJ","RO","RR","SC","SP","SE","TO","EX"}  DISPLAYCOUNT 10 TEXT ;
+        SIZE 110,24
+
+@ 553,188 BUTTONEX oButtonex1 CAPTION "&Salvar"   SIZE 120,38 STYLE BS_CENTER +WS_TABSTOP;
+          BITMAP (HBitmap():AddResource(::nCte_Img_Salvar)):handle;
+          ON CLICK{|| ::uiSalvaLotacao(oDlg,oOBJ,cLAN) }
+
+@ 673,188 BUTTONEX oButtonex2 CAPTION "&Fechar"   SIZE 120,38 STYLE BS_CENTER +WS_TABSTOP;
+          BITMAP (HBitmap():AddResource(::nCte_Img_Sair)):handle;
+          ON CLICK{|| oDlg:CLOSE() }
+
+ACTIVATE DIALOG oDlg
+
+RETURN(.T.)
+
+/* ------------------------------------------------------
+   salva para a array com dados da lotação
+   Marco Barcelos - 17/03/2014
+-------------------------------------------------------*/
+Method uiSalvaLotacao(oOBJ,oOBJ2,cLAN) Class oCTe_HWgui
+
+Local cTipoProp:='', nTipVeic:=0, cTipCarroc := '', cUF := '', cTipoRoda := ''
+
+WITH OBJECT oOBJ
+   IF EMPTY(:oCapM3:VARGET())
+      ::oCTe_GERAIS:uiAviso('Favor informar a capacidade em M3 deste veículo')
+      RETURN(.F.)
+   ENDIF
+   IF EMPTY(:oCapKg:VARGET())
+      ::oCTe_GERAIS:uiAviso('Favor informar a capacidade em Kg deste veículo')
+      RETURN(.F.)
+   ENDIF
+   IF EMPTY(:oRENAVAM:VARGET())
+      ::oCTe_GERAIS:uiAviso('Favor informar o Renavam do veículo')
+      RETURN(.F.)
+   ENDIF
+   IF Empty(:oPlaca:VARGET())
+      ::oCTe_GERAIS:uiAviso('Favor informar a placa do veículo')
+      RETURN(.F.)
+   ENDIF
+   IF :oTara:VARGET()<=0
+      ::oCTe_GERAIS:uiAviso('Favor informar a tara do veículo')
+      RETURN(.F.)
+   ENDIF
+
+   WITH OBJECT oOBJ2:oPage1:oPage2:oBr4
+      If oOBJ:oRadiobutton1:GETVALUE()
+         cTipoProp := 'P'
+      Else
+         cTipoProp := 'T'
+      Endif
+      If oOBJ:oRadiobutton3:GETVALUE()
+         nTipVeic := 0
+      Else
+         nTipVeic := 1
+      Endif
+      cTipoRoda := Left(oOBJ:oCombo1:VARGET(),2)
+      cTipCarroc :=  Left(oOBJ:oCombo2:VARGET(),2)
+      cUF :=  oOBJ:oCombo3:VARGET()
+      IF cLAN='C'
+         AADD(:aArray,{ oOBJ:oCOD:VARGET(), oOBJ:oRenavam:VARGET(), oOBJ:oPlaca:VARGET(), oOBJ:oTara:VARGET(), oOBJ:oCapKg:VARGET(),;
+              oOBJ:oCapM3:VARGET(), cTipoProp, nTipVeic, cTipoRoda, cTipCarroc, cUF })
+      ELSE
+         :aArray[:nCurrent,01] := oOBJ:oCod:VARGET()
+         :aArray[:nCurrent,02] := oOBJ:oRenavam:VARGET()
+         :aArray[:nCurrent,03] := oOBJ:oPlaca:VARGET()
+         :aArray[:nCurrent,04] := oOBJ:oTara:VARGET()
+         :aArray[:nCurrent,05] := oOBJ:oCapKg:VARGET()
+         :aArray[:nCurrent,06] := oOBJ:oCapM3:VARGET()
+         :aArray[:nCurrent,07] := cTipoProp
+         :aArray[:nCurrent,08] := nTipVeic
+         :aArray[:nCurrent,09] := cTipoRoda
+         :aArray[:nCurrent,10] := cTipCarroc
+         :aArray[:nCurrent,11] := cUF
+      ENDIF
+      :REFRESH()
+   END
+   :CLOSE()
+END
+RETURN(.T.)
+
+
+
+Method uiCad_pedagio(oOBJ,cLAN) Class oCTe_HWgui
+/*
+   Cadastro de dados do pedágio
+   Mauricio Cruz - 18/03/2014
+*/
+LOCAL oTELA:=oSygTela()
+
+WITH OBJECT oOBJ:oPage1:oPage2:oBr5
+   IF cLAN='A' .AND. LEN(:aArray)<=0
+      RETURN(.F.)
+   ENDIF
+END
+
+oTELA:cTitulo:='Pedágio'
+oTELA:nWidth:=559
+oTELA:nHeight:=255
+oTELA:lModal:=.T.
+oTELA:bDesenhaTela:={|| TELA_PEDAGIO(oTELA,oOBJ,cLAN)  }
+oTELA:aBotoes:= {{'&Salvar' ,{|| SALVA_PEDAGIO(oTELA,oOBJ,cLAN)  } ,'Salvar os dados do pedágio',(HBitmap():AddResource(1002)):handle }}
+oTELA:Execute()
+
+RETURN(.T.)
+
+STATIC FUNCTION SALVA_PEDAGIO(oTELA,oOBJ,cLAN)
+/*
+   Salva os dados do pedágio
+   Mauricio Cruz - 18/03/2014
+*/
+LOCAL aSQL:={}
+LOCAL cCNPJfor:='', cCNPJcli:=''
+
+WITH OBJECT oTELA:oDlgTela
+   IF :oCODfor:VARGET()<=0
+      SHOWMSG('Favor informar o fornecedor do vale pedágio.')
+      RETURN(.F.)
+   ENDIF
+   IF EMPTY(:oCPV:VARGET())
+      SHOWMSG('Favor informar o comprovante do vale pedágio.')
+      RETURN(.F.)
+   ENDIF
+   IF :oVAL:VARGET()<=0
+      SHOWMSG('Favor informar o valor do vale pedágio.')
+      RETURN(.F.)
+   ENDIF
+   
+   EXECUTA_SQL('select cgc from cag_for where codfor='+concat_sql(:oCODfor:VARGET()),,,@aSQL)
+   IF LEN(aSQL)<=0 .OR. EMPTY(aSQL[1,1])
+      SHOWMSG('Não foi possível localizar o CNPJ do fornecedor do vale pedágio.')
+      RETURN(.F.)
+   ENDIF
+   cCNPJfor:=aSQL[1,1]
+
+   IF :oCODcli:VARGET()>0   
+      EXECUTA_SQL('select cgc from cag_cli where codcli='+concat_sql(:oCODcli:VARGET()),,,@aSQL)
+      IF LEN(aSQL)<=0 .OR. EMPTY(aSQL[1,1])
+         SHOWMSG('Não foi possível localizar o CNPJ do responsável pelo pagamento do vale pedágio.')
+         RETURN(.F.)
+      ENDIF
+      cCNPJcli:=aSQL[1,1]
+   ENDIF   
+   
+   IF cLAN='C'
+      AADD(oOBJ:oPage1:oPage2:oBr5:aArray,{:oCODfor:VARGET(),:oNOMfor:VARGET(),:oCPV:VARGET(),:oCODcli:VARGET(),:oNOMcli:VARGET(),:oVAL:VARGET(),cCNPJfor,cCNPJcli})
+   ELSE
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,1]:=:oCODfor:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,2]:=:oNOMfor:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,3]:=:oCPV:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,4]:=:oCODcli:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,5]:=:oNOMcli:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,6]:=:oVAL:VARGET()
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,7]:=cCNPJfor
+      oOBJ:oPage1:oPage2:oBr5:aArray[oOBJ:oPage1:oPage2:oBr5:nCurrent,8]:=cCNPJcli
+   ENDIF
+
+   oOBJ:oPage1:oPage2:oBr5:REFRESH()
+   :CLOSE()
+END
+
+
+
+RETURN(.T.)
+
+STATIC FUNCTION TELA_PEDAGIO(oTELA,oOBJ,cLAN)
+/*
+   Tela de dados do pedágio
+   Mauricio Cruz - 18/03/2014
+*/
+LOCAL oGroup1, oGroup2
+LOCAL oLabel1, oLabel2
+LOCAL oCPV, oVAL, oCODfor,oCODcli,oNOMfor,oNOMcli
+LOCAL oOwnerbutton1, oOwnerbutton2
+LOCAL cCPV:='', cNOMfor:='', cNOMcli:=''
+LOCAL nVAL:=0, nCODcli:=0, nCODfor:=0
+LOCAL oFOR:=oSygTela()
+LOCAL oRES:=oSygTela()
+
+IF cLAN='A'
+   WITH OBJECT oOBJ:oPage1:oPage2:oBr5
+      nCODfor:=:aArray[:nCurrent,1]
+      cNOMfor:=:aArray[:nCurrent,2]
+      cCPV:=:aArray[:nCurrent,3]
+      nCODcli:=:aArray[:nCurrent,4]
+      cNOMcli:=:aArray[:nCurrent,5]
+      nVAL:=:aArray[:nCurrent,6]
+   END
+ENDIF
+
+@ 004,000 GROUPBOX oGroup1 CAPTION "Fornecedor"  SIZE 550,57 STYLE BS_LEFT COLOR x_BLUE
+
+@ 012,020 GET oCODfor VAR nCODfor SIZE 80,24  PICTURE '9999999999' MAXLENGTH 10;
+          VALID{|| IF(nCODfor>0,PEGAFOR(@nCODfor,@cNOMfor,oCODfor,oNOMfor),.T.)  };
+          TOOLTIP 'Informe o código do fornecedor ou deixe vazil para informar o nome'
+
+@ 094,020 GET oNOMfor VAR cNOMfor SIZE 425,24  PICTURE '@!' MAXLENGTH 100;
+          VALID{|| IF(nCODfor<=0,PEGAFOR(@nCODfor,@cNOMfor,oCODfor,oNOMfor),.T.)  };
+          TOOLTIP 'Informe o nome do fornecedor, parte do nome ou deixe vazil para a lista'
+
+@ 521,020 OWNERBUTTON oOwnerbutton1  SIZE 24,24 FLAT;
+          ON CLICK {|| nCODfor:=0, cNOMfor:='',PEGAFOR(@nCODfor,@cNOMfor,oCODfor,oNOMfor) };
+          BITMAP 1010 FROM RESOURCE  TRANSPARENT;
+          TOOLTIP 'Localizar um fornecedor'
+
+@ 004,060 GROUPBOX oGroup2 CAPTION "Responsável Pelo Pagamento"  SIZE 550,57 STYLE BS_LEFT COLOR x_BLUE
+@ 012,083 GET oCODcli VAR nCODcli SIZE 80,24  PICTURE '999999999' MAXLENGTH 10;
+          VALID{|| IF(nCODcli>0,PEGACLI(@nCODcli,@cNOMcli,oCODcli,oNOMcli),.T.)  };
+          TOOLTIP 'Informe o código do cliente ou deixe vazil para informar o nome'
+
+@ 094,083 GET oNOMcli VAR cNOMcli SIZE 425,24  PICTURE '@!' MAXLENGTH 100;
+          VALID{|| IF(nCODcli<=0,PEGACLI(@nCODcli,@cNOMcli,oCODcli,oNOMcli),.T.)  };
+          TOOLTIP 'Informe o nome do cliente, parte do nome ou deixe vazil para a lista'
+
+@ 522,083 OWNERBUTTON oOwnerbutton2  SIZE 24,24 FLAT;
+          ON CLICK {|| nCODcli:=0, cNOMcli:='',PEGACLI(@nCODcli,@cNOMcli,oCODcli,oNOMcli) };
+          BITMAP 1010 FROM RESOURCE  TRANSPARENT;
+          TOOLTIP 'Localizar um cliente'
+
+@ 004,131 SAY oLabel1 CAPTION "Comprovante de Compra:"  SIZE 149,21
+@ 160,128 GET oCPV VAR cCPV SIZE 207,24  PICTURE '99999999999999999999' MAXLENGTH 20;
+          TOOLTIP 'Informe o comprovante da compra'
+
+@ 004,164 SAY oLabel2 CAPTION "Valor do Vale-Pedágio:"  SIZE 136,21  
+@ 160,161 GET oVAL VAR nVAL SIZE 207,24  PICTURE '@E 999,999,999.99' MAXLENGTH 13;
+          TOOLTIP 'Informe o valor do vale pedágio'
+
+RETURN(.T.)
+
+Method uiDel_pedagio(oOBJ) Class oCTe_HWgui
+/*
+   Exclui um dado de pedágio
+   Mauricio Cruz - 18/03/2014
+*/
+WITH OBJECT oOBJ:oPage1:oPage2:oBr5
+   IF LEN(:aArray)<=0 .OR. !SN('Confirma a exclusão do pedágio selecionado ?')
+      RETURN(.F.)
+   ENDIF
+   ADEL(:aArray,:nCurrent,.T.)
+   :REFRESH()
+END
+
+Return(.T.)
 
 // * EOF
+
+

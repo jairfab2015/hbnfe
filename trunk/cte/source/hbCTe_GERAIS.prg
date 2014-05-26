@@ -10,6 +10,8 @@
 #include "HBXML.ch"
 #include "hbCTe.ch"
 
+STATIC CR := CHR(10)
+
 Class oCTe_GERAIS
 
    // Metodos Rotinas gerais
@@ -299,10 +301,18 @@ Method rgRelatorioGeral(oOBJ,cSOP,cFIL) Class oCTe_GERAIS
    Impressao em fastreport do relatorio geral dos cte
    Mauricio Cruz - 22/08/2013
 */
+LOCAL dINI:=DATE(), dFIM:=DATE()
 LOCAL mI:=0
 LOCAL aSQL:={}
 
 WITH OBJECT oOBJ
+   dINI:=:oINI:GETVALUE()
+   dFIM:=:oFIM:GETVALUE()
+   IF :oTODper:GETVALUE()
+      dINI:=CTOD('01-01-1900')
+      dFIM:=CTOD('31-12-3900')
+   ENDIF
+
    ::rgExecuta_Sql('select a.cte_numerodacte, '+;                                            // 01
                    '       a.cte_serie, '+;                                                  // 02
                    '       a.cte_modelo, '+;                                                 // 03
@@ -375,15 +385,16 @@ WITH OBJECT oOBJ
                    '       g.docs_npeso, '+;                                                 // 48
                    '       g.docs_chavenfe, '+;                                              // 49
                    '       g.docs_id_cte, '+;                                                // 50
-                   '       a.cte_valfrete '+;                                                // 51
+                   '       a.cte_valfrete, '+;                                               // 51
+                   '       c.cliente '+;                                                     // 52
                    '  from sagi_cte a '+;
-                   '  left join cag_cli b on b.codcli=a.remetente_id '+;
+                   '  left join cag_cli b on b.codcli=a.remetente_id '+; 
                    '  left join cag_cli c on c.codcli=a.destinatario_id '+;
                    '  left join sagi_cte_prestacao_servico f on f.prest_id_cte=a.cte_id '+;
                    '  left join sagi_cte_docs g on g.docs_id_cte=a.cte_id '+;
                    '  left join tipserv h on h.codserv=f.prest_id_cte_cad_servico '+;
-                   ' where a.'+IF(:oPER:GETTEXT()='Emissão','cte_dataemissao','cte_dataautorizacao')+'>='+::rgConcat_sql(:oINI:GETVALUE())+;
-                   '   and a.'+IF(:oPER:GETTEXT()='Emissão','cte_dataemissao','cte_dataautorizacao')+'<='+::rgConcat_sql(:oFIM:GETVALUE())+;
+                   ' where a.'+IF(:oPER:GETTEXT()='Emissão','cte_dataemissao','cte_dataautorizacao')+'>='+::rgConcat_sql(dINI)+;
+                   '   and a.'+IF(:oPER:GETTEXT()='Emissão','cte_dataemissao','cte_dataautorizacao')+'<='+::rgConcat_sql(dFIM)+;
                    '   and '+IF(:oSIT:GETTEXT()<>'TODAS'," case when trim(a.cte_prot_canc)<>'' then 'CANCELADA' "+;
                                                          "      when trim(a.cte_prot_inut)<>'' then 'INUTILIZADA' "+;
                                                          "      when trim(a.cte_protocolo)<>'' then 'AUTORIZADA' "+;
@@ -391,8 +402,8 @@ WITH OBJECT oOBJ
                                                          ' end::text='+::rgConcat_sql(:oSIT:GETTEXT()),'true')+;
                    '   and a.cte_serie='+::rgConcat_sql(:oSER:GETTEXT())+;
                    '   and a.cte_modelo='+::rgConcat_sql(:oMOD:GETTEXT())+;
-                   '   and ('+IF(:oREM:GETVALUE(),"b.cliente like '%"+ALLTRIM(:oNOM:VARGET())+"%'",'true')+;
-                   '    or ' +IF(:oDES:GETVALUE(),"c.cliente like '%"+ALLTRIM(:oNOM:VARGET())+"%'",'true')+')'+;
+                   '   and '+IF(:oREM:GETVALUE(),"b.cliente like '%"+ALLTRIM(:oNOM:VARGET())+"%'",'true')+;
+                   '   and '+IF(:oDES:GETVALUE(),"c.cliente like '%"+ALLTRIM(:oNOM:VARGET())+"%'",'true')+;
                    '   and '+IF(!EMPTY(:oPROD:VARGET()),"a.cte_descricaopredominante like '%"+ALLTRIM(:oPROD:VARGET())+"%'" ,'true')+;
                    '   and '+IF(:oCFOP:VARGET()>0,'a.cfop_id='+::rgConcat_sql(:oCFOP:VARGET()),'true')+;
                    '   and '+IF(!EMPTY(:oPLA:VARGET()),"a.cte_placa like '%"+ALLTRIM(:oPLA:VARGET())+"%'",'true')+;
