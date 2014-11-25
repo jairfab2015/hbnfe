@@ -26,12 +26,28 @@ CLASS hbNFeAssina
    METHOD execute()
    ENDCLASS
 
+#define XML_NFE          1
+#define XML_CANCEL       2
+#define XML_INUTIL       3
+#define XML_OUTROS       4
+#define XML_EVENTO       5
+#define XML_EVENTOCANCEL 6
+#define XML_EVENTOMANIF  7
+#define XML_CTE          8
+#define XML_MDFE         9
 
 METHOD execute() CLASS hbNFeAssina
    LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
          xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois,;
          XMLAssinado, posini, ParseError, oSchema, SIGNEDKEY, DSIGKEY, SCONTAINER,;
          SPROVIDER, ETYPE, TIPO, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXMLSig
+   //LOCAL aDelimitadores := { ;
+   //   { "<infMDFe",   "</MDFe>",    XML_MDFE   }, ;
+   //   { "<infCte",    "</CTe>",     XML_CTE    }, ;
+   //   { "<infNFe",    "</NFe>",     XML_NFE    }, ;
+   //   { "<infCanc",   "</cancNFe>", XML_CANCEL }, ;
+   //   { "<infInut",   "</inutNFe>", XML_INUTIL }, ;
+   //   { "<infEvento", "</evento>",  XML_EVENTO } }
 
    IF ::lMemFile = Nil
       ::lMemFile = .F.
@@ -51,29 +67,36 @@ METHOD execute() CLASS hbNFeAssina
       ENDIF
       cXML := MEMOREAD(::cXMLFile)
    ENDIF
-   IF AT('<Signature',cXML) <= 0
+   IF AT( '<Signature', cXML ) <= 0
+      //FOR nCont = 1 TO Len( aDelimitadores )
+      //   IF aDelimitadores[ nCont, 1 ] $ cXml
+      //      Tipo := aDelimitadores[ nCont, 3 ]
+      //      EXIT
+      //   ENDIF
+      //NEXT
+      Tipo := 0
       I := AT('<infNFe',cXML)
-      Tipo := 1
+      Tipo := XML_NFE
       IF I = 0
          I := AT('<infCanc',cXML)
          IF I > 0
-            Tipo := 2
+            Tipo := XML_CANCEL
          ELSE
             I := AT('<infInut',cXML)
             IF I > 0
-               Tipo := 3
+               Tipo := XML_INUTIL
             ELSE
                I := AT('<infEvento', cXML)
                IF I > 0
                  IF '<tpEvento>110111</tpEvento>'$cXML   // Cancelamento por Evento - Mauricio Cruz - 09/10/2012
-                    Tipo := 6
+                    Tipo := XML_EVENTOCANCEL
                  ELSEIF '<tpEvento>210200</tpEvento>'$cXML .OR. '<tpEvento>210210</tpEvento>'$cXML .OR. '<tpEvento>210220</tpEvento>'$cXML .OR. '<tpEvento>210240</tpEvento>'$cXML // Manifestação do destinatario - Mauricio Cruz 15/10/2012
-                    Tipo := 7
+                    Tipo := XML_EVENTOMANIF
                  ELSE
-                    Tipo := 5
+                    Tipo := XML_EVENTO
                  ENDIF
                ELSE
-                 Tipo := 4
+                 Tipo := XML_OUTROS
                ENDIF
             ENDIF
          ENDIF
@@ -90,7 +113,7 @@ METHOD execute() CLASS hbNFeAssina
          aRetorno['MsgErro']  := 'Não encontrei inicio do URI: aspas inicial'
          RETURN(aRetorno)
       ENDIF
-      J := AT('"',cXML,I+1)
+      J := AT( '"', cXML, I + 1 )
       IF J = 0
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'Não encontrei inicio do URI: aspas final'
@@ -98,15 +121,15 @@ METHOD execute() CLASS hbNFeAssina
       ENDIF
       URI := SUBS(cXML,I+1,J-I-1)
 
-      IF Tipo = 1
+      IF Tipo = XML_NFE
          cXML := SUBS(cXML,1,AT('</NFe>',cXML)-1)
-      ELSEIF Tipo = 2
+      ELSEIF Tipo = XML_CANCEL
          cXML := SUBS(cXML,1,AT('</cancNFe>',cXML)-1)
-      ELSEIF Tipo = 3
+      ELSEIF Tipo = XML_INUTIL
          cXML := SUBS(cXML,1,AT('</inutNFe>',cXML)-1)
-      ELSEIF Tipo = 4
+      ELSEIF Tipo = XML_OUTROS
          cXML := SUBS(cXML,1,AT('</envDPEC>',cXML)-1)
-      ELSEIF Tipo = 5 .OR. Tipo = 6 .OR. Tipo=7
+      ELSEIF Tipo = XML_EVENTO .OR. Tipo = XML_EVENTOCANCEL .OR. Tipo = XML_EVENTOMANIF
          cXML := SUBS(cXML,1,AT('</evento>',cXML)-1)
       ENDIF
 
@@ -123,15 +146,15 @@ METHOD execute() CLASS hbNFeAssina
       ENDIF
       cXML += cXMLSig
 
-      IF Tipo = 1
+      IF Tipo = XML_NFE
          cXML := cXML + '</NFe>'
-      ELSEIF Tipo = 2
+      ELSEIF Tipo = XML_CANCEL
          cXML := cXML + '</cancNFe>'
-      ELSEIF Tipo = 3
+      ELSEIF Tipo = XML_INUTIL
          cXML := cXML + '</inutNFe>'
-      ELSEIF Tipo = 4
+      ELSEIF Tipo = XML_OUTROS
          cXML := cXML + '</envDPEC>'
-      ELSEIF Tipo = 5 .OR. Tipo = 6 .OR. Tipo=7
+      ELSEIF Tipo = XML_EVENTO .OR. Tipo = XML_EVENTOCANCEL .OR. Tipo = XML_EVENTOMANIF
          cXML := cXML + '</evento>' //</envEvento>'
       ENDIF
   ENDIF
