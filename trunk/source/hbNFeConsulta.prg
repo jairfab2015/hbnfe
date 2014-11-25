@@ -234,7 +234,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                  + '<NFe xmlns' + hbNFe_PegaDadosXML('NFe xmlns', cXMLSai, 'NFe' ) + '</NFe>';
                  + aRetorno['protNFe'];
                  + '</nfeProc>'
-*/                 
+*/
          TRY
             MEMOWRIT( ::cNFeFile, cXMLSai, .F. )
          CATCH
