@@ -73,7 +73,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    cXML := cXML +   '</soap12:Body>'
    cXML := cXML +'</soap12:Envelope>'
 
-   
+
    TRY
       MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::idLote+"-env-lot.xml",cXMLDadosMsg,.F.)
    CATCH
@@ -84,9 +84,9 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
 
    cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
    cUrlWS := ::ohbNFe:getURLWS(_RECEPCAO)
-   
+
 //ShowMsg_Edit(cUrlWS)
-   
+
   IF ::ohbNFe:nSOAP = HBNFE_CURL
      aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
                  'SOAPAction: "NfeRecepcao2"',;
@@ -133,7 +133,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
      oServerWS:open("POST", cUrlWS, .F.)
      oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
-  
+
      #ifdef __XHARBOUR__
         oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
      #else
@@ -206,7 +206,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    aRetorno['dhRecbto'] := oFuncoes:pegaTag(cXMLResp, "dhRecbto")
    aRetorno['nRec']     := oFuncoes:pegaTag(cXMLResp, "nRec")
    aRetorno['tMed']     := oFuncoes:pegaTag(cXMLResp, "tMed")
-   
+
    IF ::lAguardaRetorno
    	  FOR nVezesRet = 1 to ::nVezesTentaRetorno              // Anderson Camilo  10/11/2011
          FOR nI = 1 TO ::nTempoAguardaRetorno              // Anderson Camilo  10/11/2011
@@ -272,7 +272,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
   	   NEXT nVezesRet
 
    ENDIF
-   
+
    oDOMDoc:=Nil
    oServerWS:=Nil
 RETURN(aRetorno)
