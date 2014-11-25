@@ -5,6 +5,8 @@
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 * projeto de apoio para assinatura pem http://wiki.gophp.com.br/index.php?title=Assinar_NFe        *
 ****************************************************************************************************
+
+
 #include "common.ch"
 #include "hbclass.ch"
 #ifndef __XHARBOUR__
@@ -15,19 +17,21 @@
 #endif
 #include "hbnfe.ch"
 
+
 CLASS hbNFeAssina
    DATA ohbNFe
    DATA cXMLFile
    DATA lMemFile
 
    METHOD execute()
-ENDCLASS
+   ENDCLASS
+
 
 METHOD execute() CLASS hbNFeAssina
-LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
-      xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois,;
-      XMLAssinado, posini, ParseError, oSchema, SIGNEDKEY, DSIGKEY, SCONTAINER,;
-      SPROVIDER, ETYPE, TIPO, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXMLSig
+   LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
+         xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois,;
+         XMLAssinado, posini, ParseError, oSchema, SIGNEDKEY, DSIGKEY, SCONTAINER,;
+         SPROVIDER, ETYPE, TIPO, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXMLSig
 
    IF ::lMemFile = Nil
       ::lMemFile = .F.
@@ -173,7 +177,7 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
        oDOMDoc:resolveExternals := .F.
        oDOMDoc:validateOnParse  = .T.
        oDOMDoc:preserveWhiteSpace = .T.
-    
+
        TRY
          #ifdef __XHARBOUR__
             xmldsig := xhb_CreateObject( _MSXML2_MXDigitalSignature )
@@ -214,13 +218,13 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
           aRetorno['MsgErro']  := 'Certificado não encontrado, Favor revisar a instalação do Certificado'
           RETURN(aRetorno)
        ENDIF
-    
+
        #ifdef __XHARBOUR__
           oStoreMem := xhb_CreateObject( "CAPICOM.Store" )
        #else
           oStoreMem := win_oleCreateObject( "CAPICOM.Store" )
        #endif
-    
+
        TRY
           oStoreMem:open(_CAPICOM_MEMORY_STORE,'Memoria',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
        CATCH oError
@@ -250,9 +254,9 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
        END
 
        xmldsig:store := oStoreMem
-    
+
        //---> Dados necessários para gerar a assinatura
-       
+
        TRY
           eType := oCert:PrivateKey:ProviderType
           sProvider := oCert:PrivateKey:ProviderName
@@ -261,7 +265,7 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-          RETURN(aRetorno)          
+          RETURN(aRetorno)
        END
        IF (dsigKey = nil)
           aRetorno['OK']       := .F.
@@ -338,4 +342,4 @@ LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
    ParseError := nil
    oSchema := nil
    aRetorno['OK'] := .T.
-RETURN(aRetorno)
+   RETURN(aRetorno)
