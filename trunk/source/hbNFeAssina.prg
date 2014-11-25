@@ -68,13 +68,13 @@ METHOD execute() CLASS hbNFeAssina
       IF EMPTY( cXML )
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'XML de memoria vazio.'
-         RETURN(aRetorno)
+         RETURN aRetorno
       ENDIF
    ELSE
       IF !FILE( ::cXMLFile )
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'Arquivo nao encontrado '+::cXMLFile
-         RETURN(aRetorno)
+         RETURN aRetorno
       ENDIF
       cXML := MEMOREAD(::cXMLFile)
    ENDIF
@@ -122,19 +122,19 @@ METHOD execute() CLASS hbNFeAssina
       IF I = 0
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'Não encontrei inicio do URI: Id='
-         RETURN(aRetorno)
+         RETURN aRetorno
       ENDIF
       I := AT('"',cXML,I+2)
       IF I = 0
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'Não encontrei inicio do URI: aspas inicial'
-         RETURN(aRetorno)
+         RETURN aRetorno
       ENDIF
       J := AT( '"', cXML, I + 1 )
       IF J = 0
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := 'Não encontrei inicio do URI: aspas final'
-         RETURN(aRetorno)
+         RETURN aRetorno
       ENDIF
       URI := SUBS(cXML,I+1,J-I-1)
 
@@ -213,7 +213,7 @@ METHOD execute() CLASS hbNFeAssina
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Nao consegui carregar ' + _MSXML2_DOMDocument
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
        oDOMDoc:async = .F.
        oDOMDoc:resolveExternals := .F.
@@ -229,7 +229,7 @@ METHOD execute() CLASS hbNFeAssina
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Nao consegui carregar ' + _MSXML2_MXDigitalSignature
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
 
        oDOMDoc:LoadXML(cXML)
@@ -241,7 +241,7 @@ METHOD execute() CLASS hbNFeAssina
                       +"code: "+STR(oDOMDoc:parseError:errorCode)
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := cMsgErro
-          RETURN(aRetorno)
+          RETURN aRetorno
        ENDIF
 
        DSIGNS = "xmlns:ds='http://www.w3.org/2000/09/xmldsig#'"
@@ -251,14 +251,14 @@ METHOD execute() CLASS hbNFeAssina
        IF (xmldsig:signature = nil)
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'É preciso carregar o template antes de assinar.'
-          RETURN(aRetorno)
+          RETURN aRetorno
        ENDIF
 
        oCert:=::ohbNFe:pegaObjetoCertificado(::ohbNFe:cSerialCert)
        IF oCert == Nil
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Certificado não encontrado, Favor revisar a instalação do Certificado'
-          RETURN(aRetorno)
+          RETURN aRetorno
        ENDIF
 
        #ifdef __XHARBOUR__
@@ -278,7 +278,7 @@ METHOD execute() CLASS hbNFeAssina
                 	 "Mensangem: " + oError:Description
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := cMSgErro
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
 
        TRY
@@ -292,7 +292,7 @@ METHOD execute() CLASS hbNFeAssina
                 	 "Mensangem: " + oError:Description
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := cMSgErro
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
 
        xmldsig:store := oStoreMem
@@ -307,12 +307,12 @@ METHOD execute() CLASS hbNFeAssina
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
        IF (dsigKey = nil)
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP.'
-          RETURN(aRetorno)
+          RETURN aRetorno
        ENDIF
 
        TRY
@@ -320,7 +320,7 @@ METHOD execute() CLASS hbNFeAssina
        CATCH
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-          RETURN(aRetorno)
+          RETURN aRetorno
        END
 
        IF (signedKey <> nil)
@@ -344,7 +344,7 @@ METHOD execute() CLASS hbNFeAssina
        ELSE
           aRetorno['OK']       := .F.
           aRetorno['MsgErro']  := 'Assinatura Falhou.'
-          RETURN(aRetorno)
+          RETURN aRetorno
        ENDIF
 
        IF xmlHeaderAntes <> ''
@@ -377,11 +377,11 @@ METHOD execute() CLASS hbNFeAssina
             	 "Mensangem: " + oError:Description
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMSgErro
-      RETURN(aRetorno)
+      RETURN aRetorno
    END
 
-   oDOMDoc := nil
+   oDOMDoc    := nil
    ParseError := nil
-   oSchema := nil
-   aRetorno['OK'] := .T.
-   RETURN(aRetorno)
+   oSchema    := nil
+   aRetorno[ 'OK' ] := .T.
+   RETURN aRetorno
