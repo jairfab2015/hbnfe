@@ -22,7 +22,7 @@ class hbMDFe
    DATA cCHAVE
    DATA aMUNcarregamento
    DATA aUFpercurso
-   
+
    DATA emit_IE
    DATA emit_xNome
    DATA emit_xFant
@@ -36,7 +36,7 @@ class hbMDFe
    DATA emit_UF
    DATA emit_fone
    DATA emit_email
-   
+
    DATA modRod_RNTRC
    DATA modRod_CIOT
    DATA modRod_cInt
@@ -48,7 +48,7 @@ class hbMDFe
    DATA modRod_pedagio
    DATA modRod_capKG
    DATA modRod_capM3
-   
+
    DATA munDes_municipio
 
    DATA qCTe INIT 0 HIDDEN
@@ -61,24 +61,24 @@ class hbMDFe
    DATA aLACRE
    DATA infAdFisco
    DATA infCpl
-   
+
    DATA versaoDados
-   
+
    DATA mdfRecibo
-   
+
    DATA nProt
    DATA xJust
    DATA URIId
-   
+
    DATA cUFencerra
    DATA cMUNencerra
-   
+
    DATA cDANDFE
    DATA cLANG
-   
+
    DATA lDesign
-   
-   Method LinkWebService()
+
+   Method LinkWebService( cServ )
    Method XMLide()
    Method XMLemit()
    Method XMLmodalRodoviario()
@@ -95,17 +95,17 @@ class hbMDFe
    Method MDFeCancela()
    Method MDFeEncerra()
    Method MDFeImprimeFastReport()
-   
+
 EndCLass
 
 
-Method LinkWebService(cServ) Class hbMDFe
+Method LinkWebService( cServ ) Class hbMDFe
 /*
    Links dos webservices do MDFe
    Mauricio Cruz - 22/05/2013
 */
 LOCAL aWEB:={}
-LOCAL nSCAN:=0
+LOCAL nSCAN
 LOCAL cRET:=''
 //          Serviço              Verc  Produção                                                                    Homologação
 AADD(aWEB,{'MDFeRecepcao'      ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            })
@@ -127,7 +127,7 @@ Method XMLide() Class hbMDFe
    Mauricio Cruz - 21/05/2031
 */
 LOCAL aRETORNO:=HASH()
-LOCAL mI:=0
+LOCAL mI // :=0
 LOCAL cXML:=''
 
 aRETORNO['STATUS']:=.F.
@@ -219,7 +219,7 @@ FOR mI:=1 TO LEN(::aMUNcarregamento)
    cXML+='<infMunCarrega>'
    cXML+=   '<cMunCarrega>'+ALLTRIM(STR(::aMUNcarregamento[mI,1]))+'</cMunCarrega>'
    cXML+=   '<xMunCarrega>'+ALLTRIM(::aMUNcarregamento[mI,2])+'</xMunCarrega>'
-   cXML+='</infMunCarrega>'   
+   cXML+='</infMunCarrega>'
 NEXT
 FOR mI:=1 TO LEN(::aUFpercurso)
    cXML+='<infPercurso>'
@@ -315,7 +315,7 @@ TRY
       cXML+='<xCpl>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xCpl))+'</xCpl>'
    ENDIF
 CATCH
-END   
+END
 cXML+=      '<xBairro>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xBairro))+'</xBairro>'
 cXML+=      '<cMun>'+ALLTRIM(::emit_cMun)+'</cMun>'
 cXML+=      '<xMun>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xMun))+'</xMun>'
@@ -330,13 +330,13 @@ TRY
    IF !EMPTY(::emit_fone)
       cXML+='<fone>'+ALLTRIM(::emit_fone)+'</fone>'
    ENDIF
-CATCH 
+CATCH
 END
 TRY
    IF !EMPTY(::emit_email)
       cXML+='<email>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_email))+'</email>'
    ENDIF
-CATCH 
+CATCH
 END
 cXML+=   '</enderEmit>'
 cXML+='</emit>'
@@ -348,7 +348,7 @@ IF MEMOWRIT(::cXML,cXML,.F.)
    aRETORNO['MSG']:='Grupo EMIT criado com sucesso.'
 ELSE
    aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo EMIT'
-ENDIF   
+ENDIF
 
 Return(aRETORNO)
 
@@ -407,7 +407,7 @@ TRY
       cXMLmod+='<CIOT>'+ALLTRIM(STR(::modRod_CIOT))+'</CIOT>'
    ENDIF
 CATCH
-END   
+END
 //cXMLmod+=      '<veicPrincipal>'   QQQ
 cXMLmod+=      '<veicTracao>'
 TRY
@@ -484,7 +484,7 @@ TRY
       cXMLmod+=   '</valePed>'
    ENDIF
 CATCH
-END   
+END
 cXMLmod+='</rodo>'
 // QQQ
 
@@ -504,7 +504,7 @@ IF MEMOWRIT(::cXML,cXML,.F.)
    aRETORNO['MSG']:='Grupo Modal Ferroviário criado com sucesso.'
 ELSE
    aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo Modal Ferroviário'
-ENDIF   
+ENDIF
 
 Return(aRETORNO)
 
@@ -541,7 +541,7 @@ FERASE(::cXML)
 
        1          2            3          4          5      6
 {cMunDescarga,xMunDescarga,{<infCTe>},{<infNFe>},<infCT>,<infNF> } 1 2  3     4    5    6   7         8
-                                |         |          |      |->{CNPJ,UF,nNF,serie,dEmi,vNF,PIN,{<infUnidTransp>}}  1         2                3                4 
+                                |         |          |      |->{CNPJ,UF,nNF,serie,dEmi,vNF,PIN,{<infUnidTransp>}}  1         2                3                4
                                 |         |          |                                                  |->{tpUnidTransp,idUnidTransp,{<lacUnidTransp>}, {<infUnidCarga> }} 1        2                3
                                 |         |          |                                                                                        |->nLacre        |-->{tpUnidCarga,idUnidCarga,{<lacUnidCarga>}}
                                 |         |          |                                                                                                                                              |->nLacre
@@ -623,7 +623,7 @@ FOR mI:=1 TO LEN(::munDes_municipio)
       CATCH
       END
       cXML+='</infCTe>'
-      ::qCTe++      
+      ::qCTe++
    NEXT
    //CT
    FOR cI:=1 TO LEN(::munDes_municipio[mI,5])
@@ -806,7 +806,7 @@ IF MEMOWRIT(::cXML,cXML,.F.)
    aRETORNO['MSG']:='Grupo de Documentos criado com sucesso.'
 ELSE
    aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo de Documentos'
-ENDIF   
+ENDIF
 
 Return(aRETORNO)
 
@@ -846,16 +846,16 @@ FERASE(::cXML)
 cXML+='<tot>'
 IF ::qCTe>0
    cXML+='<qCTe>'+ALLTRIM(STRTRAN(STR(::qCTe),'.'))+'</qCTe>'
-ENDIF   
+ENDIF
 IF ::qCT>0
    cXML+='<qCT>'+ALLTRIM(STRTRAN(STR(::qCT),'.'))+'</qCT>'
 ENDIF
 IF ::qNFe>0
    cXML+='<qNFe>'+ALLTRIM(STRTRAN(STR(::qNFe),'.'))+'</qNFe>'
-ENDIF   
+ENDIF
 IF ::qNF>0
    cXML+='<qNF>'+ALLTRIM(STRTRAN(STR(::qNF),'.'))+'</qNF>'
-ENDIF   
+ENDIF
 cXML+=   '<vCarga>'+ALLTRIM(STR(::vCarga))+'</vCarga>'
 cXML+=   '<cUnid>'+ALLTRIM(::cUnid)+'</cUnid>'
 cXML+=   '<qCarga>'+ALLTRIM(STR(::qCarga),'.')+'</qCarga>'
@@ -1063,7 +1063,7 @@ TRY
    dsigKey:=oXmldsig:createKeyFromCSP(oCert:PrivateKey:ProviderType, oCert:PrivateKey:ProviderName, oCert:PrivateKey:ContainerName, 0)
 CATCH
    aRETORNO['MSG']:='Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-   RETURN(aRETORNO)          
+   RETURN(aRETORNO)
 END
 IF (dsigKey = nil)
    aRETORNO['MSG']:='Erro ao criar a chave do CSP.'
@@ -1147,7 +1147,7 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o arquivo XML para a validação.'
    RETURN(aRETORNO)
-END   
+END
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
    aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
                     'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_OsNewLine()+;
@@ -1277,7 +1277,7 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o documento XML'
    RETURN(aRETORNO)
-END   
+END
 IF oDOMDoc:parseError:errorCode <> 0
    aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
                     ' Linha: '+STR(oDOMDoc:parseError:line)                                       +HB_OsNewLine()+;
@@ -1604,7 +1604,7 @@ cXML+=    '<mdfeDadosMsg xmlns="http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeSta
 cXML+=       '<consStatServMDFe xmlns="http://www.portalfiscal.inf.br/mdfe" versao="'+ALLTRIM(::versaoDados)+'">'
 cXML+=          '<tpAmb>'+::ohbNFe:tpAmb+'</tpAmb>'
 cXML+=          '<xServ>STATUS</xServ>'
-cXML+=       '</consStatServMDFe>' 
+cXML+=       '</consStatServMDFe>'
 cXML+=    '</mdfeDadosMsg>'
 cXML+=  '</soap12:Body>'
 cXML+='</soap12:Envelope>'
@@ -1801,7 +1801,7 @@ IF VAL(aRETORNO['cStat'])=631
       RETURN(aRETORNO)
    ENDIF
    aRETORNO['XML']:=aRETORNO['procEventoMDFe']
-   
+
    cXMLResp:=::oFuncoes:pegaTag(aRETORNO['XML'],'retEventoMDFe')
    cXMLResp:=::oFuncoes:pegaTag(cXMLResp,'infEvento')
 
@@ -1885,7 +1885,7 @@ IF VAL(aRETORNO['cStat'])=631
       RETURN(aRETORNO)
    ENDIF
    aRETORNO['XML']:=aRETORNO['procEventoMDFe']
-   
+
    cXMLResp:=::oFuncoes:pegaTag(aRETORNO['XML'],'retEventoMDFe')
    cXMLResp:=::oFuncoes:pegaTag(cXMLResp,'infEvento')
 
@@ -1936,7 +1936,7 @@ IF ::cXML=NIL .OR. !FILE(::cXML)
 ENDIF
 IF !EMPTY(aRETORNO['MSG'])
    RETURN(aRETORNO)
-ENDIF   
+ENDIF
 
 AADD(aREL,{'ide.mod',''})
 AADD(aREL,{'ide.serie',''})
@@ -2022,7 +2022,7 @@ ELSE
    //oFrPrn:PrepareReport()
    oFrPrn:PreviewOptions:SetZoomMode(2)
    oFrPrn:ShowReport()
-ENDIF   
+ENDIF
 oFrPrn:DestroyFR()
 oFrPrn:=NIL
 
