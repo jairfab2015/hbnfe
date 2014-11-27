@@ -17,7 +17,6 @@
 #endif
 #include "hbnfe.ch"
 
-#define XML_INDEFINIDO   0
 #define XML_NFE          1
 #define XML_CANCEL       2
 #define XML_INUTIL       3
@@ -41,25 +40,26 @@ CLASS hbNFeAssina
    METHOD execute()
    ENDCLASS
 
+
 METHOD execute() CLASS hbNFeAssina
    LOCAL cCN, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(), I,;
          xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois,;
          XMLAssinado, posini, ParseError, oSchema, SIGNEDKEY, DSIGKEY, SCONTAINER,;
-         SPROVIDER, ETYPE, nTipoXml, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXMLSig
+         SPROVIDER, ETYPE, nTagInicioFim, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXMLSig
    LOCAL aDelimitadores := { ;
-      { "<infMDFe",   "</MDFe>",    XML_MDFE   }, ; // antes porque MDFe contém CTe e NFe
-      { "<infCte",    "</CTe>",     XML_CTE    }, ; // antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
-      { "<infNFe",    "</NFe>",     XML_NFE    }, ;
-      { "<infCanc",   "</cancNFe>", XML_CANCEL }, ;
-      { "<infDPEC",   "</envDPEC>", XML_DPEC   }, ; // DPEC
-      { "<infInut",   "</inutNFe>", XML_INUTIL }, ; // inutilização
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 110110 carta de correção
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 110111 cancelamento
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 210200 manifestação
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 210210 manifestação
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 210220 manifestação
-      { "<infEvento", "</evento>",  XML_EVENTO }, ; // 210240 manifestação
-      { "<infEvento", "</evento>",  XML_EVENTO }  } // 110112 manifesto encerramento
+      { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contém CTe e NFe
+      { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
+      { "<infNFe",    "</NFe>"       }, ; // NFE
+      { "<infCanc",   "</cancNFe>"   }, ; // Cancelamento antigo
+      { "<infDPEC",   "</envDPEC>"   }. ; // DPEC
+      { "<infInut",   "</inutNFe>"   }, ; // Inutilização
+      { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correção
+      { "<infEvento", "</evento>"    }, ; // Evento 110111 cancelamento
+      { "<infEvento", "</evento>"    }, ; // Evento 210200 manifestação
+      { "<infEvento", "</evento>"    }, ; // Evento 210210 manifestação
+      { "<infEvento", "</evento>"    }, ; // Evento 210220 manifestação
+      { "<infEvento", "</evento>"    }, ; // Evento 210240 manifestação
+      { "<infEvento", "</evento>"    } }  // Evento 110112 manifesto encerramento
 
    IF ::lMemFile = Nil
       ::lMemFile = .F.
@@ -80,41 +80,41 @@ METHOD execute() CLASS hbNFeAssina
       cXML := MEMOREAD(::cXMLFile)
    ENDIF
    IF AT( '<Signature', cXML ) <= 0
-      nTipoXml := XML_INDEFINIDO
+      nTagInicioFim := 0
       FOR nCont = 1 TO Len( aDelimitadores )
          IF aDelimitadores[ nCont, TAG_INICIO ] $ cXml .AND. aDelimitadores[ nCont, TAG_FIM ] $ cXml
-            nTipoXml := aDelimitadores[ nCont, TAG_TIPOXML ]
+            nTagInicioFim := nCont
             EXIT
          ENDIF
       NEXT
-      IF nTipoXml == XML_INDEFINIDO
+      IF nTagInicioFim == 0
          aRetorno[ "OK" ]      := .F.
          aRetorno[ "MsgErro" ] := "Tipo de XML desconhecido" + ::cXmlFile
          RETURN aRetorno
       ENDIF
-      //nTipoXml := 0
+      //nTagInicioFim := 0
       //I := AT('<infNFe',cXML)
-      //nTipoXml := XML_NFE
+      //nTagInicioFim := XML_NFE
       //IF I = 0
       //   I := AT('<infCanc',cXML)
       //   IF I > 0
-      //      nTipoXml := XML_CANCEL
+      //      nTagInicioFim := XML_CANCEL
       //   ELSE
       //      I := AT('<infInut',cXML)
       //      IF I > 0
-      //         nTipoXml := XML_INUTIL
+      //         nTagInicioFim := XML_INUTIL
       //      ELSE
       //         I := AT('<infEvento', cXML)
       //         IF I > 0
       //           IF '<tpEvento>110111</tpEvento>'$cXML   // Cancelamento por Evento - Mauricio Cruz - 09/10/2012
-      //              nTipoXml := XML_EVENTOCANCEL
+      //              nTagInicioFim := XML_EVENTOCANCEL
       //           ELSEIF '<tpEvento>210200</tpEvento>'$cXML .OR. '<tpEvento>210210</tpEvento>'$cXML .OR. '<tpEvento>210220</tpEvento>'$cXML .OR. '<tpEvento>210240</tpEvento>'$cXML // Manifestação do destinatario - Mauricio Cruz 15/10/2012
-      //              nTipoXml := XML_EVENTOMANIF
+      //              nTagInicioFim := XML_EVENTOMANIF
       //           ELSE
-      //              nTipoXml := XML_EVENTO
+      //              nTagInicioFim := XML_EVENTO
       //           ENDIF
       //         ELSE
-      //           nTipoXml := XML_OUTROS
+      //           nTagInicioFim := XML_OUTROS
       //         ENDIF
       //      ENDIF
       //   ENDIF
@@ -139,16 +139,16 @@ METHOD execute() CLASS hbNFeAssina
       ENDIF
       URI := SUBS(cXML,I+1,J-I-1)
 
-      cXml := Substr( cXml, 1, At( aDelimitadores[ nTipoXml, TAG_FIM ], cXml ) - 1 )
-      //IF nTipoXml = XML_NFE
+      cXml := Substr( cXml, 1, At( aDelimitadores[ nTagInicioFim, TAG_FIM ], cXml ) - 1 )
+      //IF nTagInicioFim = XML_NFE
       //   cXML := SUBS(cXML,1,AT('</NFe>',cXML)-1)
-      //ELSEIF nTipoXml = XML_CANCEL
+      //ELSEIF nTagInicioFim = XML_CANCEL
       //   cXML := SUBS(cXML,1,AT('</cancNFe>',cXML)-1)
-      //ELSEIF nTipoXml = XML_INUTIL
+      //ELSEIF nTagInicioFim = XML_INUTIL
       //   cXML := SUBS(cXML,1,AT('</inutNFe>',cXML)-1)
-      //ELSEIF nTipoXml = XML_OUTROS
+      //ELSEIF nTagInicioFim = XML_OUTROS
       //   cXML := SUBS(cXML,1,AT('</envDPEC>',cXML)-1)
-      //ELSEIF nTipoXml = XML_EVENTO .OR. nTipoXml = XML_EVENTOCANCEL .OR. nTipoXml = XML_EVENTOMANIF
+      //ELSEIF nTagInicioFim = XML_EVENTO .OR. nTagInicioFim = XML_EVENTOCANCEL .OR. nTagInicioFim = XML_EVENTOMANIF
       //   cXML := SUBS(cXML,1,AT('</evento>',cXML)-1)
       //ENDIF
 
@@ -165,16 +165,16 @@ METHOD execute() CLASS hbNFeAssina
       ENDIF
       cXML += cXMLSig
 
-      cXml += aDelimitadores[ nTipoXml, TAG_FIM ]
-      //IF nTipoXml = XML_NFE
+      cXml += aDelimitadores[ nTagInicioFim, TAG_FIM ]
+      //IF nTagInicioFim = XML_NFE
       //   cXML := cXML + '</NFe>'
-      //ELSEIF nTipoXml = XML_CANCEL
+      //ELSEIF nTagInicioFim = XML_CANCEL
       //   cXML := cXML + '</cancNFe>'
-      //ELSEIF nTipoXml = XML_INUTIL
+      //ELSEIF nTagInicioFim = XML_INUTIL
       //   cXML := cXML + '</inutNFe>'
-      //ELSEIF nTipoXml = XML_OUTROS
+      //ELSEIF nTagInicioFim = XML_OUTROS
       //   cXML := cXML + '</envDPEC>'
-      //ELSEIF nTipoXml = XML_EVENTO .OR. nTipoXml = XML_EVENTOCANCEL .OR. nTipoXml = XML_EVENTOMANIF
+      //ELSEIF nTagInicioFim = XML_EVENTO .OR. nTagInicioFim = XML_EVENTOCANCEL .OR. nTagInicioFim = XML_EVENTOMANIF
       //   cXML := cXML + '</evento>' //</envEvento>'
       //ENDIF
   ENDIF
