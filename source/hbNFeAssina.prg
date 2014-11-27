@@ -10,9 +10,9 @@
 #include "common.ch"
 #include "hbclass.ch"
 #ifndef __XHARBOUR__
-   #include "hbwin.ch"     // Harbour 3.2 não precisa se indicar hbwin.hbc
-   #include "harupdf.ch"   // Harbour 3.2 não precisa se indicar hbhpdf.hbc
-   #include "hbzebra.ch"   // Harbour 3.2 não precisa se indicar hbzebra.hbc
+   #include "hbwin.ch"     // Harbour 3.2 nao precisa se indicar hbwin.hbc
+   #include "harupdf.ch"   // Harbour 3.2 nao precisa se indicar hbhpdf.hbc
+   #include "hbzebra.ch"   // Harbour 3.2 nao precisa se indicar hbzebra.hbc
    #include "hbcompat.ch"  // A confirmar
 #endif
 #include "hbnfe.ch"
@@ -33,18 +33,18 @@ METHOD Execute() CLASS hbNFeAssina
          SPROVIDER, ETYPE, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXmlSig
    LOCAL cXmlTagInicial := "", cXmlTagFinal := ""
    LOCAL aDelimitadores := { ;
-      { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contém CTe e NFe
-      { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
+      { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contem CTe e NFe
+      { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contem NFe - esquisito mas infCte e nao infCTe
       { "<infNFe",    "</NFe>"       }, ; // NFE
       { "<infCanc",   "</cancNFe>"   }, ; // Cancelamento antigo
       { "<infDPEC",   "</envDPEC>"   }. ; // DPEC
-      { "<infInut",   "</inutNFe>"   }, ; // Inutilização
-      { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correção
+      { "<infInut",   "</inutNFe>"   }, ; // Inutilizacao
+      { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correcao
       { "<infEvento", "</evento>"    }, ; // Evento 110111 cancelamento
-      { "<infEvento", "</evento>"    }, ; // Evento 210200 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210210 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210220 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210240 manifestação
+      { "<infEvento", "</evento>"    }, ; // Evento 210200 manifestacao
+      { "<infEvento", "</evento>"    }, ; // Evento 210210 manifestacao
+      { "<infEvento", "</evento>"    }, ; // Evento 210220 manifestacao
+      { "<infEvento", "</evento>"    }, ; // Evento 210240 manifestacao
       { "<infEvento", "</evento>"    } }  // Evento 110112 manifesto encerramento
 
    IF ::lMemFile = NIL
@@ -81,19 +81,19 @@ METHOD Execute() CLASS hbNFeAssina
       I := At( 'Id=', cXml )
       IF I = 0
          aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'Não encontrei inicio do URI: Id='
+         aRetorno[ 'MsgErro' ]  := 'Nao encontrei inicio do URI: Id='
          RETURN aRetorno
       ENDIF
       I := At( '"', cXml, I + 2 )
       IF I = 0
          aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'Não encontrei inicio do URI: aspas inicial'
+         aRetorno[ 'MsgErro' ]  := 'Nao encontrei inicio do URI: aspas inicial'
          RETURN aRetorno
       ENDIF
       J := At( '"', cXml, I + 1 )
       IF J = 0
          aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'Não encontrei inicio do URI: aspas final'
+         aRetorno[ 'MsgErro' ]  := 'Nao encontrei inicio do URI: aspas final'
          RETURN aRetorno
       ENDIF
       URI := Substr( cXml, I + 1, J - I - 1 )
@@ -184,7 +184,7 @@ METHOD Execute() CLASS hbNFeAssina
 
        oDOMDoc:LoadXML( cXml )
        IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-          cMsgErro := "assinar: Não foi possível carregar o documento pois ele não corresponde ao seu Schema" + HB_OsNewLine()
+          cMsgErro := "assinar: Nao foi possível carregar o documento pois ele nao corresponde ao seu Schema" + HB_OsNewLine()
           cMsgErro += " Linha: "              + Str( oDOMDoc:parseError:line )   + HB_OsNewLine()
           cMsgErro += " Caractere na linha: " + STR(oDOMDoc:parseError:linepos ) + HB_OsNewLine()
           cMsgErro += " Causa do erro: "      + oDOMDoc:parseError:reason        + HB_OsNewLine()
@@ -200,14 +200,14 @@ METHOD Execute() CLASS hbNFeAssina
        xmldsig:signature := oDOMDoc:selectSingleNode( './/ds:Signature' )
        IF ( xmldsig:signature = NIL )
           aRetorno[ 'OK' ]       := .F.
-          aRetorno[ 'MsgErro' ]  := 'É preciso carregar o template antes de assinar.'
+          aRetorno[ 'MsgErro' ]  := 'E preciso carregar o template antes de assinar.'
           RETURN aRetorno
        ENDIF
 
        oCert:=::ohbNFe:pegaObjetoCertificado( ::ohbNFe:cSerialCert )
        IF oCert == NIL
           aRetorno[ 'OK' ]       := .F.
-          aRetorno[ 'MsgErro' ]  := 'Certificado não encontrado, Favor revisar a instalação do Certificado'
+          aRetorno[ 'MsgErro' ]  := 'Certificado nao encontrado, Favor revisar a instalacao do Certificado'
           RETURN aRetorno
        ENDIF
 
@@ -220,7 +220,7 @@ METHOD Execute() CLASS hbNFeAssina
        TRY
           oStoreMem:open( _CAPICOM_MEMORY_STORE, 'Memoria', _CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED )
        CATCH oError
-         cMsgErro := "Falha ao criar espaço certificado na memória " + HB_OsNewLine() + ;
+         cMsgErro := "Falha ao criar espaco certificado na memoria " + HB_OsNewLine() + ;
                  	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_OsNewLine() + ;
                   	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_OsNewLine() + ;
                  	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_OsNewLine() + ;
@@ -256,7 +256,7 @@ METHOD Execute() CLASS hbNFeAssina
           dsigKey    := xmldsig:createKeyFromCSP( eType, sProvider, sContainer, 0 )
        CATCH
           aRetorno[ 'OK' ]       := .F.
-          aRetorno[ 'MsgErro' ]  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
+          aRetorno[ 'MsgErro' ]  := 'Erro ao criar a chave do CSP, talvez o certificado nao esteja instalado corretamente.'
           RETURN aRetorno
        END
        IF ( dsigKey = NIL )
@@ -269,7 +269,7 @@ METHOD Execute() CLASS hbNFeAssina
           signedKey := xmldsig:sign( dsigKey, 2 )
        CATCH
           aRetorno[ 'OK' ]       := .F.
-          aRetorno[ 'MsgErro' ]  := 'Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
+          aRetorno[ 'MsgErro' ]  := 'Erro ao criar a chave do CSP, talvez o certificado nao esteja instalado corretamente.'
           RETURN aRetorno
        END
 
@@ -330,6 +330,6 @@ METHOD Execute() CLASS hbNFeAssina
       RETURN aRetorno
    END
 
-   oDOMDoc          := NIL // Harbour 3.2 não precisa
+   oDOMDoc          := NIL // Harbour 3.2 nao precisa
    aRetorno[ 'OK' ] := .T.
    RETURN aRetorno
