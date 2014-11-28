@@ -29,7 +29,7 @@ CLASS hbNFeDanfe
    METHOD dadosImposto()
    METHOD dadosTransporte()
    METHOD cabecalhoProdutos()
-   METHOD desenhaBoxProdutos(nTamanhoProd,nLarguraBox)
+   METHOD desenhaBoxProdutos(nLinhaFinalProd,nTamanhoProd)
    METHOD produtos()
    METHOD totalServico()
    METHOD dadosAdicionais()
@@ -39,8 +39,8 @@ CLASS hbNFeDanfe
 
    DATA nItens1Folha
    DATA nItensDemaisFolhas
-   DATA nLarguraDescricao 
-   
+   DATA nLarguraDescricao
+
    DATA cTelefoneEmitente INIT ""
    DATA cSiteEmitente INIT ""
    DATA cEmailEmitente INIT ""
@@ -157,7 +157,7 @@ RETURN(::aRetorno)
 
 METHOD buscaDadosXML() CLASS hbNFeDanfe
 LOCAL cIde, cEmit, cDest, cRetirada, cEntrega, cICMSTotal, cISSTotal, cRetTrib, ;
-      cTransp, cVeicTransp, cReboque, cCobranca, cInfAdic, cObsCont, cObsFisco, ;
+      cTransp, cVeicTransp, cReboque, cInfAdic, cObsCont, cObsFisco, ;
       cExporta, cCompra, cInfProt,;
       oFuncoes := hbNFeFuncoes()
 
@@ -224,7 +224,7 @@ LOCAL cIde, cEmit, cDest, cRetirada, cEntrega, cICMSTotal, cISSTotal, cRetTrib, 
    ::aDest[ "xMun" ] := hbNFe_PegaDadosXML("xMun", cDest )
    ::aDest[ "UF" ] := hbNFe_PegaDadosXML("UF", cDest )
    ::aDest[ "CEP" ] := hbNFe_PegaDadosXML("CEP", cDest )
-*   IF ( ::aDest[ "CEP" ] = Nil .OR. EMPTY(ALLTRIM(::aDest[ "CEP" ])) ) .AND. ::aDest[ "UF" ]  <> "EX" 
+*   IF ( ::aDest[ "CEP" ] = Nil .OR. EMPTY(ALLTRIM(::aDest[ "CEP" ])) ) .AND. ::aDest[ "UF" ]  <> "EX"
 *      ::aRetorno[ 'OK' ] := .F.
 *      ::aRetorno[ 'MsgErro' ] := 'Destinatário sem CEP ou inválido !'
 *      RETURN(.F.)
@@ -343,11 +343,11 @@ LOCAL cIde, cEmit, cDest, cRetirada, cEntrega, cICMSTotal, cISSTotal, cRetTrib, 
 
    cInfAdic := hbNFe_PegaDadosXML("infAdic", ::cXML )
    ::aInfAdic := hash()
-   
+
    IF !EMPTY(cInfAdic)   // Mauricio Cruz - 28/09/2011   && Anderson Retirei o + antes do CHR(13)+CHR(10)
       ::aInfAdic[ "infCpl" ] := hbNFe_PegaDadosXML("infCpl", cInfAdic )
 	  IF !EMPTY(::aInfAdic[ "infCpl" ])
-         ::aInfAdic[ "infCpl" ] := STRTRAN( ::aInfAdic[ "infCpl" ], ";", CHR(13)+CHR(10) )
+         ::aInfAdic[ "infCpl" ] := STRTRAN( ::aInfAdic[ "infCpl" ], ";", HB_EOL() )
 	   ELSE
          ::aInfAdic[ "infCpl" ] := ""
 	  endif
@@ -408,7 +408,7 @@ METHOD geraPDF() CLASS hbNFeDanfe
       ::oPdfFontCabecalho := HPDF_GetFont( ::oPdf, "Courier", "CP1252" )
       ::oPdfFontCabecalhoBold := HPDF_GetFont( ::oPdf, "Courier-Bold", "CP1252" )
    ENDIF
-   
+
    &&  Alterado por Anderson Camilo em 06/11/2012
 
    #ifdef __XHARBOUR__
@@ -419,7 +419,7 @@ METHOD geraPDF() CLASS hbNFeDanfe
      endif
 
       && Inserido por Anderson Camilo em 04/04/2012
-   
+
    ::cFonteCode128 := HPDF_LoadType1FontFromFile(::oPdf, 'fontes\Code128bWinLarge.afm', 'fontes\Code128bWinLarge.pfb')   && Code 128
    ::cFonteCode128F := HPDF_GetFont( ::oPdf, ::cFonteCode128, "WinAnsiEncoding" )
    #endif
@@ -472,7 +472,7 @@ METHOD geraPDF() CLASS hbNFeDanfe
    ::cFile := ::ohbNFe:pastaPDF+"\"+::cChave+".pdf"
    HPDF_SaveToFile( ::oPdf, ::cFile )
    HPDF_Free( ::oPdf )
-   
+
 RETURN(.T.)
 
 METHOD calculaItens1Folha(nItensInicial) CLASS hbNFeDanfe
@@ -490,7 +490,7 @@ LOCAL nRetorno
 RETURN nRetorno
 
 METHOD novaPagina() CLASS hbNFeDanfe
-LOCAL nRadiano, nAltura, nLargura, nAngulo
+LOCAL nRadiano, nAltura, nAngulo // , nLargura
    ::oPdfPage := HPDF_AddPage( ::oPdf )
    IF ::lPaisagem = .T.
       HPDF_Page_SetSize( ::oPdfPage, HPDF_PAGE_SIZE_A4, HPDF_PAGE_LANDSCAPE )
@@ -498,7 +498,7 @@ LOCAL nRadiano, nAltura, nLargura, nAngulo
       HPDF_Page_SetSize( ::oPdfPage, HPDF_PAGE_SIZE_A4, HPDF_PAGE_PORTRAIT )
    ENDIF
    nAltura := HPDF_Page_GetHeight( ::oPdfPage )
-   nLargura := HPDF_Page_GetWidth( ::oPdfPage )
+   // nLargura := HPDF_Page_GetWidth( ::oPdfPage )
 
    IF ::lPaisagem = .T. // paisagem
       ::nLinhaPdf := nAltura - 10 && Margem Superior
@@ -727,8 +727,8 @@ LOCAL oImage, hZebra
 
                        && Modificado por Anderson Camilo em 04/04/2012
           hbNFe_Texto_Hpdf( ::oPdfPage,540, ::nLinhaPdf-1.5, 815, Nil, CodificaCode128c(::cChave), HPDF_TALIGN_CENTER, Nil, ::cFonteCode128F, 15 )
-		  
- 		  
+
+
       #else
           hZebra := hb_zebra_create_code128( ::cChave, Nil )
           hbNFe_Zebrea_Draw_Hpdf( hZebra, ::oPdfPage, 540, ::nLinhaPdf-32, 1.0, 30 )
@@ -752,7 +752,7 @@ LOCAL oImage, hZebra
          hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-63   , 829, Nil, "da NF-e www.nfe.fazenda.gov.br/portal ou" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
          hbNFe_Texto_Hpdf( ::oPdfPage,526, ::nLinhaPdf-71   , 829, Nil, "no site da Sefaz Autorizadora" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
       ENDIF
-   
+
       ::nLinhaPdf -= 80
 
       // NATUREZA
@@ -814,7 +814,7 @@ LOCAL oImage, hZebra
              oImage := HPDF_LoadJPEGImageFromFile( ::oPdf, ::cLogoFile )
              HPDF_Page_DrawImage( ::oPdfPage, oImage, 6, ::nLinhaPdf - (72+6), 62, 72 )
             hbNFe_Texto_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-6 , 244, Nil, TRIM(MEMOLINE(::aEmit[ "xNome" ],30,1)) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 12 )
-             && Anderson camilo   30/12/2011  Comentei esta linha porque a razão social estava saindo um nome sobre o outro 			
+             && Anderson camilo   30/12/2011  Comentei esta linha porque a razão social estava saindo um nome sobre o outro
 *            hbNFe_Texto_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-18, 244, Nil, TRIM(MEMOLINE(::aEmit[ "xNome" ],30,2)), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 12 )
             hbNFe_Texto_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-30, 244, Nil, ::aEmit[ "xLgr" ]+" "+::aEmit[ "nro" ], HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 8 )
             hbNFe_Texto_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-38, 244, Nil, ::aEmit[ "xBairro" ]+" - "+TRANSF( ::aEmit[ "CEP" ], "@R 99999-999"), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 8 )
@@ -885,10 +885,10 @@ LOCAL oImage, hZebra
          hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-55   , 589, Nil, "Consulta de autenticidade no portal nacional" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
          hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-63   , 589, Nil, "da NF-e www.nfe.fazenda.gov.br/portal ou" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
          hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-71   , 589, Nil, "no site da Sefaz Autorizadora" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
-      ENDIF   
+      ENDIF
 
       ::nLinhaPdf -= 80
-   
+
       // NATUREZA
       hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-16, 365, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 369, Nil, "NATUREZA DA OPERAÇÃO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -910,11 +910,11 @@ LOCAL oImage, hZebra
             hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-6   , 589, Nil, ::aInfProt[ "nProt" ]+" "+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),9,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),6,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),1,4)+" "+SUBS(::aInfProt[ "dhRecbto" ],12,8) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
          ELSE
             hbNFe_Texto_Hpdf( ::oPdfPage,371, ::nLinhaPdf-6   , 589, Nil, ::aInfProt[ "nProt" ]+" "+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),9,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),6,2)+"/"+SUBS(SUBS(::aInfProt[ "dhRecbto" ],1,10),1,4)+" "+SUBS(::aInfProt[ "dhRecbto" ],12,8) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
-         ENDIF   
+         ENDIF
       ENDIF
 
       ::nLinhaPdf -= 16
-   
+
       // I.E.
       hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-16, 240, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 244, Nil, "INSCRIÇÃO ESTADUAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -927,7 +927,7 @@ LOCAL oImage, hZebra
       hbNFe_Box_Hpdf( ::oPdfPage,470, ::nLinhaPdf-16, 120, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,471, ::nLinhaPdf-1  , 589, Nil, "C.N.P.J." , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
       hbNFe_Texto_Hpdf( ::oPdfPage,471, ::nLinhaPdf-5  , 589, Nil, TRANSF(::aEmit[ "CNPJ" ], "@R 99.999.999/9999-99"), HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 10 )
-   
+
       ::nLinhaPdf -= 17
    ENDIF
 RETURN Nil
@@ -937,7 +937,7 @@ METHOD destinatario() CLASS hbNFeDanfe
       hbNFe_Texto_Hpdf( ::oPdfPage, 70, ::nLinhaPdf  , 830, Nil, "DESTINATÁRIO/REMETENTE" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
 
       ::nLinhaPdf -= 6
-   
+
       // RAZAO SOCIAL
       hbNFe_Box_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-16, 590, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 659, Nil, "NOME / RAZÃO SOCIAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -956,9 +956,9 @@ METHOD destinatario() CLASS hbNFeDanfe
       hbNFe_Box_Hpdf( ::oPdfPage,760, ::nLinhaPdf-16, 70, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,761, ::nLinhaPdf-1  , 829, Nil, "DATA DE EMISSÃO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
       hbNFe_Texto_Hpdf( ::oPdfPage,761, ::nLinhaPdf-5  , 829, Nil, SUBS(::aIde[ "dEmi" ],9,2)+"/"+SUBS(::aIde[ "dEmi" ],6,2)+"/"+SUBS(::aIde[ "dEmi" ],1,4) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
-   
+
       ::nLinhaPdf -= 16
-   
+
       // ENDEREÇO
       hbNFe_Box_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-16, 440, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 509, Nil, "ENDEREÇO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -996,7 +996,7 @@ METHOD destinatario() CLASS hbNFeDanfe
          hbNFe_Texto_Hpdf( ::oPdfPage,481, ::nLinhaPdf-5  , 629, Nil, TRANSF(::aDest[ "fone" ], "@R (99) 99999-9999") , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
       ELSEIF LEN(::aDest[ "fone" ])>10
          hbNFe_Texto_Hpdf( ::oPdfPage,481, ::nLinhaPdf-5  , 629, Nil, TRANSF(::aDest[ "fone" ], "@R +99 (99) 99999-9999") , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
-      ENDIF   
+      ENDIF
       // ESTADO
       hbNFe_Box_Hpdf( ::oPdfPage,630, ::nLinhaPdf-16, 30, 16, ::nLarguraBox )
       hbNFe_Texto_Hpdf( ::oPdfPage,631, ::nLinhaPdf-1  , 659, Nil, "ESTADO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -1013,7 +1013,7 @@ METHOD destinatario() CLASS hbNFeDanfe
       ::nLinhaPdf -= 17
    ELSE
       hbNFe_Texto_Hpdf( ::oPdfPage, 5, ::nLinhaPdf  , 589, Nil, "DESTINATÁRIO/REMETENTE" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
-   
+
       ::nLinhaPdf -= 6
 
       // RAZAO SOCIAL
@@ -1059,7 +1059,7 @@ METHOD destinatario() CLASS hbNFeDanfe
          hbNFe_Texto_Hpdf( ::oPdfPage,521, ::nLinhaPdf-5  , 589, Nil, SUBS(::aIde[ "dSaiEnt" ],9,2)+"/"+SUBS(::aIde[ "dSaiEnt" ],6,2)+"/"+SUBS(::aIde[ "dSaiEnt" ],1,4) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
       CATCH
       END
-   
+
       ::nLinhaPdf -= 16
 
       // MUNICIPIO
@@ -1105,7 +1105,7 @@ LOCAL nICob, nItensCob, nLinhaFinalCob, nTamanhoCob
                 hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 824, Nil, "PAGAMENTO À VISTA" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 10 )
              ELSEIF ::aIde[ "indPag" ] == "1"    && Alterado por Anderson Camilo em 31/07/2012
                 hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 824, Nil, "PAGAMENTO À PRAZO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 10 )
-             ELSE  
+             ELSE
                 hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 824, Nil, "OUTROS" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 10 )
              ENDIF
              ::nLinhaPdf -= 13
@@ -1237,7 +1237,7 @@ LOCAL nTamForm
 RETURN Nil
 
 METHOD faturas() CLASS hbNFeDanfe
-LOCAL nTamForm, nI, cDups, nColuna, cDup, cNumero, cVencimento, cValor
+LOCAL nTamForm, cDups, nColuna, cDup, cNumero, cVencimento, cValor
    IF ::nFolha = 1
       IF ::lPaisagem = .T. // paisagem
          nTamForm := 830-70
@@ -1383,7 +1383,7 @@ METHOD dadosImposto() CLASS hbNFeDanfe
          ::nLinhaPdf -= 17
       ELSE
          hbNFe_Texto_Hpdf( ::oPdfPage, 5, ::nLinhaPdf  , 589, Nil, "CÁLCULO DO IMPOSTO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
-      
+
          ::nLinhaPdf -= 6
 
          // BASE DE CALCULO DO ICMS
@@ -1433,7 +1433,7 @@ METHOD dadosImposto() CLASS hbNFeDanfe
          hbNFe_Box_Hpdf( ::oPdfPage,445, ::nLinhaPdf-16, 145, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,446, ::nLinhaPdf-1  , 589, Nil, "VALOR TOTAL DA NOTA FISCAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
          hbNFe_Texto_Hpdf( ::oPdfPage,446, ::nLinhaPdf-5  , 589, Nil, ALLTRIM(::oFuncoes:ponto(VAL(::aICMSTotal[ "vNF" ]),15,2)) , HPDF_TALIGN_RIGHT, Nil, ::oPdfFontCabecalho, 10 )
-      
+
          ::nLinhaPdf -= 17
       ENDIF
    ENDIF
@@ -1453,7 +1453,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          // TIPO FRETE
          hbNFe_Box_Hpdf( ::oPdfPage,510, ::nLinhaPdf-16, 90, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,511, ::nLinhaPdf-1  , 599, Nil, "FRETE POR CONTA" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
-         && Modificado por Anderson Camilo em 19/03/2012		 
+         && Modificado por Anderson Camilo em 19/03/2012
          IF ::aTransp[ "modFrete" ] == "0"
             hbNFe_Texto_Hpdf( ::oPdfPage,511, ::nLinhaPdf-5  , 599, Nil, "0-EMITENTE" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
          ELSEIF ::aTransp[ "modFrete" ] == "1"
@@ -1487,7 +1487,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          ENDIF
 
          ::nLinhaPdf -= 16
-         
+
          // ENDEREÇO
          hbNFe_Box_Hpdf( ::oPdfPage, 70, ::nLinhaPdf-16, 440, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 509, Nil, "ENDEREÇO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -1535,9 +1535,9 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          ::nLinhaPdf -= 17
       ELSE
          hbNFe_Texto_Hpdf( ::oPdfPage, 5, ::nLinhaPdf  , 589, Nil, "TRANSPORTADOR / VOLUMES TRANSPORTADOS" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
-      
+
          ::nLinhaPdf -= 6
-      
+
          // NOME/RAZAO SOCIAL
          hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-16, 265, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 269, Nil, "NOME/RAZÃO SOCIAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
@@ -1545,7 +1545,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          // TIPO FRETE
          hbNFe_Box_Hpdf( ::oPdfPage,270, ::nLinhaPdf-16, 90, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,271, ::nLinhaPdf-1  , 359, Nil, "FRETE POR CONTA" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
-         && Modificado por Anderson Camilo em 19/03/2012	 
+         && Modificado por Anderson Camilo em 19/03/2012
          IF ::aTransp[ "modFrete" ] == "0"
             hbNFe_Texto_Hpdf( ::oPdfPage,271, ::nLinhaPdf-5  , 359, Nil, "0-EMITENTE" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
          ELSEIF ::aTransp[ "modFrete" ] == "1"
@@ -1575,7 +1575,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          ELSE
             IF ::aTransp[ "CPF" ] <> Nil
                hbNFe_Texto_Hpdf( ::oPdfPage,501, ::nLinhaPdf-5  , 589, Nil, TRANSF(::aTransp[ "CPF" ], "@R 999.999.999-99") , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
-            ENDIF   
+            ENDIF
          ENDIF
 
          ::nLinhaPdf -= 16
@@ -1598,7 +1598,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
          hbNFe_Texto_Hpdf( ::oPdfPage,501, ::nLinhaPdf-5  , 589, Nil, ::aTransp[ "IE" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 10 )
 
          ::nLinhaPdf -= 16
-         
+
          // QUANTIDADE VOLUME
          hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-16, 95, 16, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 99, Nil, "QUANTIDADE" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
@@ -1626,7 +1626,7 @@ METHOD dadosTransporte() CLASS hbNFeDanfe
 
          ::nLinhaPdf -= 17
       ENDIF
-   ENDIF   
+   ENDIF
 RETURN Nil
 
 METHOD cabecalhoProdutos() CLASS hbNFeDanfe
@@ -1735,7 +1735,7 @@ METHOD cabecalhoProdutos() CLASS hbNFeDanfe
               hbNFe_Box_Hpdf( ::oPdfPage,240, ::nLinhaPdf-13, 15, 13, ::nLarguraBox )
               hbNFe_Texto_Hpdf( ::oPdfPage,241, ::nLinhaPdf-1  , 254, Nil, "CST" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
               hbNFe_Texto_Hpdf( ::oPdfPage,241, ::nLinhaPdf-6  , 254, Nil, "" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
-           ENDIF   
+           ENDIF
           // CFOP
           hbNFe_Box_Hpdf( ::oPdfPage,255, ::nLinhaPdf-13, 20, 13, ::nLarguraBox )
           hbNFe_Texto_Hpdf( ::oPdfPage,256, ::nLinhaPdf-1  , 274, Nil, "CFOP" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
@@ -1780,7 +1780,7 @@ METHOD cabecalhoProdutos() CLASS hbNFeDanfe
       ELSE
           hbNFe_Texto_Hpdf( ::oPdfPage, 5, ::nLinhaPdf  , 589, Nil, "DADOS DOS PRODUTOS / SERVIÇOS" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
           ::nLinhaPdf -= 6
-    
+
           // CODIGO
           hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-13, 55, 13, ::nLarguraBox )
           hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 59, Nil, "CÓDIGO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
@@ -1803,7 +1803,7 @@ METHOD cabecalhoProdutos() CLASS hbNFeDanfe
               hbNFe_Box_Hpdf( ::oPdfPage,240, ::nLinhaPdf-13, 15, 13, ::nLarguraBox )
               hbNFe_Texto_Hpdf( ::oPdfPage,241, ::nLinhaPdf-1  , 254, Nil, "CST" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
               hbNFe_Texto_Hpdf( ::oPdfPage,241, ::nLinhaPdf-6  , 254, Nil, "" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
-           ENDIF   
+           ENDIF
           // CFOP
           hbNFe_Box_Hpdf( ::oPdfPage,255, ::nLinhaPdf-13, 20, 13, ::nLarguraBox )
           hbNFe_Texto_Hpdf( ::oPdfPage,256, ::nLinhaPdf-1  , 274, Nil, "CFOP" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
@@ -1915,7 +1915,7 @@ METHOD desenhaBoxProdutos(nLinhaFinalProd,nTamanhoProd) CLASS hbNFeDanfe
           hbNFe_Box_Hpdf( ::oPdfPage,425, nLinhaFinalProd, 45, nTamanhoProd, ::nLarguraBox )
           // VALOR ICMS
           hbNFe_Box_Hpdf( ::oPdfPage,470, nLinhaFinalProd, 40, nTamanhoProd, ::nLarguraBox )
-          // VALOR IPI                           
+          // VALOR IPI
           hbNFe_Box_Hpdf( ::oPdfPage,510, nLinhaFinalProd, 40, nTamanhoProd, ::nLarguraBox )
           // ALIQ ICMS
           hbNFe_Box_Hpdf( ::oPdfPage,550, nLinhaFinalProd, 20, nTamanhoProd, ::nLarguraBox )
@@ -2051,7 +2051,7 @@ LOCAL nLinhaFinalProd, nTamanhoProd, nItem, nIdes
              ELSE
                  // CST
                  hbNFe_Texto_Hpdf( ::oPdfPage,241, ::nLinhaPdf  , 254, Nil, ::aItemICMS[ "orig" ]+::aItemICMS[ "CST" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
-              ENDIF   
+              ENDIF
              // CFOP
              hbNFe_Texto_Hpdf( ::oPdfPage,256, ::nLinhaPdf  , 274, Nil, ::aItem[ "CFOP" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
              // UNID
@@ -2158,7 +2158,7 @@ LOCAL nLinhaFinalProd, nTamanhoProd, nItem, nIdes
          IF ::nLinhaFolha <= ::nItensFolha
             hbNFe_Line_Hpdf( ::oPdfPage, 5, ::nLinhaPdf-0.5, 590, ::nLinhaPdf-0.5, ::nLarguraBox)
          ENDIF
-      ENDIF   
+      ENDIF
    ENDDO
    ::nLinhaPdf -= ((::nItensFolha-::nLinhaFolha+1)*6)
 
@@ -2172,7 +2172,7 @@ METHOD totalServico() CLASS hbNFeDanfe
             hbNFe_Texto_Hpdf( ::oPdfPage,70, ::nLinhaPdf  , 830, Nil, "CALCULO DO ISSQN" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
 
             ::nLinhaPdf -= 6
-            
+
             // INSCRICAO
             hbNFe_Box_Hpdf( ::oPdfPage,  70, ::nLinhaPdf-16, 200, 16, ::nLarguraBox )
             hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf-1  , 269, Nil, "INSCRIÇÃO MUNICIPAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
@@ -2189,13 +2189,13 @@ METHOD totalServico() CLASS hbNFeDanfe
             hbNFe_Box_Hpdf( ::oPdfPage,650, ::nLinhaPdf-16, 180, 16, ::nLarguraBox )
             hbNFe_Texto_Hpdf( ::oPdfPage,651, ::nLinhaPdf-1  , 829, Nil, "VALOR DO ISSQN" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
             hbNFe_Texto_Hpdf( ::oPdfPage,651, ::nLinhaPdf-5  , 829, Nil, ::oFuncoes:ponto(VAL(IF(::aISSTotal[ "vISS" ]<>Nil,::aISSTotal[ "vISS" ],"0")),15) , HPDF_TALIGN_RIGHT, Nil, ::oPdfFontCabecalho, 10 )
-         
+
             ::nLinhaPdf -= 17
          ELSE
             hbNFe_Texto_Hpdf( ::oPdfPage, 5, ::nLinhaPdf  , 589, Nil, "CALCULO DO ISSQN" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 5 )
-         
+
             ::nLinhaPdf -= 6
-            
+
             // INSCRICAO
             hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-16, 150, 16, ::nLarguraBox )
             hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  , 154, Nil, "INSCRIÇÃO MUNICIPAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
@@ -2212,7 +2212,7 @@ METHOD totalServico() CLASS hbNFeDanfe
             hbNFe_Box_Hpdf( ::oPdfPage,445, ::nLinhaPdf-16, 145, 16, ::nLarguraBox )
             hbNFe_Texto_Hpdf( ::oPdfPage,446, ::nLinhaPdf-1  , 589, Nil, "VALOR DO ISSQN" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 5 )
             hbNFe_Texto_Hpdf( ::oPdfPage,446, ::nLinhaPdf-5  , 589, Nil, ::oFuncoes:ponto(VAL(IF(::aISSTotal[ "vISS" ]<>Nil,::aISSTotal[ "vISS" ],"0")),15) , HPDF_TALIGN_RIGHT, Nil, ::oPdfFontCabecalho, 10 )
-         
+
             ::nLinhaPdf -= 17
          ENDIF
       ENDIF
@@ -2238,7 +2238,7 @@ LOCAL cMemo, nI
 
 
          cMemo := IF(::aInfAdic[ "infCpl" ]<>Nil,::aInfAdic[ "infCpl" ],"")
-         cMemo := STRTRAN( cMemo , ";", CHR(13)+CHR(10) )
+         cMemo := STRTRAN( cMemo , ";", HB_EOL() )
          FOR nI = 1 TO MLCOUNT( cMemo, 100 )
             hbNFe_Texto_Hpdf( ::oPdfPage,71, ::nLinhaPdf    ,564, Nil, TRIM(MEMOLINE(cMemo,100,nI)) , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
             ::nLinhaPdf -= 6
@@ -2254,21 +2254,21 @@ LOCAL cMemo, nI
 
          // INF. COMPL.    && Alterado por anderson em 18/07/2012
 *         hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-78, 395, 78, ::nLarguraBox )
-		 
+
          hbNFe_Box_Hpdf( ::oPdfPage,  5, ::nLinhaPdf-92, 395, 92, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf-1  ,399, Nil, "INFORMAÇÕES COMPLEMENTARES" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
          // RESERVADO FISCO
-		 
+
                            && Alterado por anderson em 18/07/2012
 *        hbNFe_Box_Hpdf( ::oPdfPage,400, ::nLinhaPdf-78, 190, 78, ::nLarguraBox )
          hbNFe_Box_Hpdf( ::oPdfPage,400, ::nLinhaPdf-92, 190, 92, ::nLarguraBox )
          hbNFe_Texto_Hpdf( ::oPdfPage,401, ::nLinhaPdf-1  ,589, Nil, "RESERVADO AO FISCO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
-         ::nLinhaPdf -= 7    // 
-         ::nLinhaPdf -= 4 //ESPAÇO   
-         
-         
+         ::nLinhaPdf -= 7    //
+         ::nLinhaPdf -= 4 //ESPAÇO
+
+
          cMemo := IF(::aInfAdic[ "infCpl" ]<>Nil,::aInfAdic[ "infCpl" ],"")
-         cMemo := STRTRAN( cMemo , ";", CHR(13)+CHR(10) )
+         cMemo := STRTRAN( cMemo , ";", HB_EOL() )
          FOR nI = 1 TO MLCOUNT( cMemo, 100 )
             hbNFe_Texto_Hpdf( ::oPdfPage,6, ::nLinhaPdf    ,399, Nil, TRIM(MEMOLINE(cMemo,100,nI)) , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
             ::nLinhaPdf -= 6
@@ -2276,9 +2276,9 @@ LOCAL cMemo, nI
 
          FOR nI=(MLCOUNT( cMemo, 100 )+1) TO 13    && Alterado por anderson  o original era TO 11
             ::nLinhaPdf -= 6
-         NEXT   
+         NEXT
          ::nLinhaPdf -= 4                          && Alterado por anderson  o original era -2
-      ENDIF   
+      ENDIF
    ENDIF
 RETURN Nil
 
@@ -2321,7 +2321,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItem[ "indTot" ] := hbNFe_PegaDadosXML("indTot", cItem ) // NFE 2.0
    ::aItem[ "infAdProd" ] := hbNFe_PegaDadosXML("infAdProd", cItem )
    IF ::aItem[ "infAdProd" ] <> Nil
-      ::aItem[ "infAdProd" ] := STRTRAN( ::aItem[ "infAdProd" ] , ";", CHR(13)+CHR(10) )
+      ::aItem[ "infAdProd" ] := STRTRAN( ::aItem[ "infAdProd" ] , ";", HB_EOL() )
    ENDIF
 
    cItemDI := hbNFe_PegaDadosXML('DI', cItem )
@@ -2397,7 +2397,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemICMSSN101[ "CSOSN" ] := hbNFe_PegaDadosXML("CSOSN", cItemICMSSN101 )
    ::aItemICMSSN101[ "pCredSN" ] := hbNFe_PegaDadosXML("pCredSN", cItemICMSSN101 )
    ::aItemICMSSN101[ "vCredICMSSN" ] := hbNFe_PegaDadosXML("vCredICMSSN", cItemICMSSN101 )
-   
+
    cItemICMSSN102 := hbNFe_PegaDadosXML('ICMSSN102', cItem ) //102,103,300 ou 400
    ::aItemICMSSN102 := hash()
    ::aItemICMSSN102[ "orig" ] := hbNFe_PegaDadosXML("orig", cItemICMSSN102 )
@@ -2415,7 +2415,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemICMSSN201[ "vICMSST" ] := hbNFe_PegaDadosXML("vICMSST", cItemICMSSN201 )
    ::aItemICMSSN201[ "pCredSN" ] := hbNFe_PegaDadosXML("pCredSN", cItemICMSSN201 )
    ::aItemICMSSN201[ "vCredICMSSN" ] := hbNFe_PegaDadosXML("vCredICMSSN", cItemICMSSN201 )
-   
+
    cItemICMSSN202 := hbNFe_PegaDadosXML('ICMSSN202', cItem )  // 202 ou 203
    ::aItemICMSSN202 := hash()
    ::aItemICMSSN202[ "orig" ] := hbNFe_PegaDadosXML("orig", cItemICMSSN202 )
@@ -2426,14 +2426,14 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemICMSSN202[ "vBCST" ] := hbNFe_PegaDadosXML("vBCST", cItemICMSSN202 )
    ::aItemICMSSN202[ "pICMSST" ] := hbNFe_PegaDadosXML("pICMSST", cItemICMSSN202 )
    ::aItemICMSSN202[ "vICMSST" ] := hbNFe_PegaDadosXML("vICMSST", cItemICMSSN202 )
-   
-   cItemICMSSN500 := hbNFe_PegaDadosXML('ICMSSN500', cItem ) 
+
+   cItemICMSSN500 := hbNFe_PegaDadosXML('ICMSSN500', cItem )
    ::aItemICMSSN500 := hash()
    ::aItemICMSSN500[ "orig" ] := hbNFe_PegaDadosXML("orig", cItemICMSSN500 )
    ::aItemICMSSN500[ "CSOSN" ] := hbNFe_PegaDadosXML("CSOSN", cItemICMSSN500 )
    ::aItemICMSSN500[ "vBCSTRet" ] := hbNFe_PegaDadosXML("vBCSTRet", cItemICMSSN500 )
    ::aItemICMSSN500[ "vICMSSTRet" ] := hbNFe_PegaDadosXML("vICMSSTRet", cItemICMSSN500 )
-   
+
    cItemICMSSN900 := hbNFe_PegaDadosXML('ICMSSN900', cItem )
    ::aItemICMSSN900 := hash()
    ::aItemICMSSN900[ "orig" ] := hbNFe_PegaDadosXML("orig", cItemICMSSN900 )
@@ -2451,7 +2451,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemICMSSN900[ "vICMSST" ] := hbNFe_PegaDadosXML("vICMSST", cItemICMSSN900 )
    ::aItemICMSSN900[ "pCredSN" ] := hbNFe_PegaDadosXML("pCredSN", cItemICMSSN900 )
    ::aItemICMSSN900[ "vCredICMSSN" ] := hbNFe_PegaDadosXML("vCredICMSSN", cItemICMSSN900 )
-   
+
 
    cItemIPI := hbNFe_PegaDadosXML('IPI', cItem )
    ::aItemIPI := hash()
@@ -2460,7 +2460,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemIPI[ "cSelo" ] := hbNFe_PegaDadosXML("cSelo", cItemIPI )
    ::aItemIPI[ "qSelo" ] := hbNFe_PegaDadosXML("qSelo", cItemIPI )
    ::aItemIPI[ "cEnq" ] := hbNFe_PegaDadosXML("cEnq", cItemIPI )
-   
+
    ::aItemIPI[ "CST" ] := hbNFe_PegaDadosXML("CST", cItemIPI )
    ::aItemIPI[ "vBC" ] := hbNFe_PegaDadosXML("vBC", cItemIPI )
    ::aItemIPI[ "pIPI" ] := hbNFe_PegaDadosXML("pIPI", cItemIPI )
@@ -2481,7 +2481,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemPIS[ "vBC" ] := hbNFe_PegaDadosXML("vBC", cItemPIS )
    ::aItemPIS[ "pPIS" ] := hbNFe_PegaDadosXML("pPIS", cItemPIS )
    ::aItemPIS[ "vPIS" ] := hbNFe_PegaDadosXML("vPIS", cItemPIS )
-   
+
    ::aItemPIS[ "qBCProd" ] := hbNFe_PegaDadosXML("qBCProd", cItemPIS )
    ::aItemPIS[ "vAliqProd" ] := hbNFe_PegaDadosXML("vAliqProd", cItemPIS )
 
@@ -2499,7 +2499,7 @@ LOCAL cItem, cItemDI, cItemAdi, cItemICMS, cItemICMSPart, cItemICMSST,;
    ::aItemCOFINS[ "vBC" ] := hbNFe_PegaDadosXML("vBC", cItemCOFINS )
    ::aItemCOFINS[ "pCOFINS" ] := hbNFe_PegaDadosXML("pCOFINS", cItemCOFINS )
    ::aItemCOFINS[ "vCOFINS" ] := hbNFe_PegaDadosXML("vCOFINS", cItemCOFINS )
-   
+
    ::aItemCOFINS[ "qBCProd" ] := hbNFe_PegaDadosXML("qBCProd", cItemCOFINS )
    ::aItemCOFINS[ "vAliqProd" ] := hbNFe_PegaDadosXML("vAliqProd", cItemCOFINS )
 
@@ -2537,10 +2537,13 @@ Function hbNFe_PegaDadosXML(cElemento, cStringXML, cElemento2)
    cRet := Substr(cStringXML,nPosIni+Len(IniciodoDado),nPosFim-nPosIni-Len(FinalDoDado)+1)
 Return( cRet )
 
-FUNCTION hbNFe_Texto_Hpdf( oPdfPage2, x1, y1, x2, y2, cText, align, desconhecido, oFontePDF, nTamFonte, nAngulo)
+FUNCTION hbNFe_Texto_Hpdf( oPdfPage2, x1, y1, x2, y2, cText, align, Dummy, oFontePDF, nTamFonte, nAngulo)
 LOCAL nRadiano
+   #ifndef __XHARBOUR__
+      HB_SYMBOL_UNUSED( Dummy )
+   #endif
    IF oFontePDF <> Nil
-      HPDF_Page_SetFontAndSize( oPdfPage2, oFontePDF, nTamFonte )   
+      HPDF_Page_SetFontAndSize( oPdfPage2, oFontePDF, nTamFonte )
    ENDIF
    IF x2 = Nil
       x2 := x1 - nTamFonte
@@ -2591,7 +2594,7 @@ FUNCTION hbNFe_Zebrea_Draw_Hpdf( hZebra, page, ... )
 #endif
 
 ****************************************
-function CodificaCode128c(pcCodigoBarra)      
+function CodificaCode128c(pcCodigoBarra)
 ****************************************
 
 &&  Parameters de entrada : O codigo de barras no formato Code128C "somente numeros" campo tipo caracter
@@ -2599,9 +2602,9 @@ function CodificaCode128c(pcCodigoBarra)
 &&                        : para impressão do código de barras utilizando a fonte Code128bWin, é necessário
 &&                        : para utilizar essa fonte os arquivos Code128bWin.ttf, Code128bWin.afm e Code128bWin.pfb
 && Autor                  : Anderson Camilo
-&& Data                   : 19/03/2012 
+&& Data                   : 19/03/2012
 
-local  nI :=0, checksum :=0, nValorCar :=0, cCode128 := '', cCodigoBarra :=''
+local  nI :=0, checksum :=0, nValorCar, cCode128 := '', cCodigoBarra
 
 cCodigoBarra = pcCodigoBarra
 if len(cCodigoBarra) > 0    && Verifica se os caracteres são válidos (somente números)
@@ -2610,58 +2613,58 @@ if len(cCodigoBarra) > 0    && Verifica se os caracteres são válidos (somente nú
           if (Asc( substr ( cCodigoBarra, nI, 1) ) < 48 .or. Asc( substr ( cCodigoBarra, nI, 1) ) > 57)
              nI = 0
 	         exit
-          endif		  
+          endif
       next nI
    endif
-   if nI > 0 
+   if nI > 0
       nI = 1 &&  nI é o índice da cadeia
       cCode128 = chr(155)
-	   
+
       do while nI <= len ( cCodigoBarra )
          nValorCar = val ( substr( cCodigoBarra, nI, 2) )
          if nValorCar = 0
-            nValorCar += 128 
+            nValorCar += 128
           elseif nValorCar < 95
-                 nValorCar += 32 
-          else   
-                 nValorCar +=  50 
+                 nValorCar += 32
+          else
+                 nValorCar +=  50
          endif
          cCode128 += Chr(nValorCar)
          nI = nI + 2
       enddo
-	   
-      && Calcula o checksum  
+
+      && Calcula o checksum
       for nI = 1 to len(cCode128)
           nValorCar = asc ( substr( cCode128, nI, 1 ) )
           if nValorCar = 128
              nValorCar = 0
            elseif nValorCar < 127
-                  nValorCar -= 32 
-           else 
-                  nValorCar -=  50 
+                  nValorCar -= 32
+           else
+                  nValorCar -=  50
           endif
-				   
-          if nI = 1 
+
+          if nI = 1
 		     checksum = nValorCar
-          endif			  
+          endif
           checksum = mod( (checksum + (nI - 1) * nValorCar ) , 103)
-       next nI 
+       next nI
 	   &&  Cálculo código ASCII do checkSum
 
        if checksum = 0
-          checksum += 128 
+          checksum += 128
         elseif checksum < 95
-               checksum += 32 
-        else   
-               checksum +=  50 
+               checksum += 32
+        else
+               checksum +=  50
        endif
 
        && Adiciona o checksum e STOP
-   
-       cCode128 = cCode128 + Chr(checksum) +  chr(156)  
-    endif 
+
+       cCode128 = cCode128 + Chr(checksum) +  chr(156)
+    endif
 endif
 
 return cCode128
 
-	  
+

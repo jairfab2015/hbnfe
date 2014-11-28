@@ -11,6 +11,7 @@
    #include "harupdf.ch"
    #include "hbzebra.ch"
    #include "hbcompat.ch"
+   #include "hbcurl.ch"
 #endif
 #include "hbnfe.ch"
 
@@ -30,7 +31,7 @@ ENDCLASS
 METHOD execute() CLASS hbNFeCancela
 LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
       aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeCancelamento2',;
-      oAssina, aRetornoAss, cProtNFe, oError, cXMLFile, cXMLSai, nPos, oCurl, aHeader, retHTTP
+      oAssina, aRetornoAss, oError, cXMLFile, cXMLSai, nPos, oCurl, aHeader, retHTTP
 
    IF ::cUFWS = Nil
       ::cUFWS := ::ohbNFe:cUFWS
@@ -101,23 +102,19 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
    cXML := cXML +'</soap12:Envelope>'
 
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+"NFe"+::cChaveNFe+"-ped-can.xml",cXMLDadosMsg,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\NFe" + ::cChaveNFe + "-ped-can.xml", cXMLDadosMsg )
    CATCH
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := 'Problema ao gravar protocolo de pedido '+::ohbNFe:pastaEnvRes+"\"+"NFe"+::cChaveNFe+"-ped-can.xml"
       RETURN(aRetorno)
    END
-   
-   
-   
+
    cCN := ::ohbNfe:pegaCNCertificado(::ohbNfe:cSerialCert)
 
    cUrlWS := ::ohbNFe:getURLWS(_CANCELAMENTO)
-   #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-   #else
-      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-   #endif
+
+   oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+
   IF ::ohbNFe:nSOAP = HBNFE_CURL
      aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
                  'SOAPAction: "NfeCancelamento2"',;
@@ -159,22 +156,19 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
      oServerWS:open("POST", cUrlWS, .F.)
      oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
-  
-     #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-     #else
-        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-     #endif
+
+     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
      oDOMDoc:resolveExternals := .F.
      oDOMDoc:preserveWhiteSpace = .T.
      oDOMDoc:LoadXML(cXML)
      IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() + ;
-                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() + ;
-                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() + ;
-                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() + ;
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() + ;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() + ;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() + ;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() + ;
                     " Code: "+STR(oDOMDoc:parseError:errorCode)
         aRetorno['OK']       := .F.
         aRetorno['MsgErro']  := cMSgErro
@@ -183,11 +177,11 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
      TRY
         oServerWS:send(oDOMDoc:xml)
      CATCH oError
-       cMsgErro := "Falha "+HB_OsNewLine()+ ;
-               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+       cMsgErro := "Falha "+HB_EOL()+ ;
+               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
               	 "Mensangem: " + oError:Description
         aRetorno['OK']       := .F.
         aRetorno['MsgErro']  := cMSgErro
@@ -198,9 +192,9 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
      ENDDO
      cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
    ENDIF
-   
+
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\NFe"+::cChaveNFe+"-can.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\NFe" + ::cChaveNFe + "-can.xml", cXMLResp )
    CATCH
       aRetorno['OK']       := .T.
       aRetorno['MsgErro']  := 'Problema ao retorno do protocolo '+::ohbNFe:pastaEnvRes+"\NFe"+::cChaveNFe+"-can.xml"
@@ -217,7 +211,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
       RETURN(aRetorno)
    END
    TRY
-      MEMOWRIT(::ohbNFe:pastaCancelamento+"\NFe"+::cChaveNFe+"-can.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaCancelamento + "\NFe" + ::cChaveNFe + "-can.xml", cXMLResp )
    CATCH
       aRetorno['OK']       := .T.
       aRetorno['MsgErro']  := 'Problema ao retorno do protocolo '+::ohbNFe:pastaCancelamento+"\NFe"+::cChaveNFe+"-can.xml"
@@ -258,7 +252,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
       cXMLSai := SUBS(cXMLSai,1,nPos) + ;
                  aRetorno['retCancNFe']
       TRY
-         MEMOWRIT(::ohbNFe:pastaNFe+"\"+::cChaveNFe+'-nfe.xml', cXMLSai, .F. )
+         hb_MemoWrit( ::ohbNFe:pastaNFe + "\" + ::cChaveNFe + '-nfe.xml', cXMLSai )
       CATCH
          aRetorno['MsgErro']  := 'Problema ao retorno do protocolo '+::ohbNFe:pastaNFe+"\"+::cChaveNFe+'-nfe.xml'
       END
@@ -266,5 +260,5 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro,;
 
    oDOMDoc:=Nil
    oServerWS:=Nil
-   
+
 RETURN(aRetorno)

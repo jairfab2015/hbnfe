@@ -11,6 +11,7 @@
    #include "harupdf.ch"
    #include "hbzebra.ch"
    #include "hbcompat.ch"
+   #include "hbcurl.ch"
 #endif
 #include "hbnfe.ch"
 
@@ -28,7 +29,7 @@ ENDCLASS
 METHOD execute() CLASS hbNFeConsulta
 LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(),;
       oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2',;
-      oError, nI2, xXMLSai, cProtNFe, cXMLSai, cXMLFile, cXMLDadosMsg, oCurl, aHeader, retHTTP
+      oError, cXMLSai, cXMLFile, cXMLDadosMsg, oCurl, aHeader, retHTTP
 
    IF ::cUFWS = Nil
       ::cUFWS := ::ohbNFe:cUFWS
@@ -66,7 +67,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
 
    cUrlWS := ::ohbNFe:getURLWS(_CONSULTAPROTOCOLO)
    IF cUrlWS = nil
-      cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+      cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                   "Serviço solicitado : CONSULTA PROTOCOLO"
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMsgErro
@@ -93,7 +94,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    cXML := cXML +   '</soap12:Body>'
    cXML := cXML +'</soap12:Envelope>'
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-sit.xml",cXMLDadosMsg,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-ped-sit.xml", cXMLDadosMsg )
    CATCH
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := 'Problema ao gravar pedido de consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-sit.xml"
@@ -137,31 +138,26 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
        curl_global_cleanup()
      #endif
   ELSE // MSXML
-     #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-     #else
-        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-     #endif
+
+     oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
      oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
 
-     #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-     #else
-        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-     #endif
+     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
      oDOMDoc:resolveExternals := .F.
      oDOMDoc:preserveWhiteSpace = .T.
      oDOMDoc:LoadXML(cXML)
      IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
-                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
-                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
-                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() +;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() +;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() +;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() +;
                     "code: "+STR(oDOMDoc:parseError:errorCode)
         aRetorno['OK']       := .F.
         aRetorno['MsgErro']  := cMsgErro
@@ -170,11 +166,11 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
      TRY
         oServerWS:send(oDOMDoc:xml)
      CATCH oError
-       cMsgErro := "Falha "+HB_OsNewLine()+ ;
-               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+       cMsgErro := "Falha "+HB_EOL()+ ;
+               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
               	 "Mensangem: " + oError:Description
        aRetorno['OK']       := .F.
        aRetorno['MsgErro']  := cMsgErro
@@ -189,7 +185,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    cXMLResp := oFuncoes:pegaTag( cXMLResp, 'retConsSitNFe' )
 
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-sit.xml", cXMLResp )
    CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar retorno da consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml"
@@ -236,7 +232,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                  + '</nfeProc>'
 */
          TRY
-            MEMOWRIT( ::cNFeFile, cXMLSai, .F. )
+            hb_MemoWrit( ::cNFeFile, cXMLSai )
          CATCH
             aRetorno['MsgErro']  := 'Erro ao gravar protNFe no arquivo '+::cNFeFile
             RETURN(aRetorno)

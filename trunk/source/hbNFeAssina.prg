@@ -27,17 +27,18 @@ CLASS hbNFeAssina
 
 
 METHOD Execute() CLASS hbNFeAssina
-   LOCAL cCN, cXml, oServerWS, oDOMDoc, cXmlResp, cMsgErro, aRetorno := hash(), I, ;
+   LOCAL cXml, oDOMDoc, cMsgErro, aRetorno := hash(), I, ;
          xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois, ;
          XMLAssinado, posini, SIGNEDKEY, DSIGKEY, SCONTAINER, ;
-         SPROVIDER, ETYPE, URI, J, NFESW_SHOWNORMAL := 1, nRandom, cXmlSig
-   LOCAL cXmlTagInicial := "", cXmlTagFinal := ""
+         SPROVIDER, ETYPE, URI, J, nRandom, cXmlSig // , NFESW_SHOWNORMAL := 1
+   LOCAL nP, nResult, PosFim
+   LOCAL cXmlTagInicial := "", cXmlTagFinal := "", nCont
    LOCAL aDelimitadores := { ;
       { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contem CTe e NFe
       { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contem NFe - esquisito mas infCte e nao infCTe
       { "<infNFe",    "</NFe>"       }, ; // NFE
       { "<infCanc",   "</cancNFe>"   }, ; // Cancelamento antigo
-      { "<infDPEC",   "</envDPEC>"   }. ; // DPEC
+      { "<infDPEC",   "</envDPEC>"   }, ; // DPEC
       { "<infInut",   "</inutNFe>"   }, ; // Inutilizacao
       { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correcao
       { "<infEvento", "</evento>"    }, ; // Evento 110111 cancelamento
@@ -102,7 +103,7 @@ METHOD Execute() CLASS hbNFeAssina
       cXmlSig +=    [<SignedInfo>]
       cXmlSig +=       [<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>]
       cXmlSig +=       [<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />]
-      cXmlSig +=       [<Reference URI="#] URI + [">]
+      cXmlSig +=       [<Reference URI="#] + URI + [">]
       cXmlSig +=          [<Transforms>]
       cXmlSig +=             [<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />]
       cXmlSig +=             [<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />]
@@ -122,16 +123,16 @@ METHOD Execute() CLASS hbNFeAssina
       cXmlSig +=    [</KeyInfo>]
       cXmlSig += [</Signature>]
 
-      cXml := Substr( cXml, 1, At( cTagFinal, cXml ) - 1 ) + cXmlSig + cTagFinal
+      cXml := Substr( cXml, 1, At( cXmlTagFinal, cXml ) - 1 ) + cXmlSig + cXmlTagFinal
   ENDIF
 
   IF ::ohbNFe:nSOAP = HBNFE_CURL
      // assinar
      nRandom := Random( 1, 9999 )
-     MemoWrit( 'xml_' + AllTrim( Str( nRandom ) ) + '.temp', cXml, .F. )
-     MemoWrit( 'sign_' + AllTrim( Str( nRandom ) ) + '.bat', 'xmlsec\xmlsec --sign --output signed.xml --pkcs12 ' + ;
+     hb_MemoWrit( 'xml_' + AllTrim( Str( nRandom ) ) + '.temp', cXml )
+     hb_MemoWrit( 'sign_' + AllTrim( Str( nRandom ) ) + '.bat', 'xmlsec\xmlsec --sign --output signed.xml --pkcs12 ' + ;
         ::ohbNFe:cCertPFX + ' --pwd ' + ::ohbNFe:cCertPass + ' --trusted-pem ' + ::ohbNFe:cCertFilePub + ;
-        ' --id-attr:Id infNFe xml.temp' , .F. )
+        ' --id-attr:Id infNFe xml.temp' )
      //#ifndef __XHARBOUR__
      // No início do Harbour 3.2 o RUN causava problemas. Se for esse o caso, altere aqui
      //   wapi_ShellExecute( 'sign_' + AllTrim( Str( nRandom ) ) + '.bat',, 'sign_' + AllTrim( Str( nRandom ) ) + '.bat' ,,, NFESW_SHOWNORMAL )
@@ -155,11 +156,9 @@ METHOD Execute() CLASS hbNFeAssina
        ENDIF
 
        TRY
-         #ifdef __XHARBOUR__
-            oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-         #else
+
             oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-         #endif
+
        CATCH
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := 'Nao consegui carregar ' + _MSXML2_DOMDocument
@@ -171,11 +170,9 @@ METHOD Execute() CLASS hbNFeAssina
        oDOMDoc:preserveWhiteSpace := .T.
 
        TRY
-         #ifdef __XHARBOUR__
-            xmldsig := xhb_CreateObject( _MSXML2_MXDigitalSignature )
-         #else
-            xmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
-         #endif
+
+         xmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
+
        CATCH
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := 'Nao consegui carregar ' + _MSXML2_MXDigitalSignature
@@ -184,10 +181,10 @@ METHOD Execute() CLASS hbNFeAssina
 
        oDOMDoc:LoadXML( cXml )
        IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-          cMsgErro := "assinar: Nao foi possível carregar o documento pois ele nao corresponde ao seu Schema" + HB_OsNewLine()
-          cMsgErro += " Linha: "              + Str( oDOMDoc:parseError:line )   + HB_OsNewLine()
-          cMsgErro += " Caractere na linha: " + STR(oDOMDoc:parseError:linepos ) + HB_OsNewLine()
-          cMsgErro += " Causa do erro: "      + oDOMDoc:parseError:reason        + HB_OsNewLine()
+          cMsgErro := "assinar: Nao foi possível carregar o documento pois ele nao corresponde ao seu Schema" + HB_EOL()
+          cMsgErro += " Linha: "              + Str( oDOMDoc:parseError:line )   + HB_EOL()
+          cMsgErro += " Caractere na linha: " + STR(oDOMDoc:parseError:linepos ) + HB_EOL()
+          cMsgErro += " Causa do erro: "      + oDOMDoc:parseError:reason        + HB_EOL()
           cMsgErro += "code: "                + Str( oDOMDoc:parseError:errorCode )
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := cMsgErro
@@ -211,20 +208,16 @@ METHOD Execute() CLASS hbNFeAssina
           RETURN aRetorno
        ENDIF
 
-       #ifdef __XHARBOUR__
-          oStoreMem := xhb_CreateObject( "CAPICOM.Store" )
-       #else
-          oStoreMem := win_oleCreateObject( "CAPICOM.Store" )
-       #endif
+       oStoreMem := win_oleCreateObject( "CAPICOM.Store" )
 
        TRY
           oStoreMem:open( _CAPICOM_MEMORY_STORE, 'Memoria', _CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED )
        CATCH oError
-         cMsgErro := "Falha ao criar espaco certificado na memoria " + HB_OsNewLine() + ;
-                 	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_OsNewLine() + ;
-                  	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_OsNewLine() + ;
-                 	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_OsNewLine() + ;
-                 	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_OsNewLine() + ;
+         cMsgErro := "Falha ao criar espaco certificado na memoria " + HB_EOL() + ;
+                 	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_EOL() + ;
+                  	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_EOL() + ;
+                 	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_EOL() + ;
+                 	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_EOL() + ;
                 	 "Mensagem: "  + oError:Description
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := cMSgErro
@@ -234,11 +227,11 @@ METHOD Execute() CLASS hbNFeAssina
        TRY
           oStoreMem:Add( oCert )
        CATCH oError
-         cMsgErro := "Falha ao adicionar certificado na memoria "+HB_OsNewLine()+ ;
-                 	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_OsNewLine() + ;
-                  	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_OsNewLine() + ;
-                 	 "OSCode: "    + Transform( oError:OsCode, NIL )    + ";" + HB_OsNewLine() + ;
-                 	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_OsNewLine() + ;
+         cMsgErro := "Falha ao adicionar certificado na memoria "+HB_EOL()+ ;
+                 	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_EOL() + ;
+                  	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_EOL() + ;
+                 	 "OSCode: "    + Transform( oError:OsCode, NIL )    + ";" + HB_EOL() + ;
+                 	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_EOL() + ;
                 	 "Mensagem: "  + oError:Description
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := cMSgErro
@@ -287,10 +280,10 @@ METHOD Execute() CLASS hbNFeAssina
              nP = At( '<X509Certificate>', XMLAssinado, nP + 1 )
           ENDDO
           PosFim := nResult
-          // MemoWrit( '35canc5.xml', XMLAssinado, .F. )
+          // hb_MemoWrit( '35canc5.xml', XMLAssinado )
 
           XMLAssinado := Substr( XMLAssinado, 1, PosIni ) + Substr( XMLAssinado, PosFim, Len( XMLAssinado ) )
-          // MemoWrit( '35canc6.xml', XMLAssinado, .F. )
+          // hb_MemoWrit( '35canc6.xml', XMLAssinado )
        ELSE
           aRetorno[ 'OK' ]       := .F.
           aRetorno[ 'MsgErro' ]  := 'Assinatura Falhou.'
@@ -316,14 +309,14 @@ METHOD Execute() CLASS hbNFeAssina
          aRetorno[ 'XMLAssinado' ] := XMLAssinado
       ELSE
          aRetorno[ 'XMLAssinado' ] := XMLAssinado
-         MemoWrit( ::cXmlFile, cXmlAssinado, .F. )
+         hb_MemoWrit( ::cXmlFile, XmlAssinado )
       ENDIF
    CATCH oError
-     cMsgErro := "Falha ao gravar XML assinado " + HB_OsNewLine() + ;
-             	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_OsNewLine() + ;
-              	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_OsNewLine() + ;
-             	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_OsNewLine() + ;
-             	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_OsNewLine() + ;
+     cMsgErro := "Falha ao gravar XML assinado " + HB_EOL() + ;
+             	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_EOL() + ;
+              	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_EOL() + ;
+             	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_EOL() + ;
+             	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_EOL() + ;
             	 "Mensagem: "  + oError:Description
       aRetorno[ 'OK' ]       := .F.
       aRetorno[ 'MsgErro' ]  := cMSgErro

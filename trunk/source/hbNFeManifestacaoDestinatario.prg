@@ -67,20 +67,17 @@ ENDIF
 cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 cUrlWS := ::ohbNFe:getURLWS(_CONSULTANFEDEST)
 if cUrlWS = nil
-    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+    cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                 "Serviço solicitado : CONSULTANFEDEST"
     aRetorno['OK']       := .F.
     aRetorno['MsgErro']  := cMsgErro
     RETURN(aRetorno)
 endif
 TRY
-   #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-   #else
-      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-   #endif
+   oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+
 CATCH
-   cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+   cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                "Serviço solicitado : CONSULTANFEDEST"
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -104,7 +101,7 @@ cXMLped:='<consNFeDest xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.01" 
          '</consNFeDest>'
 
 TRY
-   MEMOWRIT(::ohbNFe:pastaEnvRes+"\consNFeDest-ped.xml",cXMLped,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\consNFeDest-ped.xml", cXMLped )
 CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Problema ao gravar pedido de consulta '+::ohbNFe:pastaEnvRes+"\consNFeDest-ped.xml"
@@ -118,27 +115,24 @@ cXML:='<?xml version="1.0" encoding="utf-8"?>'+;
                '<cUF>'+::cUFWS+'</cUF>'+;
                '<versaoDados>'+::versaoDados+'</versaoDados>'+;
             '</nfeCabecMsg>'+;
-         '</soap:Header>'+; 
+         '</soap:Header>'+;
          '<soap:Body>'+;
             '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsultaDest">'+cXMLped+'</nfeDadosMsg>'+;
          '</soap:Body>'+;
       '</soap:Envelope>'
 
-#ifdef __XHARBOUR__
-   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-#else
-   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-#endif
+oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
 oDOMDoc:async = .F.
 oDOMDoc:validateOnParse  = .T.
 oDOMDoc:resolveExternals := .F.
 oDOMDoc:preserveWhiteSpace = .T.
 oDOMDoc:LoadXML(cXML)
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
-               " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
-               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
-               " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() +;
+               " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() +;
+               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() +;
+               " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() +;
                "code: "+STR(oDOMDoc:parseError:errorCode)
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -147,11 +141,11 @@ ENDIF
 TRY
    oServerWS:send(oDOMDoc:xml)
 CATCH oError
-  cMsgErro := "Falha "+HB_OsNewLine()+ ;
-             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+  cMsgErro := "Falha "+HB_EOL()+ ;
+             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
              "Mensangem: " + oError:Description
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := cMsgErro
@@ -164,7 +158,7 @@ ENDDO
 cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 
 TRY
-   MEMOWRIT(::ohbNFe:pastaEnvRes+"\retConsNFeDest.xml",cXMLResp,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\retConsNFeDest.xml", cXMLResp )
 CATCH
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := 'Problema ao gravar retorno da consulta '+::ohbNFe:pastaEnvRes+"\retConsNFeDest.xml"
@@ -188,7 +182,7 @@ hCOUNT['resCCe']:=0
 WHILE .T.
    cLINHA:=SUBSTR(cXMLResp,AT('<ret>',cXMLResp), AT('</ret>',cXMLResp)-AT('<ret>',cXMLResp)+6    )
    cXMLResp:=SUBSTR(cXMLResp,AT('</ret>',cXMLResp)+6,LEN(cXMLResp))
-   
+
    IF !EMPTY(oFuncoes:pegaTag(cLINHA, "resNFe"))
       hCOUNT['resNFe']++
       hresNFe['NSU_'+STRZERO(hCOUNT['resNFe'],3)]      := SUBSTR(oFuncoes:pegaTag(cLINHA, "resNFe"), AT('"',oFuncoes:pegaTag(cLINHA, "resNFe"))+1, AT('>',oFuncoes:pegaTag(cLINHA, "resNFe"))-AT('"',oFuncoes:pegaTag(cLINHA, "resNFe"))-2   )
@@ -244,7 +238,7 @@ WHILE .T.
    IF AT('<ret>',cXMLResp)<=0
       EXIT
    ENDIF
-ENDDO   
+ENDDO
 
 aRetorno['OK']     := .T.
 aRetorno['resNFe'] :=hresNFe
@@ -298,20 +292,16 @@ ENDIF
 cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 cUrlWS := ::ohbNFe:getURLWS(_DOWNLOADNFE)
 if cUrlWS = nil
-    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+    cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                 "Serviço solicitado : DOWNLOADNFE"
     aRetorno['OK']       := .F.
     aRetorno['MsgErro']  := cMsgErro
     RETURN(aRetorno)
 endif
 TRY
-   #ifdef __XHARBOUR__
-      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-   #else
-      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-   #endif
+   oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
 CATCH
-   cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+   cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                "Serviço solicitado : DOWNLOADNFE"
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -332,7 +322,7 @@ cXMLped:='<downloadNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00" 
          '</downloadNFe>'
 
 TRY
-   MEMOWRIT(::ohbNFe:pastaEnvRes+"\downloadNFe-ped.xml",cXMLped,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\downloadNFe-ped.xml", cXMLped )
 CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Problema ao gravar pedido de download da NF-e '+::ohbNFe:pastaEnvRes+"\downloadNFe-ped.xml"
@@ -352,21 +342,18 @@ cXML:='<?xml version="1.0" encoding="utf-8"?>'+;
           '</soap:Body>'+;
       '</soap:Envelope>'
 
-#ifdef __XHARBOUR__
-   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-#else
-   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-#endif
+oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
 oDOMDoc:async = .F.
 oDOMDoc:validateOnParse  = .T.
 oDOMDoc:resolveExternals := .F.
 oDOMDoc:preserveWhiteSpace = .T.
 oDOMDoc:LoadXML(cXML)
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
-               " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
-               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
-               " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() +;
+               " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() +;
+               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() +;
+               " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() +;
                "code: "+STR(oDOMDoc:parseError:errorCode)
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -375,11 +362,11 @@ ENDIF
 TRY
    oServerWS:send(oDOMDoc:xml)
 CATCH oError
-  cMsgErro := "Falha "+HB_OsNewLine()+ ;
-             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+  cMsgErro := "Falha "+HB_EOL()+ ;
+             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
              "Mensangem: " + oError:Description
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := cMsgErro
@@ -392,7 +379,7 @@ ENDDO
 cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 
 TRY
-   MEMOWRIT(::ohbNFe:pastaEnvRes+"\retDownloadNFe.xml",cXMLResp,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\retDownloadNFe.xml", cXMLResp )
 CATCH
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := 'Problema ao gravar retorno do download da NF-e '+::ohbNFe:pastaEnvRes+"\retDownloadNFe.xml"
@@ -421,7 +408,7 @@ aRetorno['XMLNfe'] := '<?xml version="1.0" encoding="UTF-8"?>'+SUBSTR(cXMLResp,2
 IF aRetorno['cStatNFe']<>'140'
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := aRetorno['cStatNFe']+'-'+aRetorno['xMotivoNFe']
-ENDIF   
+ENDIF
 
 RETURN(aRetorno)
 

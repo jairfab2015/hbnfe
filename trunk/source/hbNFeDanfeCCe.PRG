@@ -22,7 +22,7 @@ CLASS hbNFeDanfeCCe
    METHOD destinatario()
    METHOD eventos()
    METHOD rodape()
-   
+
    DATA cTelefoneEmitente INIT ""
    DATA cSiteEmitente INIT ""
    DATA cEmailEmitente INIT ""
@@ -33,15 +33,15 @@ CLASS hbNFeDanfeCCe
    DATA cChaveNFe
    DATA cChaveCCe
 
-   DATA aInfCCe   
+   DATA aInfCCe
    DATA aIde
    DATA aEmit
    DATA aDest
-   
+
    DATA cFonteCCe
-   DATA cFonteCorrecoes   
-   DATA cFonteCode128                
-   DATA cFonteCode128F               
+   DATA cFonteCorrecoes
+   DATA cFonteCode128
+   DATA cFonteCode128F
    DATA oPdf
    DATA oPdfPage
    DATA oPdfFontCabecalho
@@ -73,7 +73,7 @@ METHOD execute() CLASS hbNFeDanfeCCe
    IF ::cFonteCorrecoes = Nil
       ::cFonteCorrecoes := 'Courier'
    ENDIF
-   
+
    ::aRetorno := hash()
 
    IF !FILE(::cArquivoCCeXML)
@@ -83,7 +83,7 @@ METHOD execute() CLASS hbNFeDanfeCCe
    ENDIF
    ::cXMLCCe := MEMOREAD( ::cArquivoCCeXML )
    ::cChaveCCe := SUBS( ::cXMLCCe, AT('Id=',::cXMLCCe)+3+9,44)
-   
+
    IF !FILE(::cArquivoNFeXML)
       ::aRetorno[ 'OK' ] := .F.
       ::aRetorno[ 'MsgErro' ] := 'Arquivo não encontrado ! '+::cArquivoNFeXML
@@ -97,11 +97,11 @@ METHOD execute() CLASS hbNFeDanfeCCe
       ::aRetorno[ 'MsgErro' ] := 'Arquivos XML com Chaves diferentes...! ' + ';Chave NF-e: ' + ::cChaveNFe + ';Chave CC-e: ' + ::cChaveCCe
       RETURN(::aRetorno)
    ENDIF
-     
+
    IF !::buscaDadosXML()
       RETURN(::aRetorno)
    ENDIF
-   
+
    IF !::geraCCePDF()
       ::aRetorno[ 'OK' ] := .F.
       ::aRetorno[ 'MsgErro' ] := 'Problema ao gerar o PDF da Carta de Correção !'
@@ -179,8 +179,7 @@ LOCAL cInfCCe, cInfCCeRet, cIde, cEmit, cDest, oFuncoes := hbNFeFuncoes()
 RETURN(.T.)
 
 METHOD geraCCePDF() CLASS hbNFeDanfeCCe
-   LOCAL nItem, nIdes, nItensNF, nItens1Folha
-   LOCAL nRadiano, nAltura, nLargura, nAngulo
+   LOCAL nAltura // , nRadiano, nAngulo, nLargura
 
    // criacao objeto pdf
    ::oPdf := HPDF_New()
@@ -189,10 +188,10 @@ METHOD geraCCePDF() CLASS hbNFeDanfeCCe
       ::aRetorno[ 'MsgErro' ] := 'Falha da criação do objeto PDF da Carta de Correção!'
       RETURN(.F.)
    ENDIF
-   
+
    /* set compression mode */
    HPDF_SetCompressionMode( ::oPdf, HPDF_COMP_ALL )
-   
+
    /* setando fonte */
    IF ::cFonteCCe == "Times"
       ::oPdfFontCabecalho := HPDF_GetFont( ::oPdf, "Times-Roman", "CP1252" )
@@ -219,23 +218,23 @@ METHOD geraCCePDF() CLASS hbNFeDanfeCCe
     ELSE
       ::oPdfFontCorrecoes     := HPDF_GetFont( ::oPdf, "Courier", "CP1252" )
    ENDIF
-      
+
    ::cFonteCode128 := HPDF_LoadType1FontFromFile(::oPdf, 'fontes\Code128bWinLarge.afm', 'fontes\Code128bWinLarge.pfb')   && Code 128
    ::cFonteCode128F := HPDF_GetFont( ::oPdf, ::cFonteCode128, "WinAnsiEncoding" )
-   
+
    // final da criacao e definicao do objeto pdf
 
    ::oPdfPage := HPDF_AddPage( ::oPdf )
 
    HPDF_Page_SetSize( ::oPdfPage, HPDF_PAGE_SIZE_A4, HPDF_PAGE_PORTRAIT )
    nAltura := HPDF_Page_GetHeight( ::oPdfPage )    &&  = 841,89
-   nLargura := HPDF_Page_GetWidth( ::oPdfPage )    &&  = 595,28
+   // nLargura := HPDF_Page_GetWidth( ::oPdfPage )    &&  = 595,28
 
    ::nLinhaPdf := nAltura - 25   && Margem Superior
-   
-   nAngulo := 45                   /* A rotation of 45 degrees. */
-   nRadiano := nAngulo / 180 * 3.141592 /* Calcurate the radian value. */
-   
+
+   //nAngulo := 45                   /* A rotation of 45 degrees. */
+   // nRadiano := nAngulo / 180 * 3.141592 /* Calcurate the radian value. */
+
    ::cabecalho()
    ::destinatario()
    ::eventos()
@@ -245,7 +244,7 @@ METHOD geraCCePDF() CLASS hbNFeDanfeCCe
 
    HPDF_SaveToFile( ::oPdf, ::cFile )
    HPDF_Free( ::oPdf )
-   
+
 RETURN(.T.)
 
 
@@ -256,7 +255,7 @@ LOCAL oImage, hZebra
    hbNFe_Box_Hpdf( ::oPdfPage, 30,::nLinhaPdf-106,   535,  110, ::nLarguraBox )    && Quadro Cabeçalho
 
    // logo/dados empresa
-   
+
    hbNFe_Box_Hpdf( ::oPdfPage, 290,::nLinhaPdf-106,  275,  110, ::nLarguraBox )    && Quadro CC-e, Chave de Acesso e Codigo de Barras
    hbNFe_Texto_Hpdf( ::oPdfPage,30, ::nLinhaPdf + 2,     274, Nil, "IDENTIFICAÇÃO DO EMITENTE" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
 * alert('nLogoStyle: ' + ::nLogoStyle +';_LOGO_ESQUERDA: ' + _LOGO_ESQUERDA)
@@ -284,7 +283,7 @@ LOCAL oImage, hZebra
           hbNFe_Texto_Hpdf( ::oPdfPage,  100, ::nLinhaPdf-72,  289, Nil, TRIM(IF(!EMPTY(::cTelefoneEmitente),"FONE: "+::cTelefoneEmitente,"")), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
           hbNFe_Texto_Hpdf( ::oPdfPage,  100, ::nLinhaPdf-82,  289, Nil, TRIM(::cSiteEmitente), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
           hbNFe_Texto_Hpdf( ::oPdfPage,  100, ::nLinhaPdf-92,  289, Nil, TRIM(::cEmailEmitente), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
-		  
+
 		ELSEIF ::nLogoStyle = _LOGO_DIREITA
           oImage := HPDF_LoadJPEGImageFromFile( ::oPdf, ::cLogoFile )
           HPDF_Page_DrawImage( ::oPdfPage, oImage, 220, ::nLinhaPdf - (62+18), 62, 62 )
@@ -299,7 +298,7 @@ LOCAL oImage, hZebra
         ENDIF
    ENDIF
 
-/*   
+/*
       IF EMPTY( ::cLogoFile )
           hbNFe_Texto_Hpdf( ::oPdfPage, 71, ::nLinhaPdf   , 399, Nil, "IDENTIFICAÇÃO DO EMITENTE" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
           hbNFe_Texto_Hpdf( ::oPdfPage, 71, ::nLinhaPdf-6 , 399, Nil, TRIM(MEMOLINE(::aEmit[ "xNome" ],30,1)) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 12 )
@@ -338,12 +337,12 @@ LOCAL oImage, hZebra
             hbNFe_Texto_Hpdf( ::oPdfPage, 71, ::nLinhaPdf-70, 335, Nil, TRIM(::cEmailEmitente), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 8 )
            ENDIF
       ENDIF
-*/   
-   
-   
+*/
+
+
    hbNFe_Texto_Hpdf( ::oPdfPage,292, ::nLinhaPdf-2   , 554, Nil, "CC-e" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 18 )
    hbNFe_Texto_Hpdf( ::oPdfPage,296, ::nLinhaPdf-22   , 554, Nil, "CARTA DE CORREÇÃO ELETRÔNICA" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 14 )
-   
+
    // chave de acesso
    hbNFe_Box_Hpdf( ::oPdfPage, 290,::nLinhaPdf-61 ,  275,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,291, ::nLinhaPdf-42   , 534, Nil, "CHAVE DE ACESSO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 6 )
@@ -352,7 +351,7 @@ LOCAL oImage, hZebra
    ELSE
       hbNFe_Texto_Hpdf( ::oPdfPage,292, ::nLinhaPdf-50   , 554, Nil, TRANSF(::cChaveNFe, "@R 9999 9999 9999 9999 9999 9999 9999 9999 9999 9999 9999") , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 8 )
    ENDIF
-   
+
    // codigo barras
    #ifdef __XHARBOUR__
         hbNFe_Texto_Hpdf( ::oPdfPage,291, ::nLinhaPdf-65, 555, Nil, CodificaCode128c(::cChaveNFe), HPDF_TALIGN_CENTER, Nil, ::cFonteCode128F, 18 )
@@ -362,7 +361,7 @@ LOCAL oImage, hZebra
    #endif
 
    ::nLinhaPdf -= 106
-   
+
    // CNPJ
    hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-20,   535,  20, ::nLarguraBox )    && Quadro CNPJ/INSCRIÇÃO
    hbNFe_Texto_Hpdf( ::oPdfPage,32, ::nLinhaPdf,      160, Nil, "CNPJ" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
@@ -372,13 +371,13 @@ LOCAL oImage, hZebra
    hbNFe_Box_Hpdf(  ::oPdfPage, 160, ::nLinhaPdf-20,  130,  20, ::nLarguraBox )    && Quadro INSCRIÇÃO
    hbNFe_Texto_Hpdf( ::oPdfPage,162, ::nLinhaPdf,     290, Nil, "INSCRIÇÃO ESTADUAL" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,161, ::nLinhaPdf-6,   290, Nil, ::aEmit[ "IE" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
-   
+
    // MODELO DO DOCUMENTO (NF-E)
    hbNFe_Texto_Hpdf( ::oPdfPage,291, ::nLinhaPdf,     340, Nil, "MODELO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,291, ::nLinhaPdf-6,   340, Nil, ::aIde[ "mod" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
    // SERIE DOCUMENTO (NF-E)
-   hbNFe_Box_Hpdf( ::oPdfPage,  340, ::nLinhaPdf-20,   50,  20, ::nLarguraBox )    
+   hbNFe_Box_Hpdf( ::oPdfPage,  340, ::nLinhaPdf-20,   50,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,341, ::nLinhaPdf,     390, Nil, "SERIE" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,341, ::nLinhaPdf-6,   390, Nil, ::aIde[ "serie" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
@@ -387,7 +386,7 @@ LOCAL oImage, hZebra
    hbNFe_Texto_Hpdf( ::oPdfPage,391, ::nLinhaPdf-6,   480, Nil, SUBS(STRZERO(VAL(::aIde[ "nNF" ]),9),1,3)+"."+SUBS(STRZERO(VAL(::aIde[ "nNF" ]),9),4,3)+"."+SUBS(STRZERO(VAL(::aIde[ "nNF" ]),9),7,3) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
    // DATA DE EMISSAO DA NFE
-   hbNFe_Box_Hpdf( ::oPdfPage,  480, ::nLinhaPdf-20,   85,  20, ::nLarguraBox )    
+   hbNFe_Box_Hpdf( ::oPdfPage,  480, ::nLinhaPdf-20,   85,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,481, ::nLinhaPdf,     565, Nil, "DATA DE EMISSÃO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,481, ::nLinhaPdf-6,   565, Nil, right(::aIde[ "dEmi" ],2) + '/' + substr(::aIde[ "dEmi" ],6,2) + '/' + left(::aIde[ "dEmi" ],4), HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
@@ -396,9 +395,9 @@ RETURN Nil
 METHOD destinatario() CLASS hbNFeDanfeCCe
 
      // REMETENTE / DESTINATARIO
-	 
+
 	 ::nLinhaPdf -= 24
-   
+
       hbNFe_Texto_Hpdf( ::oPdfPage, 30, ::nLinhaPdf  , 565, Nil, "DESTINATÁRIO/REMETENTE" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 6 )
 
       ::nLinhaPdf -= 9
@@ -434,7 +433,7 @@ METHOD destinatario() CLASS hbNFeDanfeCCe
          hbNFe_Texto_Hpdf( ::oPdfPage,497, ::nLinhaPdf-6  , 564, Nil, TRANSF(::aDest[ "CEP" ], "@R 99999-999") , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
       CATCH
       END
-   
+
       ::nLinhaPdf -= 20
 
       // MUNICIPIO
@@ -458,7 +457,7 @@ METHOD destinatario() CLASS hbNFeDanfeCCe
       hbNFe_Texto_Hpdf( ::oPdfPage,457, ::nLinhaPdf-6  , 564, Nil, ::aDest[ "IE" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
       ::nLinhaPdf -= 20
-	  
+
 RETURN Nil
 
 METHOD eventos() CLASS hbNFeDanfeCCe
@@ -468,44 +467,44 @@ LOCAL cDataHoraReg, cMemo, nI, nCompLinha
    hbNFe_Texto_Hpdf( ::oPdfPage, 30, ::nLinhaPdf-4 , 565, Nil, "EVENTOS" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 6 )
 
    ::nLinhaPdf -= 12
-   
-   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-20 ,   535,  20, ::nLarguraBox )   
-   
+
+   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-20 ,   535,  20, ::nLarguraBox )
+
    // ORGAO EMITENTE
    hbNFe_Texto_Hpdf( ::oPdfPage,32, ::nLinhaPdf,   90, Nil, "ORGÃO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,32, ::nLinhaPdf-6, 90, Nil, ::aInfCCe[ "cOrgao" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
-   
+
    // TIPO DE EVENTO'
-   hbNFe_Box_Hpdf( ::oPdfPage,  90, ::nLinhaPdf-20,   60,  20, ::nLarguraBox )    
+   hbNFe_Box_Hpdf( ::oPdfPage,  90, ::nLinhaPdf-20,   60,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,92, ::nLinhaPdf,     149, Nil, "TIPO EVENTO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,92, ::nLinhaPdf-6,   149, Nil, ::aInfCCe[ "tpEvento" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
-   
+
    // SEQUENCIA  EVENTO
    hbNFe_Texto_Hpdf( ::oPdfPage,152, ::nLinhaPdf,   209, Nil, "SEQ. EVENTO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,152, ::nLinhaPdf-6, 209, Nil, ::aInfCCe[ "nSeqEvento" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
    // VERSÃO DO EVENTO
-   hbNFe_Box_Hpdf( ::oPdfPage,  210, ::nLinhaPdf-20 ,   60,  20, ::nLarguraBox )   
+   hbNFe_Box_Hpdf( ::oPdfPage,  210, ::nLinhaPdf-20 ,   60,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,212, ::nLinhaPdf,      269, Nil, "VERSÃO EVENTO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,212, ::nLinhaPdf-6,    269, Nil, ::aInfCCe[ "verEvento" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
 
    // DATA E HORA DO REGISTRO
    hbNFe_Texto_Hpdf( ::oPdfPage,272, ::nLinhaPdf,  429, Nil, "DATA DO REGISTRO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
-   cDataHoraReg := substr(::aInfCCe[ "dhRegEvento" ],9,2) + '/' 
-   cDataHoraReg += substr(::aInfCCe[ "dhRegEvento" ],6,2) + '/' 
-   cDataHoraReg += left(::aInfCCe[ "dhRegEvento" ],4) + '  ' 
+   cDataHoraReg := substr(::aInfCCe[ "dhRegEvento" ],9,2) + '/'
+   cDataHoraReg += substr(::aInfCCe[ "dhRegEvento" ],6,2) + '/'
+   cDataHoraReg += left(::aInfCCe[ "dhRegEvento" ],4) + '  '
    cDataHoraReg += substr(::aInfCCe[ "dhRegEvento" ],12,8)
    hbNFe_Texto_Hpdf( ::oPdfPage,272, ::nLinhaPdf-6, 429, Nil, cDataHoraReg , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
-   
+
    // NUMERO DO PROTOCOLO
-   hbNFe_Box_Hpdf( ::oPdfPage,  430, ::nLinhaPdf-20,    135,  20, ::nLarguraBox )  
+   hbNFe_Box_Hpdf( ::oPdfPage,  430, ::nLinhaPdf-20,    135,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,432, ::nLinhaPdf,       564, Nil, "NUMERO DO PROTOCOLO" , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,432, ::nLinhaPdf-6,     564, Nil, ::aInfCCe[ "nProt" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
-   
+
   ::nLinhaPdf -= 20
-      
+
    // STATUS DO EVENTO
-   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-20,  535,  20, ::nLarguraBox )   
+   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-20,  535,  20, ::nLarguraBox )
    hbNFe_Texto_Hpdf( ::oPdfPage,32, ::nLinhaPdf,     564, Nil, "STATUS DO EVENTO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 6 )
    hbNFe_Texto_Hpdf( ::oPdfPage,32, ::nLinhaPdf-6,    60, Nil, ::aInfCCe[ "cStat" ] , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalhoBold, 11 )
    hbNFe_Texto_Hpdf( ::oPdfPage,62, ::nLinhaPdf-6,    564, Nil, ::aInfCCe[ "xMotivo" ] , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 11 )
@@ -513,29 +512,29 @@ LOCAL cDataHoraReg, cMemo, nI, nCompLinha
   ::nLinhaPdf -= 25
 
    // Correções
-   
+
    hbNFe_Texto_Hpdf( ::oPdfPage, 30, ::nLinhaPdf , 565, Nil, "CORREÇÕES" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 6 )
-   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-188 ,   535,  180, ::nLarguraBox )   
+   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-188 ,   535,  180, ::nLarguraBox )
 
    ::nLinhaPdf -= 12
-   
-   cMemo :=  IF(::aInfCCe[ "xCorrecao" ] <> Nil, ::aInfCCe[ "xCorrecao" ],"")                                    
-   
-   cMemo := STRTRAN( cMemo , ";", CHR(13)+CHR(10) )
+
+   cMemo :=  IF(::aInfCCe[ "xCorrecao" ] <> Nil, ::aInfCCe[ "xCorrecao" ],"")
+
+   cMemo := STRTRAN( cMemo , ";", HB_EOL() )
    nCompLinha := 77
-   IF ::cFonteCorrecoes == "Helvetica" 
+   IF ::cFonteCorrecoes == "Helvetica"
       nCompLinha := 75
    ENDIF
-   
+
    FOR nI = 1 TO MLCOUNT( cMemo, nCompLinha )
       hbNFe_Texto_Hpdf( ::oPdfPage,38, ::nLinhaPdf    ,564, Nil, UPPER( TRIM( MEMOLINE(cMemo,nCompLinha,nI) ) ), HPDF_TALIGN_LEFT, Nil, ::oPdfFontCorrecoes, 11 )
       ::nLinhaPdf -= 12
    NEXT
-   
+
    FOR nI=(MLCOUNT( cMemo, nCompLinha )+1) TO 14
       ::nLinhaPdf -= 12
-   NEXT   
-      
+   NEXT
+
 RETURN Nil
 
 METHOD rodape() CLASS hbNFeDanfeCCe
@@ -552,12 +551,12 @@ LOCAL cTextoCond, nTamFonte
       nTamFonte = 9
    ENDIF
 
-  
+
    // Condição de USO
 
-   
+
    hbNFe_Texto_Hpdf( ::oPdfPage, 30, ::nLinhaPdf , 535, Nil, "CONDIÇÃO DE USO" , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalhoBold, 6 )
-   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-102 ,   535,  94, ::nLarguraBox )   
+   hbNFe_Box_Hpdf( ::oPdfPage,  30, ::nLinhaPdf-102 ,   535,  94, ::nLarguraBox )
    cTextoCond := 'A Carta de Correção é disciplinada pelo § 1º-A do art. 7º do Convênio S/N, de 15 de dezembro de'
    hbNFe_Texto_Hpdf( ::oPdfPage,34, ::nLinhaPdf - 12    ,564, Nil, cTextoCond , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, nTamFonte )
    cTextoCond := '1970,  e pode ser utilizada para regularização de erro ocorrido na emissão de documento fiscal,'
@@ -574,7 +573,7 @@ LOCAL cTextoCond, nTamFonte
    hbNFe_Texto_Hpdf( ::oPdfPage,34, ::nLinhaPdf - 84    ,564, Nil, cTextoCond , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, nTamFonte )
 
    // Observações:
-   
+
   ::nLinhaPdf -= 100
 
      IF ::cFonteCCe == "Times"
@@ -599,27 +598,27 @@ LOCAL cTextoCond, nTamFonte
        cTextoCond := 'fiscal em questão.'
        hbNFe_Texto_Hpdf( ::oPdfPage, 34, ::nLinhaPdf-40 , 564, Nil, cTextoCond, HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 11 )
    ENDIF
-   
+
 
    // Observações:
-   
+
   ::nLinhaPdf -= 100
 
    hbNFe_Line_Hpdf( ::oPdfPage, 34, ::nLinhaPdf-12, 270, ::nLinhaPdf-12, ::nLarguraBox)
-  
+
    hbNFe_Texto_Hpdf( ::oPdfPage, 30,  ::nLinhaPdf-14, 284, Nil, 'Local e data' , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
    hbNFe_Texto_Hpdf( ::oPdfPage, 304, ::nLinhaPdf-14, 574, Nil, 'Sem outro motivo para o momento subscrevemos-nos.' , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 9 )
    hbNFe_Texto_Hpdf( ::oPdfPage, 304, ::nLinhaPdf-24, 574, Nil, 'Atenciosamente.' , HPDF_TALIGN_LEFT, Nil, ::oPdfFontCabecalho, 9 )
 
    hbNFe_Line_Hpdf( ::oPdfPage, 34,  ::nLinhaPdf-92, 270, ::nLinhaPdf-92, ::nLarguraBox)
    hbNFe_Line_Hpdf( ::oPdfPage, 564, ::nLinhaPdf-92, 300, ::nLinhaPdf-92, ::nLarguraBox)
-   
+
    hbNFe_Texto_Hpdf( ::oPdfPage, 30,  ::nLinhaPdf-94, 284, Nil,  trim( memoline(::aDest[ "xNome" ],40,1 ) ) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
    hbNFe_Texto_Hpdf( ::oPdfPage, 30,  ::nLinhaPdf-108, 284, Nil, trim( memoline(::aDest[ "xNome" ],40,2 ) ) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
    hbNFe_Texto_Hpdf( ::oPdfPage, 300, ::nLinhaPdf-94,  574, Nil, trim( memoline(::aEmit[ "xNome" ],40,1 ) ) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
    hbNFe_Texto_Hpdf( ::oPdfPage, 300, ::nLinhaPdf-108, 574, Nil, trim( memoline(::aEmit[ "xNome" ],40,2 ) ) , HPDF_TALIGN_CENTER, Nil, ::oPdfFontCabecalho, 9 )
-   
-   
+
+
 RETURN Nil
 
 

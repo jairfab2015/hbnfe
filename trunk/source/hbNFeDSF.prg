@@ -1,13 +1,14 @@
 #include "common.ch"
 #include "hbclass.ch"
 #include "hbnfe.ch"
+#include "hbcompat.ch"
 
 class hbNFSe_DSF
    DATA oFuncoes INIT hbNFeFuncoes()
    data oCTe_GERAIS INIT oCTe_GERAIS()
    DATA ohbNFe
    DATA Xml
-   
+
    // Cabecalho
    DATA cab_CodCidade
    DATA cab_CPFCNPJRemetente
@@ -20,12 +21,12 @@ class hbNFSe_DSF
    DATA cab_Versao Init 1
    DATA cab_MetodoEnvio Init 'WS'
    DATA cab_VersaoComponente Init '6.0004'
-   
+
    // Rps
    DATA rps_InscricaoMunicipalPrestador
    DATA rps_RazaoSocialPrestador
    DATA rps_TipoRPS Init 'RPS'
-   DATA rps_SerieRPS Init 'NF' 
+   DATA rps_SerieRPS Init 'NF'
    DATA rps_NumeroRPS
    DATA rps_DataEmissaoRPS
    DATA rps_SituacaoRPS
@@ -78,8 +79,8 @@ class hbNFSe_DSF
    DATA Itens_Quantidade
    DATA Itens_ValorUnitario
    DATA Itens_ValorTotal
-   DATA Itens_Tributavel   
-   
+   DATA Itens_Tributavel
+
    // Registro das Deducoes
    DATA Deducao_DeducaoPor
    DATA Deducao_TipoDeducao
@@ -88,23 +89,23 @@ class hbNFSe_DSF
    DATA Deducao_ValorTotalReferencia
    DATA Deducao_PercentualDeduzir
    DATA Deducao_ValorDeduzir
-   
+
    DATA numero_nota
    DATA codigo_verificacao
    DATA motivo
-   
+
    Method Registro_Cabecalho()
    Method Registro_RPS()
    Method Registro_Itens_RPS(lABRE,lFECHA)
    Method Registro_Deducao_RPS(lABRE,lFECHA)
    Method Assina_XML()
-   
+
    Method Finaliza_RPS()
-   
+
    Method Gera_Chave_SHA1()
    Method DataToYYYY_MM_DD(dDAT,lTIME)
    Method DataToYYYYMMDD(dDAT)
-   Method LinkWebService(cServ)
+   Method LinkWebService()
    Method ComunicaWebService(cMethod)
    Method ctPegaCNCertificado()
    Method LeRetorno(cRET)
@@ -120,7 +121,7 @@ Method Registro_Cabecalho() Class hbNFSe_DSF
    Mauricio Cruz - 01/05/2013
 */
 LOCAL aRETORNO:=HASH()
-LOCAL cXML:='', cARQ:=''
+LOCAL cXML:='', cARQ
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -171,7 +172,7 @@ cXML+=      '<MetodoEnvio>'+ALLTRIM(::cab_MetodoEnvio)+'</MetodoEnvio>'
 cXML+=   '</Cabecalho>'
 
 cARQ:=::ohbNFe:pastaEnvRes+'\NFSe'+ALLTRIM(::cab_CPFCNPJRemetente)+DTOS(DATE())+STRTRAN(LEFT(TIME(),8),':')+'.xml'
-MEMOWRIT(cARQ,cXML,.F.)
+hb_MemoWrit( cARQ, cXML )
 
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=cARQ
@@ -187,7 +188,7 @@ Method Registro_RPS() Class hbNFSe_DSF
    Mauricio Cruz - 01/05/2013
 */
 LOCAL aRETORNO:=HASH()
-LOCAL cXML:='', cARQ:=''
+LOCAL cXML:='', cARQ
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -378,7 +379,7 @@ cXML+=         '<DataEmissaoRPS>'+::DataToYYYY_MM_DD(::rps_DataEmissaoRPS,.T.)+'
 cXML+=         '<SituacaoRPS>'+ALLTRIM(::rps_SituacaoRPS)+'</SituacaoRPS>'
 cXML+=         '<SerieRPSSubstituido>'+ALLTRIM(::rps_SerieRPSSubstituido)+'</SerieRPSSubstituido>'
 cXML+=         '<NumeroRPSSubstituido>'+ALLTRIM(STR(::rps_NumeroRPSSubstituido))+'</NumeroRPSSubstituido>'
-cXML+=         '<NumeroNFSeSubstituida>'+ALLTRIM(STR(::rps_NumeroNFSeSubstituida))+'</NumeroNFSeSubstituida>' 
+cXML+=         '<NumeroNFSeSubstituida>'+ALLTRIM(STR(::rps_NumeroNFSeSubstituida))+'</NumeroNFSeSubstituida>'
 cXML+=         '<DataEmissaoNFSeSubstituida>'+::DataToYYYY_MM_DD(::rps_DataEmissaoNFSeSubstituida)+'</DataEmissaoNFSeSubstituida>'
 cXML+=         '<SeriePrestacao>'+ALLTRIM(::rps_SeriePrestacao)+'</SeriePrestacao>'
 cXML+=         '<InscricaoMunicipalTomador>'+ALLTRIM(::rps_InscricaoMunicipalTomador)+'</InscricaoMunicipalTomador>'
@@ -424,7 +425,7 @@ cXML+=         '<CPFCNPJIntermediario>'+ALLTRIM(::rps_CPFCNPJIntermediario)+'</C
 cXML:=::oFuncoes:RemoveAcentuacao(cXML)
 
 cARQ:=::ohbNFe:pastaEnvRes+'\NFSe'+ALLTRIM(::cab_CPFCNPJRemetente)+ALLTRIM(::rps_InscricaoMunicipalPrestador)+ALLTRIM(::rps_SerieRPS)+DTOS(::rps_DataEmissaoRPS)+ALLTRIM(STR(::rps_NumeroRPS))+'.xml'
-MEMOWRIT(cARQ,cXML,.F.)
+hb_MemoWrit( cARQ, cXML )
 
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=cARQ
@@ -475,7 +476,7 @@ FERASE(::Xml)
 cXML+='<Deducoes/>'
 IF lABRE
    cXML+='<Itens>'
-ENDIF   
+ENDIF
 
 cXML+='<Item>'
 cXML+=   '<DiscriminacaoServico>'+ALLTRIM(::oCTe_GERAIS:rgLimpaString(::Itens_DiscriminacaoServico))+'</DiscriminacaoServico>'
@@ -487,9 +488,9 @@ cXML+='</Item>'
 
 IF lFECHA
    cXML+='</Itens>'
-ENDIF   
+ENDIF
 
-MEMOWRIT(::Xml,cXML,.F.)
+hb_MemoWrit( ::Xml, cXML )
 
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=::Xml
@@ -552,7 +553,7 @@ FERASE(::Xml)
 
 IF lABRE
    cXML+='<Deducoes>'
-ENDIF   
+ENDIF
 
 cXML+='<Deducao>'
 cXML+=   '<DeducaoPor>'+ALLTRIM(::Deducao_DeducaoPor)+'</DeducaoPor>'
@@ -566,9 +567,9 @@ cXML+='</Deducao>'
 
 IF lFECHA
    cXML+='</Deducoes>'
-ENDIF   
+ENDIF
 
-MEMOWRIT(::Xml,cXML,.F.)
+hb_MemoWrit( ::Xml, cXML )
 
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=::Xml
@@ -584,7 +585,7 @@ Method Finaliza_RPS() Class hbNFSe_DSF
    Mauricio Cruz - 02/05/2013
 */
 LOCAL aRETORNO:=HASH()
-LOCAL cXML:=''
+LOCAL cXML
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -601,7 +602,7 @@ cXML+='</Lote>'
 cXML+='<Signature></Signature>'
 cXML+='</ns1:ReqEnvioLoteRPS>'
 
-MEMOWRIT(::Xml,cXML,.F.)
+hb_MemoWrit( ::Xml, cXML )
 
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=::Xml
@@ -617,8 +618,9 @@ Method Assina_XML() Class hbNFSe_DSF
 */
 LOCAL oDOMDoc, oXmldsig, oCert, oStoreMem, dsigKey, signedKey
 LOCAL aRETORNO:=HASH()
-LOCAL cXML:='', cXMLSig:=''
-LOCAL PosIni:=0, PosFim:=0, nP:=0, nResult:=0
+LOCAL cXML, cXMLSig
+LOCAL PosIni, PosFim, nP, nResult
+LOCAL oError
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -655,11 +657,9 @@ cXML:=STRTRAN(cXML,'<Signature></Signature>','<Signature xmlns="http://www.w3.or
 
 // Inicializa o objeto do DOMDocument
 TRY
-   #ifdef __XHARBOUR__
-      oDOMDoc := xhb_CreateObject(_MSXML2_DOMDocument)
-   #else
-      oDOMDoc := win_oleCreateObject(_MSXML2_DOMDocument)
-   #endif
+
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
 CATCH
    aRETORNO['MSG']:='Nao foi possível carregar ' + _MSXML2_DOMDocument
    RETURN(aRETORNO)
@@ -671,11 +671,9 @@ oDOMDoc:preserveWhiteSpace = .T.
 
 // inicializa o objeto do MXDigitalSignature
 TRY
-   #ifdef __XHARBOUR__
-      oXmldsig := xhb_CreateObject( _MSXML2_MXDigitalSignature )
-   #else
-      oXmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
-   #endif
+
+      oXmldsig := win_OleCreateObject( _MSXML2_MXDigitalSignature )
+
 CATCH
    aRETORNO['MSG']:='Nao foi possível carregar ' +_MSXML2_MXDigitalSignature
    RETURN(aRETORNO)
@@ -684,10 +682,10 @@ END
 // carrega o arquivo XML para o DOM
 oDOMDoc:LoadXML(cXML)
 IF oDOMDoc:parseError:errorCode<>0
-   aRETORNO['MSG']:=' Assinar: Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
-                    ' Linha: '              + STR(oDOMDoc:parseError:line)+HB_OsNewLine()+;
-                    ' Caractere na linha: ' + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine()+;
-                    ' Causa do erro: '      + oDOMDoc:parseError:reason+HB_OsNewLine()+;
+   aRETORNO['MSG']:=' Assinar: Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+                    ' Linha: '              + STR(oDOMDoc:parseError:line)+HB_EOL()+;
+                    ' Caractere na linha: ' + STR(oDOMDoc:parseError:linepos)+HB_EOL()+;
+                    ' Causa do erro: '      + oDOMDoc:parseError:reason+HB_EOL()+;
                     ' code: '               + STR(oDOMDoc:parseError:errorCode)
    RETURN(aRETORNO)
 ENDIF
@@ -707,22 +705,16 @@ IF oCert == Nil
    RETURN(aRETORNO)
 ENDIF
 
-// cria o objeto de Store da capicom
-#ifdef __XHARBOUR__
-   oStoreMem := xhb_CreateObject('CAPICOM.Store')
-#else
    oStoreMem := win_oleCreateObject('CAPICOM.Store')
-#endif
 
-// Aloca o certificado na memoria
 TRY
    oStoreMem:open(_CAPICOM_MEMORY_STORE,'Memoria',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
 CATCH oError
-   aRETORNO['MSG']:='Falha ao alocar o certificado na memoria '+HB_OsNewLine()+ ;
-                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_OsNewLine()+ ;
-                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_OsNewLine()+ ;
-                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_OsNewLine()+ ;
-                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_OsNewLine()+ ;
+   aRETORNO['MSG']:='Falha ao alocar o certificado na memoria '+HB_EOL()+ ;
+                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+ ;
+                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+ ;
+                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+ ;
+                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+ ;
                     'Mensangem: ' + oError:Description
    RETURN(aRETORNO)
 END
@@ -731,11 +723,11 @@ END
 TRY
    oStoreMem:Add(oCert)
 CATCH oError
-   aRETORNO['MSG']:='Falha ao aloca o certificado na memoria da Capicom '+HB_OsNewLine()+;
-                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_OsNewLine()+;
-                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_OsNewLine()+;
-                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_OsNewLine()+;
-                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_OsNewLine()+;
+   aRETORNO['MSG']:='Falha ao aloca o certificado na memoria da Capicom '+HB_EOL()+;
+                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+;
+                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+;
+                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+;
+                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+;
                     'Mensangem: ' + oError:Description
    RETURN(aRETORNO)
 END
@@ -746,7 +738,7 @@ TRY
    dsigKey:=oXmldsig:createKeyFromCSP(oCert:PrivateKey:ProviderType, oCert:PrivateKey:ProviderName, oCert:PrivateKey:ContainerName, 0)
 CATCH
    aRETORNO['MSG']:='Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-   RETURN(aRETORNO)          
+   RETURN(aRETORNO)
 END
 IF (dsigKey = nil)
    aRETORNO['MSG']:='Erro ao criar a chave do CSP.'
@@ -781,8 +773,8 @@ cXMLSig := SUBS(cXMLSig,1,PosIni)+SUBS(cXMLSig,PosFim,len(cXMLSig))
 //cXMLSig:='<?xml version="1.0" encoding="UTF-8" ?>'+cXMLSig
 
 // grava o arquivo no disco
-MEMOWRIT(::Xml,cXMLSig,.F.)
-   
+hb_MemoWrit( ::Xml, cXMLSig )
+
 aRETORNO['STATUS']:=.T.
 aRETORNO['XML']:=::Xml
 aRETORNO['MSG']:='XML assinado com sucesso em '+::Xml
@@ -822,16 +814,14 @@ Method ctPegaCNCertificado() Class hbNFSe_DSF
    Pega o CN do certificado - do projeto hbNFE
    Mauricio Cruz - 22/07/2013
 */
-LOCAL oStore, oResult, oCertificados
+LOCAL oStore, oCertificados
 LOCAL cSubjectName:='', cCN:=''
-LOCAL mI:=0
+LOCAL mI
 
 TRY
-   #ifdef __XHARBOUR__
-      oStore := xhb_CreateObject( "CAPICOM.Store" )
-   #else
-      oStore := win_oleCreateObject( "CAPICOM.Store" )
-   #endif
+
+      oStore := win_OleCreateObject( "CAPICOM.Store" )
+
 CATCH
 END
 
@@ -864,7 +854,7 @@ Method ComunicaWebService(cMethod) Class hbNFSe_DSF
 */
 LOCAL oServerWS
 LOCAL aRETORNO:=HASH()
-LOCAL cCERT:='', cUrlWS:='', cXML:={}
+LOCAL cCERT:='', cUrlWS, cXML, oDomDoc, e
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -914,7 +904,9 @@ IF EMPTY(cUrlWS)
 ENDIF
 
 TRY
-   oServerWS:=xhb_CreateObject( _MSXML2_ServerXMLHTTP )
+
+   oServerWS := win_OleCreateObject( _MSXML2_ServerXMLHTTP )
+
    oServerWS:setOption( 3, 'CURRENT_USER\MY\'+cCERT )
    oServerWS:open('POST', cUrlWS, .F.)
    oServerWS:setRequestHeader('SOAPAction', '""' )
@@ -930,7 +922,9 @@ IF oServerWS=NIL
 ENDIF
 
 TRY
-   oDOMDoc:=xhb_CreateObject(_MSXML2_DOMDocument)
+
+   oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
+
    oDOMDoc:async = .F.
    oDOMDoc:validateOnParse  = .T.
    oDOMDoc:resolveExternals := .F.
@@ -939,12 +933,12 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o documento XML'
    RETURN(aRETORNO)
-END   
+END
 IF oDOMDoc:parseError:errorCode <> 0
-   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
-                    ' Linha: '+STR(oDOMDoc:parseError:line)                                       +HB_OsNewLine()+;
-                    ' Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                       +HB_OsNewLine()+;
-                    ' Causa do erro: '+oDOMDoc:parseError:reason                                  +HB_OsNewLine()+;
+   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+                    ' Linha: '+STR(oDOMDoc:parseError:line)                                       +HB_EOL()+;
+                    ' Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                       +HB_EOL()+;
+                    ' Causa do erro: '+oDOMDoc:parseError:reason                                  +HB_EOL()+;
                     ' Code: '+STR(oDOMDoc:parseError:errorCode)
   RETURN(aRETORNO)
 ENDIF
@@ -952,11 +946,11 @@ ENDIF
 TRY
   oServerWS:send(oDOMDoc:xml)
 CATCH e
-   aRETORNO['MSG']:='Falha: Não foi possível conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.'+HB_OsNewLine()+;
-                    'Error: '+Transform(e:GenCode,nil)                                                      +';'+HB_OsNewLine()+;
-                    'SubC: '+Transform(e:SubCode,nil)                                                       +';'+HB_OsNewLine()+;
-                    'OSCode: '+Transform(e:OsCode,nil)                                                      +';'+HB_OsNewLine()+;
-                    'SubSystem: '+Transform(e:SubSystem,nil)                                                +';'+HB_OsNewLine()+;
+   aRETORNO['MSG']:='Falha: Não foi possível conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.'+HB_EOL()+;
+                    'Error: '+Transform(e:GenCode,nil)                                                      +';'+HB_EOL()+;
+                    'SubC: '+Transform(e:SubCode,nil)                                                       +';'+HB_EOL()+;
+                    'OSCode: '+Transform(e:OsCode,nil)                                                      +';'+HB_EOL()+;
+                    'SubSystem: '+Transform(e:SubSystem,nil)                                                +';'+HB_EOL()+;
                     'Mensangem: '+e:Description
   RETURN(aRETORNO)
 END
@@ -976,7 +970,7 @@ Method CancelaNFSe() Class hbNFSe_DSF
 /*
    Cancelamento de NFSe DSF
    Mauricio Cruz - 31/10/2013
-   
+
    chamar  ::Registro_Cabecalho() antes de chamar esse no xml
 */
 LOCAL cXML:=''
@@ -1025,11 +1019,11 @@ cXML+=         '<CodigoVerificacao>'+ALLTRIM(::codigo_verificacao)+'</CodigoVeri
 cXML+=         '<MotivoCancelamento>'+ALLTRIM(::motivo)+'</MotivoCancelamento>'
 cXML+=      '</Nota>'
 cXML+=   '</Lote>'
-cXML+=   '<Signature></Signature>' 
+cXML+=   '<Signature></Signature>'
 cXML+='</ns1:ReqCancelamentoNFSe>'
 
 ::Xml:=::ohbNFe:pastaEnvRes+'\NFSe_canc'+ALLTRIM(::cab_CPFCNPJRemetente)+DTOS(DATE())+STRTRAN(LEFT(TIME(),8),':')+'.xml'
-MEMOWRIT(::Xml,cXML)
+hb_MemoWrit( ::Xml, cXML )
 
 aRETORNO:=::Assina_XML()
 IF !aRETORNO['STATUS']
@@ -1079,7 +1073,7 @@ ELSEIF '<Alertas>' $ cRET
    aRETORNO['MSG']:=aRETORNO['CODIGO']+'-'+aRETORNO['DESCRICAO']
 ELSE
    aRETORNO['STATUS']:=.T.
-ENDIF   
+ENDIF
 
 RETURN(aRETORNO)
 
@@ -1091,7 +1085,7 @@ Method ValidaXML() Class hbNFSe_DSF
 */
 LOCAL oDOMDoc, oSchema, ParseError
 LOCAL aRETORNO:=HASH()
-LOCAL cSchemaFilename:=''
+LOCAL cSchemaFilename:='', cXml, oError
 
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
@@ -1111,7 +1105,9 @@ ELSEIF 'ReqCancelamentoNFSe' $ cXML  // Cancelamento de NFSe
 ENDIF
 
 TRY
-   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+
+   oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
+
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o MSXML para validação do XML.'
    RETURN(aRETORNO)
@@ -1125,18 +1121,20 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o arquivo XML para a validação.'
    RETURN(aRETORNO)
-END   
+END
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
-                    'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_OsNewLine()+;
-                    'Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                        +HB_OsNewLine()+;
-                    'Causa do erro: '+oDOMDoc:parseError:reason                                   +HB_OsNewLine()+;
+   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+                    'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_EOL()+;
+                    'Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                        +HB_EOL()+;
+                    'Causa do erro: '+oDOMDoc:parseError:reason                                   +HB_EOL()+;
                     'Code: '+STR(oDOMDoc:parseError:errorCode)
   RETURN(aRETORNO)
 ENDIF
 
 TRY
-   oSchema := xhb_CreateObject( _MSXML2_XMLSchemaCache )
+
+   oSchema := win_OleCreateObject( _MSXML2_XMLSchemaCache )
+
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o MSXML para o schema do XML.'
    RETURN(aRETORNO)
@@ -1150,11 +1148,11 @@ ENDIF
 TRY
    oSchema:add( 'http://localhost:8080/WsNFe2/lote', cSchemaFilename )
 CATCH oError
-   aRETORNO['MSG']:='Falha '+HB_OsNewLine()+ ;
-                    'Error: '+Transform(oError:GenCode, nil)       + ';' +HB_OsNewLine()+;
-                    'SubC: '+Transform(oError:SubCode, nil)        + ';' +HB_OsNewLine()+;
-                    'OSCode: '+Transform(oError:OsCode,  nil)      + ';' +HB_OsNewLine()+;
-                    'SubSystem: '+Transform(oError:SubSystem, nil) + ';' +HB_OsNewLine()+;
+   aRETORNO['MSG']:='Falha '+HB_EOL()+ ;
+                    'Error: '+Transform(oError:GenCode, nil)       + ';' +HB_EOL()+;
+                    'SubC: '+Transform(oError:SubCode, nil)        + ';' +HB_EOL()+;
+                    'OSCode: '+Transform(oError:OsCode,  nil)      + ';' +HB_EOL()+;
+                    'SubSystem: '+Transform(oError:SubSystem, nil) + ';' +HB_EOL()+;
                     'Mensangem: '+oError:Description
   RETURN(aRETORNO)
 END
@@ -1193,7 +1191,7 @@ Method Gera_Chave_SHA1() Class hbNFSe_DSF
    Gera a chave e Chama executavel auxiliar para retornar a chave SHA1
    Mauricio Cruz - 02/05/2013
 */
-LOCAL cRET:=''
+LOCAL cRET
 LOCAL cCHA:=PADL(ALLTRIM(::rps_InscricaoMunicipalPrestador),11,'0')
 
 cCHA+=PADR(ALLTRIM(::rps_SerieRPS),5,' ')

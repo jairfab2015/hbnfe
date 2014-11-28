@@ -38,7 +38,7 @@ ENDCLASS
 METHOD execute() CLASS hbNFeCCe
 LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(),;
       oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento',;
-      oError, nI2, xXMLSai, cProtNFe, cXMLSai, cXMLFile, cXMLDadosMsg,;
+      oError, cXMLDadosMsg, cXmlDadosMsg2, nI, cSeq, ;
       cId, cCondUso, cXMLResp2, cXMLResp3, cXMLResp4, oAssina, aRetornoAss, oValida, aRetornoVal, nPos
 
    IF ::cUFWS = Nil
@@ -58,20 +58,18 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
 
    cUrlWS := ::ohbNFe:getURLWS(_EVENTO)
    if cUrlWS = nil
-       cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+       cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                    "Serviço solicitado : CCe"
        aRetorno['OK']       := .F.
        aRetorno['MsgErro']  := cMsgErro
        RETURN(aRetorno)
    endif
    TRY
-      #ifdef __XHARBOUR__
-         oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-      #else
-         oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-      #endif
+
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+
    CATCH
-      cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+      cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
                   "Serviço solicitado : CCe"
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMsgErro
@@ -131,7 +129,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    NEXT
    cXMLDadosMsg += +'</envEvento>'
 
-    MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-cce.xml",cXMLDadosMsg,.F.)
+    hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-ped-cce.xml", cXMLDadosMsg )
 
     oValida := hbNFeValida()
     oValida:ohbNFe := ::ohbNfe // Objeto hbNFe
@@ -163,28 +161,25 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    cXML := cXML +'</soap12:Envelope>'
 
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-cce.xml",cXMLDadosMsg,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-ped-cce.xml", cXMLDadosMsg )
    CATCH
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := 'Problema ao gravar pedido da CCe '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-cce.xml"
       RETURN(aRetorno)
    END
 
-   #ifdef __XHARBOUR__
-      oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-   #else
-      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-   #endif
+   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
    oDOMDoc:async = .F.
    oDOMDoc:validateOnParse  = .T.
    oDOMDoc:resolveExternals := .F.
    oDOMDoc:preserveWhiteSpace = .T.
    oDOMDoc:LoadXML(cXML)
    IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-      cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
-                  " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
-                  " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
-                  " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+      cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() +;
+                  " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() +;
+                  " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() +;
+                  " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() +;
                   "code: "+STR(oDOMDoc:parseError:errorCode)
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMsgErro
@@ -193,11 +188,11 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    TRY
       oServerWS:send(oDOMDoc:xml)
    CATCH oError
-     cMsgErro := "Falha "+HB_OsNewLine()+ ;
-             	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-              	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-             	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-             	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+     cMsgErro := "Falha "+HB_EOL()+ ;
+             	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+              	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+             	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+             	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
             	 "Mensangem: " + oError:Description
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := cMsgErro
@@ -208,7 +203,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    ENDDO
    cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 *   ? cXMLResp
-   
+
    IF VAL(oFuncoes:pegaTag(cXMLResp, "cStat"))<>128
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := oFuncoes:pegaTag(cXMLResp, "cStat")+'-'+oFuncoes:pegaTag(cXMLResp, "xMotivo")
@@ -222,10 +217,10 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       aRetorno['cStat']    := oFuncoes:pegaTag(cXMLResp, "cStat")
       aRetorno['xMotivo']  := oFuncoes:pegaTag(cXMLResp, "xMotivo")
    ENDIF
-   
+
    cXMLResp2 := oFuncoes:pegaTag( cXMLResp, 'retEnvEvento' )
    cXMLResp4 := oFuncoes:pegaTag( cXMLResp, 'retEvento' )    // Mauricio Cruz - 13/10/2011
-   
+
    nPos := 1
    nI := 0
    DO WHILE .T.
@@ -253,7 +248,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       aRetorno['emailDest_'+cSeq]   := oFuncoes:pegaTag(cXMLResp3, "emailDest")
       aRetorno['dhRegEvento_'+cSeq] := oFuncoes:pegaTag(cXMLResp3, "dhRegEvento")
       aRetorno['nProt_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "nProt")
-      
+
       // Mauricio Cruz - 13/10/2011
       IF oFuncoes:pegaTag(cXMLResp3, "cStat")<>'135'
          aRetorno['OK']       := .F.
@@ -273,7 +268,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                      '</infEvento>' +;
                    '</retEvento>' +;
                  '</ProcEventoNFe>'
-*/   
+*/
    //  Mauricio Cruz - 13/10/2011
    cXMLResp := '<?xml version="1.0" encoding="UTF-8" ?>' +;
                  '<ProcEventoNFe versao="1.00" xmlns="http://www.portalfiscal.inf.br/nfe">' +;
@@ -285,7 +280,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
                    '</retEvento>' +;
                  '</ProcEventoNFe>'
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-cce.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-cce.xml", cXMLResp )
    CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar retorno da cce '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-cce.xml"

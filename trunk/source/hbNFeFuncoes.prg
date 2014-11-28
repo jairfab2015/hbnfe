@@ -14,16 +14,16 @@
 
 CLASS hbNFeFuncoes
 *  // Funcoes de Texto
-   METHOD pegaTag(cXMLcXML, cTag)
+   METHOD pegaTag(cXML, cTag)
    METHOD eliminaString(cString,cEliminar)
    METHOD parseEncode( cTexto, lExtendido )
    METHOD parseDecode( cTexto )
-   METHOD strTostrval( cString )
+   METHOD strTostrval( cString, nCasas )
 *  // Funcoes de B.O.
    METHOD validaEAN(cCodigoBarras)
    METHOD validaPlaca(cPlaca)
 *  // Funcoes de Data
-   METHOD FormatDate(dData,cMascara)
+   METHOD FormatDate(dData,cMascara,cSeparador)
    METHOD DesFormatDate(cData)
 *  // Funcoes de Valores
    METHOD ponto(nValor,nTamanho,nDecimais,cTipo,cSigla)
@@ -263,13 +263,13 @@ Local nInd := 0, nUnidade := 0, nDigito := 0, lRetorno   := .f., aPosicao[12], a
       lRetorno := nDigito = VAL(RIGHT(ALLTRIM(cCodigoBarras), 1))
       IF !lRetorno
          aRetorno[2] := "O digito verificador esta incorreto !"
-      ENDIF   
+      ENDIF
    ELSE
       IF LEN( TRIM ( cCodigoBarras ) ) = 0
          lRetorno := .T.
-      ELSE   
+      ELSE
          aRetorno[2] := "O tamanho do campo devera conter 8, 13 ou 14 digitos !"
-      ENDIF   
+      ENDIF
    ENDIF
    aRetorno[1] := lRetorno
 RETURN (aRetorno)
