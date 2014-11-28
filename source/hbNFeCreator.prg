@@ -43,7 +43,7 @@ CREATE CLASS hbNFeCreator
    METHOD getCurItem()
 
    METHOD geraXML()
-   METHOD incluiTagGrupo(cTag,cValor)
+   METHOD incluiTagGrupo( cTag ) // , cValor
    METHOD incluiTag(cTag,cValor,lExigida)
    METHOD valToStr(cnCampo, nDec)
 ENDCLASS
@@ -466,26 +466,26 @@ RETURN ::nItensDI
 CREATE CLASS hbNFeCreatorItemICMS
    DATA orig
    DATA CST
-   DATA CSOSN       
-   DATA modBC       
-   DATA pRedBC      
-   DATA vBC         
-   DATA pICMS       
-   DATA vICMS       
-   DATA modBCST     
-   DATA pMVAST      
-   DATA pRedBCST    
-   DATA vBCST       
-   DATA pICMSST     
-   DATA vICMSST     
-   DATA cUFST       
-   DATA pBCOp       
+   DATA CSOSN
+   DATA modBC
+   DATA pRedBC
+   DATA vBC
+   DATA pICMS
+   DATA vICMS
+   DATA modBCST
+   DATA pMVAST
+   DATA pRedBCST
+   DATA vBCST
+   DATA pICMSST
+   DATA vICMSST
+   DATA cUFST
+   DATA pBCOp
    DATA vBCSTRet
-   DATA vICMSSTRet  
+   DATA vICMSSTRet
    DATA motDesICMS
    DATA pCredSN
    DATA vCredICMSSN
-   DATA vBCSTDest   
+   DATA vBCSTDest
    DATA vICMSSTDest
 
    METHOD New() CONSTRUCTOR
@@ -741,15 +741,15 @@ CREATE CLASS hbNFeCreatorTotaisICMS
    DATA vBC
    DATA vICMS
    DATA vBCST
-   DATA vST     
-   DATA vProd   
+   DATA vST
+   DATA vProd
    DATA vFrete
-   DATA vSeg    
-   DATA vDesc   
+   DATA vSeg
+   DATA vDesc
    DATA vII
-   DATA vIPI    
+   DATA vIPI
    DATA vPIS
-   DATA vCOFINS 
+   DATA vCOFINS
    DATA vOutro
    DATA vNF
 
@@ -1941,7 +1941,7 @@ LOCAL aRetorno := hash(), oAssina, aRetornoAss, oValida, aRetornoVal, nItem, nIt
 
    aRetorno[ 'OK' ] := .T.
 
-   MEMOWRIT(::ohbNFe:pastaNFe+"\"+::cChave+'-nfe.xml',::cXMLSaida,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaNFe + "\" + ::cChave + '-nfe.xml', ::cXMLSaida )
    IF ::lValida
         oAssina := hbNFeAssina()
         oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe

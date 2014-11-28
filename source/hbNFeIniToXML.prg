@@ -19,7 +19,7 @@ CLASS hbNFeIniToXML
    DATA cIniFile
    DATA cXMLFile
    DATA lValida    // Assina e Valida
-   
+
    DATA aIde
    DATA aRefNfe       // notas referenciadas - Mauricio Cruz - 18/01/2012
    DATA aEmit
@@ -95,9 +95,9 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       aRetorno := ::criaNFe(hIniData,::cIniFile)
       IF ::lCriaSaiNfe
          IF aRetorno[ 'OK' ] = .T.
-            MEMOWRIT("SAINFE.TXT", "OK: Gerado")
+            hb_MemoWrit( "SAINFE.TXT", "OK: Gerado" )
          ELSE
-            MEMOWRIT("SAINFE.TXT", "ERRO: "+aRetorno['MsgErro'])
+            hb_MemoWrit( "SAINFE.TXT", "ERRO: " + aRetorno[ 'MsgErro' ] )
          ENDIF
       ENDIF
    ELSEIF "ASSINAR" $ UPPER(cComando)
@@ -108,7 +108,7 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       oAssina:lMemFile := .F.
       aRetornoAss := oAssina:execute()
       oAssina := Nil
-      
+
       IF aRetornoAss['OK'] == .F.
          aRetorno['OK'] := .F.
          aRetorno['MsgErro'] := aRetornoAss['MsgErro']
@@ -117,9 +117,9 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       ENDIF
       IF ::lCriaSaiNfe
          IF aRetorno[ 'OK' ] = .T.
-            MEMOWRIT("SAINFE.TXT", "OK: Assinado")
+            hb_MemoWrit( "SAINFE.TXT", "OK: Assinado" )
          ELSE
-            MEMOWRIT("SAINFE.TXT", "ERRO: "+aRetorno['MsgErro'])
+            hb_MemoWrit( "SAINFE.TXT", "ERRO: " + aRetorno[ 'MsgErro' ] )
          ENDIF
       ENDIF
    ELSEIF "VALIDAR" $ UPPER(cComando)
@@ -136,9 +136,9 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       ENDIF
       IF ::lCriaSaiNfe
          IF aRetorno[ 'OK' ] = .T.
-            MEMOWRIT("SAINFE.TXT", "OK: Validado")
+            hb_MemoWrit( "SAINFE.TXT", "OK: Validado" )
          ELSE
-            MEMOWRIT("SAINFE.TXT", "ERRO: "+aRetorno['MsgErro'])
+            hb_MemoWrit( "SAINFE.TXT", "ERRO: " + aRetorno[ 'MsgErro' ] )
          ENDIF
       ENDIF
    ELSEIF "CANCELAR" $ UPPER(cComando)
@@ -164,18 +164,18 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       ENDIF
       IF ::lCriaSaiNfe
          IF aRetorno[ 'OK' ] = .T.
-            MEMOWRIT("SAINFE.TXT", "OK: Cancelado" + CHR(13)+CHR(10)+;
-                                   "cStat="+aRetorno['cStat'] + CHR(13)+CHR(10)+;
-                                   "xMotivo="+aRetorno['xMotivo'] + CHR(13)+CHR(10)+;
-                                   "cUF="+aRetorno['cUF'] + CHR(13)+CHR(10)+;
-                                   "chNFe="+aRetorno['chNFe'] + CHR(13)+CHR(10)+;
-                                   "dhRecbto="+aRetorno['dhRecbto'] + CHR(13)+CHR(10)+;
-                                   "nProt="+aRetorno['nProt'] + CHR(13)+CHR(10)+;
-                                   "digVal="+aRetorno['digVal'] + CHR(13)+CHR(10)+;
+            hb_MemoWrit( "SAINFE.TXT", "OK: Cancelado" + HB_EOL() + ;
+                                   "cStat="+aRetorno['cStat'] + HB_EOL() + ;
+                                   "xMotivo="+aRetorno['xMotivo'] + HB_EOL() + ;
+                                   "cUF="+aRetorno['cUF'] + HB_EOL() + ;
+                                   "chNFe="+aRetorno['chNFe'] + HB_EOL() + ;
+                                   "dhRecbto="+aRetorno['dhRecbto'] + HB_EOL() + ;
+                                   "nProt="+aRetorno['nProt'] + HB_EOL() + ;
+                                   "digVal="+aRetorno['digVal'] + HB_EOL() + ;
                                    "xml="+aRetorno['retCancNFe'] ;
                                    )
          ELSE
-            MEMOWRIT("SAINFE.TXT", "ERRO: "+aRetorno['MsgErro'])
+            hb_MemoWrit( "SAINFE.TXT", "ERRO: " + aRetorno[ 'MsgErro' ] )
          ENDIF
       ENDIF
    ELSEIF "ENVIAR" $ UPPER(cComando)
@@ -191,17 +191,17 @@ LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValid
       aRetorno := aRetornoSta
       IF ::lCriaSaiNfe
          IF aRetorno[ 'OK' ] = .T.
-            MEMOWRIT("SAINFE.TXT", "OK: " + CHR(13)+CHR(10)+;
-                                   "tpAmb="+aRetorno['tpAmb'] + CHR(13)+CHR(10)+;
-                                   "verAplic="+aRetorno['verAplic'] + CHR(13)+CHR(10)+;
-                                   "cStat="+aRetorno['cStat'] + CHR(13)+CHR(10)+;
-                                   "xMotivo="+aRetorno['xMotivo'] + CHR(13)+CHR(10)+;
-                                   "cUF="+aRetorno['cUF'] + CHR(13)+CHR(10)+;
-                                   "dhRecbto="+aRetorno['dhRecbto'] + CHR(13)+CHR(10)+;
-                                   "tMed="+aRetorno['tMed'] ;
+            hb_MemoWrit( "SAINFE.TXT", "OK: "  + HB_EOL() + ;
+                                   "tpAmb="    + aRetorno['tpAmb'] + HB_EOL() + ;
+                                   "verAplic=" + aRetorno['verAplic'] + HB_EOL() + ;
+                                   "cStat="    + aRetorno['cStat'] + HB_EOL() + ;
+                                   "xMotivo="  + aRetorno['xMotivo'] + HB_EOL() + ;
+                                   "cUF="      + aRetorno['cUF'] + HB_EOL() + ;
+                                   "dhRecbto=" + aRetorno['dhRecbto'] + HB_EOL() + ;
+                                   "tMed="     + aRetorno['tMed'] ;
                                    )
          ELSE
-            MEMOWRIT("SAINFE.TXT", "ERRO: "+aRetorno['MsgErro'])
+            hb_MemoWrit( "SAINFE.TXT", "ERRO: " + aRetorno[ 'MsgErro' ] )
          ENDIF
       ENDIF
    ENDIF
@@ -214,12 +214,12 @@ METHOD criaNFe(hIniData,cIniFile) CLASS hbNFeIniToXML
 LOCAL oFuncoes := hbNFeFuncoes(), aRetorno := hash(), cDV, cChaveNFe, ;
       oAssina, aRetornoAss, oValida, aRetornoVal,;
       nICob, nNICob, nItem, nNItem, nObs, nAdi, nDI, mI, mY
-LOCAL nItnRef:=0      
+LOCAL nItnRef:=0
 LOCAL aMSGvld:={}
 LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
-   aRetorno['OK'] := .T.      
-   
+   aRetorno['OK'] := .T.
+
    cChaveNFe := ::ohbNFe:empresa_UF + ;
              oFuncoes:FormatDate(CTOD(hIniData['Identificacao']['Emissao']),"YYMM","") + ;
              PADL(ALLTRIM(hIniData['Emitente']['CNPJ']),14,'0') + ;
@@ -231,7 +231,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
    cDV := oFuncoes:modulo11( cChaveNFe, 2, 9 )
    cChaveNFe += cDV
-   
+
    ::aIde := hash()
   	::aIde[ "cUF" ] := ::ohbNFe:empresa_UF
   	::aIde[ "cNF" ] := STRZERO(VAL(hIniData['Identificacao']['Codigo']),8)
@@ -253,7 +253,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    END
   	::aIde[ "tpNF" ] := hIniData['Identificacao']['Tipo']
   	::aIde[ "cMunFG" ] := hIniData['Emitente']['CidadeCod'] //::ohbNFe:empresa_cMun // codigo ibge empresa
-   
+
    // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012
     ::aRefNfe:=hash()
    WHILE .T.
@@ -275,11 +275,11 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       ::aRefNfe['serie'+STRZERO(nItnRef,3)]  := hIniData['NFRef'+STRZERO(nItnRef,3)]['Serie']
       ::aRefNfe['nNF'+STRZERO(nItnRef,3)]    := hIniData['NFRef'+STRZERO(nItnRef,3)]['nNF']
    ENDDO
- 
+
 
 	::aIde[ "tpImp" ] := ::ohbNFe:empresa_tpImp // 1 - retrato 2-paisagem
 	::aIde[ "tpEmis" ] := ::ohbNFe:tpEmis  // 1-normal scan fsda...
-   
+
    IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tpEmis" ])=6 .OR. VAL(::aIde[ "tpEmis" ])=7  // SE FOR MODO SCAN / SVC...
       ::aIde[ "dhCont" ] := ALLTRIM(STR(YEAR(CTOD(hIniData['Identificacao']['dhCont']))))+'-'+;
                             ALLTRIM(STRZERO( MONTH(CTOD(hIniData['Identificacao']['dhCont'])),2 ))+'-'+;
@@ -287,7 +287,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                             ALLTRIM(hIniData['Identificacao']['contHr'])
       ::aIde[ "xJust" ] :=   hIniData['Identificacao']['xJust']
    ENDIF
-   
+
 	::aIde[ "cDV" ] := cDV // Digito verificador chave nfe
 	::aIde[ "tpAmb" ] := ::ohbNFe:tpAmb // 1- producao 2-homologacao
 	IF hIniData['Identificacao']['Finalidade'] = '0'
@@ -348,14 +348,14 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
    ::aDest := hash()
    IF LEN( hIniData['Destinatario']['CNPJ'] ) <= 11 .AND. hIniData['Destinatario']['UF'] <>'EX'  // Mauricio Cruz - 03/10/2011
-   	::aDest[ "CPF" ] := hIniData['Destinatario']['CNPJ'] 
+   	::aDest[ "CPF" ] := hIniData['Destinatario']['CNPJ']
    ELSE
    	::aDest[ "CNPJ" ] := hIniData['Destinatario']['CNPJ']
    ENDIF
    IF ::ohbNFe:tpAmb='2' .AND. hIniData['Destinatario']['UF'] <>'EX'   // Mauricio Cruz - 03/10/2011
       //::aDest[ "CNPJ" ] := '99999999000191'
    ENDIF
-   
+
    IF ::ohbNFe:tpAmb='2'    // Mauricio Cruz - 30/09/2011
       ::aDest[ "xNome" ] := 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'
    ELSE
@@ -389,8 +389,8 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	::aDest[ "xPais" ] := 'BRASIL'
 	END
 
-  
-   
+
+
    TRY   // Alterado - Mauricio Cruz - 30/09/2011
       IF !EMPTY( hIniData['Destinatario']['Fone'] )
          ::aDest[ "fone" ] := oFuncoes:eliminaString(hIniData['Destinatario']['Fone'], ".-/ ()")
@@ -465,7 +465,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 	::aItemCOFINS := hash()
 	::aItemCOFINSST := hash()
 	::aItemCOMB := hash()
-		
+
    nItem := 0
    DO WHILE .T.
       nItem ++
@@ -550,23 +550,23 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       	::aItem[ "item"+STRZERO(nItem,3)+"_nItemPed" ] := hIniData['Produto'+STRZERO(nItem,3)]['nItemPed']
     	CATCH
     	END
-  
-      TRY 
+
+      TRY
 	     	::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ] := hIniData['comb'+STRZERO(nItem,3)]['cProdANP']
 			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_CODIF" ] := hIniData['comb'+STRZERO(nItem,3)]['CODIF']
-			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_qTemp" ] := oFuncoes:strTostrval( hIniData['comb'+STRZERO(nItem,3)]['qTemp'] , 4 )			
-			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_UFCons" ] := hIniData['comb'+STRZERO(nItem,3)]['UFCons']		   
+			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_qTemp" ] := oFuncoes:strTostrval( hIniData['comb'+STRZERO(nItem,3)]['qTemp'] , 4 )
+			::aItemCOMB[ "item"+STRZERO(nItem,3)+"_UFCons" ] := hIniData['comb'+STRZERO(nItem,3)]['UFCons']
 		CATCH
 		END
 
-  
+
       nDi := 0
       DO WHILE .T.
          nDi ++
         	TRY
             // alterado -> Mauricio Cruz - 04/10/2011
            	//::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['nDI']
-            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['NumeroDI']   
+            ::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_nDI" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['NumeroDI']
         	CATCH
         	   nDi --
            	EXIT
@@ -579,15 +579,15 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['cExportador']
          */
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDI" ]         := STR(YEAR(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),4)+'-'+;
-                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),2)+'-'+; 
+                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),2)+'-'+;
                                                                                STRZERO(DAY(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataRegistroDI'])),2)
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_xLocDesemb" ]  := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['LocalDesembaraco']
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_UFDesemb" ]    := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['UFDesembaraco']
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_dDesemb" ]     := STR(YEAR(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),4)+'-'+;
-                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),2)+'-'+; 
+                                                                               STRZERO(MONTH(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),2)+'-'+;
                                                                                STRZERO(DAY(CTOD(hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['DataDesembaraco'])),2)
       	::aItemDI[ "item"+STRZERO(nItem,3)+STRZERO(nDi,3)+"_cExportador" ] := hIniData['DI'+STRZERO(nItem,3)+STRZERO(nDi,3)]['CodigoExportador']
-         
+
 
          nAdi := 0
          DO WHILE .T.
@@ -676,7 +676,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	END
     	TRY
        	::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]    := hIniData['ICMS'+STRZERO(nItem,3)]['PercentualReducaoST']
-    	CATCH    
+    	CATCH
          ::aItemICMS[ "item"+STRZERO(nItem,3)+"_pRedBCST" ]    := '0.00'    // Mauricio Cruz - 04/10/2011
     	END
     	TRY
@@ -862,7 +862,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       CATCH
       END
    ENDDO
-   
+
  	// totais da NF
 	::aICMSTotal := hash()
    TRY
@@ -992,7 +992,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    TRY
     	::aTransp[ "xNome" ] := oFuncoes:parseEncode( hIniData['Transportador']['NomeRazao'] )
    CATCH
-   END   
+   END
    TRY
     	IF !EMPTY( hIniData['Transportador']['IE'] )
        	::aTransp[ "IE" ] := hIniData['Transportador']['IE']
@@ -1117,7 +1117,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    	::aTransp[ "nLacre" ] := hIniData['Lacre001001']['nLacre']
 	CATCH
 	END
-   
+
 	::aFatura := hash()
 	TRY
     	::aFatura[ "nFat" ] := hIniData['Fatura']['Numero']
@@ -1152,7 +1152,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
    END
    */
-   
+
    // Maurício cruz - 27/10/2011
    IF !EMPTY(SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ))
         //::aInfAdic[ "infAdFisco" ] := CLEAR_CHAR( oFuncoes:parseEncode( SYG_GetPrivateProfileString( 'DadosAdicionais', 'Fisco', , cIniFile ),.t. ) )
@@ -1225,7 +1225,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	::aObsFisco[ "pref"+STRZERO(nObs,3)+"_indProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['indProc']
    ENDDO
 
-   
+
 	::aExporta := hash()
 	TRY
       ::aExporta[ "UFEmbarq" ] := hIniData['Exporta']['UFEmbarq']
@@ -1240,7 +1240,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	::aCompra[ "xCont" ] := hIniData['Compra']['xCont']
 	CATCH
 	END
-   
+
    ::REGRAS_NFE(@aMSGvld,cChaveNFe,nItem)
    IF LEN(aMSGvld)>0
       *IF !ERROS_ALERTAS_NFE(aMSGvld)
@@ -1249,16 +1249,16 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
          RETURN(aRetorno)
       *ENDIF
    ENDIF
-   
+
    ************************************************************************************************
    *                            CRIACAO DO ARQUIVO XML                                            *
    ************************************************************************************************
-   
-   
-   
-   
-   
-   
+
+
+
+
+
+
 	::cXMLSaida := '<NFe xmlns="http://www.portalfiscal.inf.br/nfe">' + ;
 	               '<infNFe versao="2.00" Id="NFe'+cChaveNFe+'">'
 	::incluiTag('ide')
@@ -1278,13 +1278,13 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       ENDIF
     	::incluiTag('tpNF'    ,::aIde[ "tpNF" ])
     	::incluiTag('cMunFG'  ,::aIde[ "cMunFG" ])
-   
 
-      // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012   
+
+      // NOTAS REFERENCIADAS   - Mauricio Cruz - 18/01/2012
       IF nItnRef>0
          ::incluiTag('NFref')
       ENDIF
-      
+
       FOR mI:=1 TO nItnRef
          IF !EMPTY(::aRefNfe['refNFe'+STRZERO(mI,3)])
             ::incluiTag('refNFe'  ,::aRefNfe['refNFe'+STRZERO(mI,3)])
@@ -1304,7 +1304,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
       IF nItnRef>0
          ::incluiTag('/NFref')
       ENDIF
-      
+
     	::incluiTag('tpImp'   ,::aIde[ "tpImp" ])
     	::incluiTag('tpEmis'  ,::aIde[ "tpEmis" ])
     	::incluiTag('cDV'     ,::aIde[ "cDV" ])
@@ -1363,7 +1363,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	::incluiTag('cMun'     ,::aDest[ "cMun" ])
     	::incluiTag('xMun'     ,::aDest[ "xMun" ])
     	::incluiTag('UF'       ,::aDest[ "UF" ])
-      
+
       TRY   // Mauricio Cruz  04/10/2011 (Motivo de exportacao)
     	   ::incluiTag('CEP'      ,::aDest[ "CEP" ])
       CATCH
@@ -1381,24 +1381,24 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	IF !EMPTY(::aDest[ "fone" ])
        	::incluiTag('fone'    ,::aDest[ "fone" ])
       ENDIF
-      
+
     	::incluiTag('/enderDest')
     	::incluiTag('IE'       ,::aDest[ "IE" ])
-      
+
     	IF !EMPTY(::aDest[ "ISUF" ])
        	::incluiTag('ISUF'  ,::aDest[ "ISUF" ])
       ENDIF
     	IF !EMPTY(::aDest[ "email" ])
        	::incluiTag('email'    ,::aDest[ "email" ])
       ENDIF
-      
+
 	::incluiTag('/dest')
-   
+
    TRY
       IF !EMPTY(::aEntrega[ "CNPJ" ]) .OR. !EMPTY(::aEntrega[ "CPF" ])
          ::incluiTag('entrega')
       ENDIF
-      
+
       TRY
          IF !EMPTY(::aEntrega[ "CNPJ" ])
             ::incluiTag('CNPJ',::aEntrega[ "CNPJ" ])
@@ -1477,7 +1477,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             IF aRetorno['OK'] = .F.
                RETURN(aRetorno)
             ENDIF
-            
+
          	::incluiTag('xProd'    ,::aItem[ "item"+STRZERO(nItem,3)+"_xProd" ])
          	::incluiTag('NCM'      ,::aItem[ "item"+STRZERO(nItem,3)+"_NCM" ])
          	TRY
@@ -1508,7 +1508,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             IF aRetorno['OK'] = .F.
                RETURN(aRetorno)
             ENDIF
-               
+
          	::incluiTag('uTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_uTrib" ])
          	::incluiTag('qTrib'    ,::aItem[ "item"+STRZERO(nItem,3)+"_qTrib" ])
 
@@ -1573,7 +1573,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                CATCH
                END
             ENDIF
-            
+
           TRY
             ::incluiTag('xPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_xPed" ])
           CATCH
@@ -1582,23 +1582,23 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
             ::incluiTag('nItemPed'   ,::aItem[ "item"+STRZERO(nItem,3)+"_nItemPed" ])
           CATCH
           END
-				
+
 				TRY
 					IF VAL(::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])>0
-						::incluiTag('comb')											
-							::incluiTag('cProdANP' ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])						
+						::incluiTag('comb')
+							::incluiTag('cProdANP' ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_cProdANP" ])
 							::incluiTag('CODIF'    ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_CODIF" ])
 							::incluiTag('qTemp'    ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_qTemp" ])
 							::incluiTag('UFCons'   ,::aItemCOMB[ "item"+STRZERO(nItem,3)+"_UFCons" ])
-						::incluiTag('/comb')						
+						::incluiTag('/comb')
 					ENDIF
 				CATCH
-				END			
-			 	
+				END
+
       	::incluiTag('/prod')
-         
+
       	::incluiTag('imposto')
-            
+
        IF ::lMostra_imp_danfe
           ::incluiTag('vTotTrib',::aItemICMS[ "item"+STRZERO(nItem,3)+"vTotTrib" ])
        ENDIF
@@ -1664,7 +1664,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                            ELSE
                               ::incluiTag('motDesICMS'  ,'9')
                            ENDIF
-                        CATCH 
+                        CATCH
                            ::incluiTag('motDesICMS'  ,'9')
                         END
                      ENDIF
@@ -1869,8 +1869,8 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
               ENDIF
             CATCH
             END
-            
-            
+
+
             // Mauricio Cruz - 04/10/2011
             TRY
                IF LEFT(::aItem[ "item"+STRZERO(nItem,3)+"_CFOP" ],1)='3'   // So precisa do II se for nota de importacao
@@ -1892,8 +1892,8 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                ::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ]:='0.00'
             ENDIF
 
-            
-            
+
+
             // ATENCAO!!!  OS CODIGOS CST:  49,50,51,52,53,54,55,56,60,61,62,63,64,65,66,67,70,71,72,73,74,75,98 PARA PIS / COFINS
             // AINDA NAO FORAM IMPLEMENTADOS NO MANULA DA NF-E E DEVEM SER USADOS COMO 99 ATE QUE SEJA IMPLEMENTADO
             // FICAR DE OLHO PARA QUANDO ISSO SAIR!  (NT2010.001.PDF)  ->  JA FAZ DOIS ANOS ISSO! RECHECAR...
@@ -1927,8 +1927,8 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                      CATCH
                         ::incluiTag('pPIS'       ,'0.00')
                      END
-                     
-                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0. 
+
+                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0.
                     	TRY
                         IF VAL(::aItemPIS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
                       	   ::incluiTag('qBCProd'    ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
@@ -1945,7 +1945,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                     	CATCH
                         *::incluiTag('vAliqProd'  ,'0.00')
                     	END
-                     
+
                      TRY
                     	   ::incluiTag('vPIS'       ,::aItemPIS[ "item"+STRZERO(nItem,3)+"_vPIS" ])
                      CATCH
@@ -1970,7 +1970,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_pCOFINS" ]:='0.00'
                ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vCOFINS" ]:='0.00'
             ENDIF
-            
+
          	::incluiTag('COFINS')
               	IF ::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_CST" ] $ '01,02'
                	::incluiTag('COFINSAliq')
@@ -2001,9 +2001,9 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
                      CATCH
                         ::incluiTag('pCOFINS'    ,'0.00')
                      END
-                     
-                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0. 
-                    	TRY  
+
+                     //Os campos vAliqProd e qBCProd só são gerados qdo o campo vAliqProd for maior que 0.
+                    	TRY
                         IF VAL(::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_vAliqProd" ])>0
                       	   ::incluiTag('qBCProd'    ,::aItemCOFINS[ "item"+STRZERO(nItem,3)+"_qBCProd" ])
                         ENDIF
@@ -2043,7 +2043,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
          END
    	::incluiTag('/det')
    NEXT
-   
+
 	::incluiTag('total')
     	::incluiTag('ICMSTot')
       	::incluiTag('vBC',::aICMSTotal[ "vBC" ])
@@ -2101,7 +2101,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
          ENDIF
       CATCH
       END
-      
+
    	TRY
    	   IF !EMPTY( ::aVeicTransp[ "placa" ] )
             IF !oFuncoes:validaPlaca( ::aVeicTransp[ "placa" ] )
@@ -2202,7 +2202,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    CATCH
    END
    ::incluiTag('/infAdic')
-   
+
    TRY
       IF !EMPTY(::aExporta[ 'UFEmbarq' ])
          ::incluiTag('exporta')
@@ -2217,7 +2217,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
 
 	::incluiTag('/NFe')
 
-   MEMOWRIT(::ohbNFe:pastaNFe+"\"+cChaveNFe+'-nfe.xml',::cXMLSaida,.F.)
+   hb_MemoWrit( ::ohbNFe:pastaNFe + "\" + cChaveNFe + '-nfe.xml', ::cXMLSaida )
    IF ::lValida
         oAssina := hbNFeAssina()
         oAssina:ohbNFe := ::ohbNfe // Objeto hbNFe
@@ -2249,7 +2249,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
    aRetorno['OK'] := .T.
    aRetorno['chNFe'] := cChaveNFe
    aRetorno['cXMLRet'] := ::ohbNFe:pastaNFe+"\"+cChaveNFe+'-nfe.xml'     // Mauricio Cruz - 30/09/2011
-   
+
 RETURN(aRetorno)
 
 METHOD incluiTag(cTag,cValor) CLASS hbNFeIniToXML
@@ -2302,7 +2302,7 @@ ENDIF
 IF CHR(155)$cRET  // ø
    cRET:=StrTran( cRET, CHR(155))
 ENDIF
-FOR mI:=156 TO 159  // £  Ø × ƒ 
+FOR mI:=156 TO 159  // £  Ø × ƒ
    IF CHR(mI)$cRET
       cRET:=StrTran( cRET, CHR(mI))
    ENDIF
@@ -2387,38 +2387,6 @@ STATIC FUNCTION TiraAcento(cText)
 return(cText)
 
 
-#pragma BEGINDUMP
-
-#define _WIN32_IE      0x0500
-#define HB_OS_WIN_32_USED
-#define _WIN32_WINNT   0x0400
-#include <windows.h>
-#include "hbapi.h"
-#include "hbapiitm.h"
-
-#if !defined( HB_ISNIL )
-   #define HB_ISNIL( n )         ISNIL( n )
-   #define HB_ISCHAR( n )        ISCHAR( n )
-#endif
-
-HB_FUNC( SYG_GETPRIVATEPROFILESTRING )
-{
-   //TCHAR bBuffer[ 1024 ] = { 0 };
-   TCHAR bBuffer[ 5024 ] = { 0 };
-   DWORD dwLen ;
-   char * lpSection = hb_parc( 1 );
-   char * lpEntry = HB_ISCHAR(2) ? hb_parc( 2 ) : NULL ;
-   char * lpDefault = hb_parc( 3 );
-   char * lpFileName = hb_parc( 4 );
-   dwLen = GetPrivateProfileString( lpSection , lpEntry ,lpDefault , bBuffer, sizeof( bBuffer ) , lpFileName);
-   if( dwLen )
-     hb_retclen( ( char * ) bBuffer, dwLen );
-   else
-      hb_retc( lpDefault );
-}
-
-
-#pragma ENDDUMP 
 
 
 
@@ -2437,13 +2405,13 @@ aMSGvld:={}
 // GA03   | A03 | Campo Id inválido: – Chave de Acesso do campo Id difere da concatenação dos campos correspondentes | Obrig.  | 502 | Rej. | Rejeição: Erro na Chave de Acesso - Campo Id não corresponde à concatenação dos campos correspondentes
 // ******************* B - Identificação da NF-e  *******************
 // GB02   | B02 | Código da UF do Emitente difere da UF do Web Service                                               | Obrig.  | 226 | Rej. | Rejeição: Código da UF do Emitente diverge da UF autorizadora
-// GB07   | B07 | Na autorização pela SEFAZ (ou SEFAZ VIRTUAL): – Série da NF-e difere da faixa de 0-889 A faixa 
+// GB07   | B07 | Na autorização pela SEFAZ (ou SEFAZ VIRTUAL): – Série da NF-e difere da faixa de 0-889 A faixa
 //                890-899 é reservada para a emissão de NF-e avulsa quando permitida pela SEFAZ.                     | Obrig.  | 266 | Rej. | Rejeição: Série utilizada fora da faixa permitida no Web Service (0-889)
 IF VAL(::aIde[ "serie" ])>=890 .AND. VAL(::aIde[ "serie" ])<=899
    AADD(aMSGvld,{.T.,'Rejeição: Série utilizada fora da faixa permitida no Web Service (0-889). '+CHR(10)+CHR(13)+'DICA: Favor não utilizar as séries entre 890 e 899'})
 ENDIF
 
-// GB07.1 | B07 | Na autorização pelo SCAN - Sistema de Contingência Nacional: – Série da NF-e difere da faixa de  
+// GB07.1 | B07 | Na autorização pelo SCAN - Sistema de Contingência Nacional: – Série da NF-e difere da faixa de
 //                900-999                                                                                            | Obrig.  | 503 | Rej. | Rejeição: Série utilizada fora da faixa permitida no SCAN (900-999)
 IF VAL(::aIde[ "tpEmis" ])=3 .AND. !(VAL(::aIde[ "serie" ])>=900 .AND. VAL(::aIde[ "serie" ])<=999)
    AADD(aMSGvld,{.T.,'Rejeição: Série utilizada fora da faixa permitida no SCAN (900-999). '+CHR(10)+CHR(13)+'DICA: Favor utilizar série entre 900 e 999 para modo SCAN.'})
@@ -2459,13 +2427,13 @@ IF DATE()-CTOD(RIGHT(::aIde[ "dEmi" ],2)+'/'+SUBSTR(::aIde[ "dEmi" ],6,2)+'/'+LE
    AADD(aMSGvld,{.T.,'Rejeição: Data de Emissão muito atrasada. '+CHR(10)+CHR(13)+'DICA: Favor ajustar a data de emissão da nota fiscal para uma data não menor que trinta (30) dias a data atual.'})
 ENDIF
 
-// GB10   | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída posterior a 30 dias 
+// GB10   | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída posterior a 30 dias
 //                da Data de Autorização                                                                             | Facult. | 504 | Rej. | Rejeição: Data de Entrada/Saída posterior ao permitido
 IF CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4))-DATE() > 30
    AADD(aMSGvld,{.F.,'Rejeição: Data de Entrada/Saída posterior ao permitido. '+CHR(10)+CHR(13)+'DICA: Favor ajustar a data de Entrada/Saída da nota fiscal para uma data não menor que trinta (30) dias a data atual.'})
 ENDIF
 
-// GB10.1 | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída anterior a 30 dias 
+// GB10.1 | B10 | Se informado Data de Entrada / Saída (dSaiEnt): – Data Entrada / Saída anterior a 30 dias
 //                da Data de Autorização                                                                             | Facult. | 505 | Rej. | Rejeição: Data de Entrada/Saída anterior ao permitido
 IF !EMPTY(::aIde[ "dSaiEnt" ])
    IF DATE()- CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4)) > 30
@@ -2473,7 +2441,7 @@ IF !EMPTY(::aIde[ "dSaiEnt" ])
    ENDIF
 ENDIF
 
-// GB10.2 | B10 | Se informado Data de Entrada / Saída (dSaiEnt) para NF-e de Saída (tpNF=1): 
+// GB10.2 | B10 | Se informado Data de Entrada / Saída (dSaiEnt) para NF-e de Saída (tpNF=1):
 //                –Data de Saída (dSaiEnt) menor que a Data de Emissão (dEmis)                                       | Facult. | 506 | Rej. | Rejeição: Data de Saída menor que a Data de Emissão
 IF !EMPTY(::aIde[ "dSaiEnt" ])
    IF VAL(::aIde[ "tpNF" ])=1 .AND. CTOD(RIGHT(::aIde[ "dSaiEnt" ],2)+'/'+SUBSTR(::aIde[ "dSaiEnt" ],6,2)+'/'+LEFT(::aIde[ "dSaiEnt" ],4)) < CTOD(RIGHT(::aIde[ "dEmi" ],2)+'/'+SUBSTR(::aIde[ "dEmi" ],6,2)+'/'+LEFT(::aIde[ "dEmi" ],4))
@@ -2495,7 +2463,7 @@ WHILE .T.
       nItnRef--
       EXIT
    END
-   // GB13   | B13 | Se informada a TAG de NF-e Referenciada: 
+   // GB13   | B13 | Se informada a TAG de NF-e Referenciada:
    //                -Dígito Verificador da Chave de Acesso inválido                                                    | Facult. | 547 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso
    //                da NF-e Referenciada inválido
    IF !VERIFICA_DV_CHV_NFE(cCHV)
@@ -2511,10 +2479,10 @@ WHILE .T.
    END
 ENDDO
 
-// GB20d  | B20d| Se informada a TAG de NF Referenciada de produtor:– CNPJ com zeros, nulo ou DV inválido            | Facult. | 549 | Rej. | Rejeição: CNPJ da NF referenciada de produtor inválido.  
+// GB20d  | B20d| Se informada a TAG de NF Referenciada de produtor:– CNPJ com zeros, nulo ou DV inválido            | Facult. | 549 | Rej. | Rejeição: CNPJ da NF referenciada de produtor inválido.
 // GB20e  | B20e| Se informada a TAG de NF Referenciada de produtor:– CPF com zeros, nulo ou DV inválido             | Facult. | 550 | Rej. | Rejeição: CPF da NF referenciada de produtor inválido.
 // GB20f  | B20f| Se informada a TAG de NF Referenciada de produtor:– IE com zeros, nulo ou DV inválido para a UF.   | Facult. | 551 | Rej. | Rejeição: IE da NF referenciada de produtor inválido.
-// GB20i  | B20i| Se informada a TAG de CT-e Referenciado:- Dígito Verificador da Chave de Acesso inválido           | Facult. | 552 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso do CT-e Referenciado inválido  
+// GB20i  | B20i| Se informada a TAG de CT-e Referenciado:- Dígito Verificador da Chave de Acesso inválido           | Facult. | 552 | Rej. | Rejeição: Dígito Verificador da Chave de Acesso do CT-e Referenciado inválido
 // GB22   | B22 | Se informada a TAG de tpEmis = 1:dhCont e xJust não devem ser informados                           | Obrig.  | 556 | Rej. | Rejeição: Justificativa de entrada em contingência não deve ser informada para tipo de emissão normal
 IF VAL(::aIde[ "tpEmis" ])=1
    TRY
@@ -2535,7 +2503,7 @@ IF VAL(::aIde[ "tpEmis" ])=3 .OR. VAL(::aIde[ "tpEmis" ])=5 .OR. VAL(::aIde[ "tp
    END
 ENDIF
 
-// GB23   | B23 | Chave de Acesso obtida pela concatenação dos campos correspondentes com dígito verificador 
+// GB23   | B23 | Chave de Acesso obtida pela concatenação dos campos correspondentes com dígito verificador
 //                (DV) inválido                                                                                      | Obrig.  | 253 | Rej. | Rejeição: Digito Verificador da chave de acesso composta inválida
 IF !VERIFICA_DV_CHV_NFE(cChaveNFe)
    AADD(aMSGvld,{.T.,'Rejeição: Digito Verificador da chave de acesso composta inválida.'})
@@ -2582,7 +2550,7 @@ IF VAL(::aIde[ "finNFe" ])=2
    ENDIF
 ENDIF
 
-// GB26   | B26 | Processo de Emissão difere de emissão pelo contribuinte (procEmi <> 0 e 3)                         | Obrig.  | 451 | Rej. | Rejeição: Processo de emissão informado inválido  
+// GB26   | B26 | Processo de Emissão difere de emissão pelo contribuinte (procEmi <> 0 e 3)                         | Obrig.  | 451 | Rej. | Rejeição: Processo de emissão informado inválido
 TRY
    IF VAL(::aIde[ "procEmi" ])<>0 .AND. VAL(::aIde[ "procEmi" ])<>3
       AADD(aMSGvld,{.T.,'Rejeição: Processo de emissão informado inválido.'})
@@ -2605,15 +2573,15 @@ ENDIF
 //
 //*********************** C- Identificação do Emitente  *************************
 //
-//GC02   | C02 | Se informada a TAG de CNPJ do emitente: – CNPJ com zeros, nulo ou DV inválido                      | Obrig.  | 207 | Rej. | Rejeição: CNPJ do emitente inválido 
+//GC02   | C02 | Se informada a TAG de CNPJ do emitente: – CNPJ com zeros, nulo ou DV inválido                      | Obrig.  | 207 | Rej. | Rejeição: CNPJ do emitente inválido
 IF VAL(::aEmit[ "CNPJ" ])=0 .OR. !HBNFE_CNPJ(::aEmit[ "CNPJ" ],.F.)
    AADD(aMSGvld,{.T.,'Rejeição: CNPJ do emitente inválido. '+CHR(10)+CHR(13)+'DICA: Favor revizar o CNPJ da empresa emitente.'})
-ENDIF 
+ENDIF
 
 //GC02.1 | C02 | CNPJ Base do Emitente difere do CNPJ Base da primeira NF-e do Lote recebido                        | Facult. | 560 | Rej. | Rejeição: CNPJ base do emitente difere do CNPJ base da primeira NF-e do lote recebido
 //GC02a  | C02a| Se informada a TAG CPF do emitente: – CPF só pode ser informado no campo Emitente para NFe avulsa  | Obrig.  | 407 | Rej. | Rejeição: O CPF só pode ser informado no campo emitente para a NF-e avulsa
-//GC02a.1| C02a| - CPF do Remetente de NF-e Avulsa com zeros, nulo ou DV inválido                                   | Obrig.  | 401 | Rej. | Rejeição: CPF do remetente inválido 
-//GC10   | C10 | Código do Município do Emitente com DV inválido (*1)                                               | Obrig.  | 272 | Rej. | Rejeição: Código Município do Emitente: dígito inválido 
+//GC02a.1| C02a| - CPF do Remetente de NF-e Avulsa com zeros, nulo ou DV inválido                                   | Obrig.  | 401 | Rej. | Rejeição: CPF do remetente inválido
+//GC10   | C10 | Código do Município do Emitente com DV inválido (*1)                                               | Obrig.  | 272 | Rej. | Rejeição: Código Município do Emitente: dígito inválido
 //GC10.1 | C10 | Código do Município do Emitente (2 primeiras posições) difere do Código da UF do emitente          | Obrig.  | 273 | Rej. | Rejeição: Código Município do Emitente: difere da UF do emitente
 IF LEFT( ALLTRIM(::aEmit[ "cMun" ]),2 )<>CODIGO_UF(::aEmit[ "UF" ],2)
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Emitente: difere da UF do emitente. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do emitente.'})
@@ -2621,7 +2589,7 @@ ENDIF
 
 
 //GC12   | C12 | Sigla da UF do Emitente difere da UF do Web Service                                                | Obrig.  | 247 | Rej. | Rejeição: Sigla da UF do Emitente diverge da UF autorizadora
-//GC17   | C17 | IE Emitente com zeros ou nulo                                                                      | Obrig.  | 229 | Rej. | Rejeição: IE do emitente não informada 
+//GC17   | C17 | IE Emitente com zeros ou nulo                                                                      | Obrig.  | 229 | Rej. | Rejeição: IE do emitente não informada
 IF EMPTY(::aEmit[ "IE" ])
    AADD(aMSGvld,{.T.,'Rejeição: IE do emitente não informada. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do emitente.'})
 ENDIF
@@ -2631,20 +2599,20 @@ IF HBNFE_CONSISTEINSCRICAOESTADUAL(::aEmit[ "IE" ],::aEmit[ "UF" ]) <> 0
    AADD(aMSGvld,{.T.,'Rejeição: IE do emitente inválida. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do emitente.'})
 ENDIF
 
-//GC18   | C18 | Se informada operação de Faturamento Direto para veículos novos (tpOp, campo J02 = 2): 
-//               –UF do Local de Entrega (campo G09) não informada (A UF é necessária na validação da IE ST 
-//               nestas operações. Vide Convênio ICMS 51/00).                                                       | Obrig.  | 478 | Rej. | Rejeição: Local da entrega não informado para faturamento direto de veículos novos 
-//GC18.1 | C18 | Se informada a IE do Substituto Tributário: 
-//               -IEST inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2) 
-//               UF a ser utilizada na validação: – UF do Local de Entrega para operação de Faturamento 
-//               Direto de veículos novos (campo G09, caso tpOP, campo J02 = 2); 
-//               -UF do destinatário (UF, campo E12) nos demais casos.                                              | Obrig.  | 211 | Rej. | Rejeição: IE do substituto inválida  
+//GC18   | C18 | Se informada operação de Faturamento Direto para veículos novos (tpOp, campo J02 = 2):
+//               –UF do Local de Entrega (campo G09) não informada (A UF é necessária na validação da IE ST
+//               nestas operações. Vide Convênio ICMS 51/00).                                                       | Obrig.  | 478 | Rej. | Rejeição: Local da entrega não informado para faturamento direto de veículos novos
+//GC18.1 | C18 | Se informada a IE do Substituto Tributário:
+//               -IEST inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)
+//               UF a ser utilizada na validação: – UF do Local de Entrega para operação de Faturamento
+//               Direto de veículos novos (campo G09, caso tpOP, campo J02 = 2);
+//               -UF do destinatário (UF, campo E12) nos demais casos.                                              | Obrig.  | 211 | Rej. | Rejeição: IE do substituto inválida
 //
 //*************** D - Identificação do Fisco Emitente (NF-e Avulsa) ******************
-//               
+//
 //GD01   | D01 | Informado o grupo “avulsa” pela empresa                                                            | Obrig.  | 403 | Rej. | Rejeição: O grupo de informações da NF-e avulsa é de uso exclusivo do Fisco E - Identificação do Destinatário
 //
-//*************** E - Identificação do Destinatário ********************  
+//*************** E - Identificação do Destinatário ********************
 //
 //GE02   | E02 | Se Operação com Exterior (UF Destinatário = “EX”) - não informada TAG CNPJ ou CNPJ <> nulo         | Obrig.  | 507 | Rej. | Rejeição: O CNPJ do destinatário/remetente não deve ser informado em operação com o exterior
 TRY
@@ -2654,7 +2622,7 @@ TRY
 CATCH
 END
 
-//GE02.1 | E02 | Se não é Operação com Exterior (UF destinatário <> “EX”): 
+//GE02.1 | E02 | Se não é Operação com Exterior (UF destinatário <> “EX”):
 //               -CNPJ destinatário é nulo e CPF destinatário é nulo                                                | Obrig.  | 508 | Rej. | Rejeição: O CNPJ com conteúdo nulo só é válido em operação com exterior.
 
 IF ::aDest[ "UF" ]<>'EX'
@@ -2670,7 +2638,7 @@ IF ::aDest[ "UF" ]<>'EX'
 ENDIF
 
 TRY
-   //GE02.2 | E02 | Se informada TAG CNPJ: - CNPJ com zeros ou dígito de controle inválido                             | Obrig.  | 208 | Rej. | Rejeição: CNPJ do destinatário inválido 
+   //GE02.2 | E02 | Se informada TAG CNPJ: - CNPJ com zeros ou dígito de controle inválido                             | Obrig.  | 208 | Rej. | Rejeição: CNPJ do destinatário inválido
    IF VAL(::aDest[ "CNPJ" ])>0 .AND. !HBNFE_CNPJ(::aDest[ "CNPJ" ],.F.)
       AADD(aMSGvld,{.T.,'Rejeição: CNPJ do destinatário inválido. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CNPJ do Destinatário.'})
    ENDIF
@@ -2688,13 +2656,13 @@ IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aDest[ "cMun" ]),
    AADD(aMSGvld,{.T.,'Rejeição: Código Município do Destinatário: difere da UF do Destinatário. '+CHR(10)+CHR(13)+'DICA: Favor revisar a cidade e o estado do destinatário.'})
 ENDIF
 
-//GE10.2 | E10 | Se Operação com Exterior (UF Destinatário = “EX”): 
+//GE10.2 | E10 | Se Operação com Exterior (UF Destinatário = “EX”):
 //               -Código Município do destinatário difere de “9999999”                                              | Obrig.  | 509 | Rej. | Rejeição: Informado código de município diferente de “9999999” para operação com o exterior
 IF ::aDest[ "UF" ]='EX' .AND. VAL(::aDest[ "cMun" ])<>9999999
    AADD(aMSGvld,{.T.,'Rejeição: Informado código de município diferente de “9999999” para operação com o exterior. '})  // NAO DEVE DE CAIR AQUI NUNCA
 ENDIF
 
-//GE14   | E14 | Se Operação com Exterior (UF Destinatário = “EX”): 
+//GE14   | E14 | Se Operação com Exterior (UF Destinatário = “EX”):
 //               - Código País do destinatário = 1058 (Brasil), ou não informado                                    | Facult. | 510 | Rej. | Rejeição: Operação com Exterior e Código País destinatário é 1058 (Brasil) ou não informado
 TRY
    IF ::aDest[ "UF" ]='EX' .AND. (VAL(::aDest[ "cPais" ])=1058 .OR. VAL(::aDest[ "cPais" ])=0)
@@ -2703,7 +2671,7 @@ TRY
 CATCH
 END
 
-//GE14.1 | E14 | Se informado Código País do destinatário e não é uma Operação com Exterior 
+//GE14.1 | E14 | Se informado Código País do destinatário e não é uma Operação com Exterior
 //               (UF Destinatário <> “EX”): - Código País do destinatário difere de 1058 (Brasil)                   | Facult. | 511 | Rej. | Rejeição: Não é de Operação com Exterior e Código País destinatário difere de 1058 (Brasil)
 TRY
    IF ::aDest[ "UF" ]<>'EX' .AND. VAL(::aDest[ "cPais" ])<>1058
@@ -2721,7 +2689,7 @@ ENDIF
 
 
 //GE17.1 | E17 | IE Destinatário informada e difere de “ISENTO”: -
-//               IE inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)         | Obrig.  | 210 | Rej. | Rejeição: IE do destinatário inválida                            
+//               IE inválida para a UF: erro no tamanho, na composição da IE, ou no dígito verificador (*2)         | Obrig.  | 210 | Rej. | Rejeição: IE do destinatário inválida
 IF ::aDest[ "UF" ]<>'EX'
    IF UPPER(ALLTRIM(::aDest[ "IE" ]))<>'ISENTO' .AND. HBNFE_CONSISTEINSCRICAOESTADUAL(::aDest[ "IE" ],::aDest[ "UF" ]) <> 0 .AND. VAL(::aIde[ "tpAmb" ])<>2
       AADD(aMSGvld,{.T.,'Rejeição: IE do destinatário inválida. '+CHR(10)+CHR(13)+'DICA: Favor revisar a inscrição estadual do destinatário.'})
@@ -2729,22 +2697,22 @@ IF ::aDest[ "UF" ]<>'EX'
 ENDIF
 
 //GE18   | E18 | Inscr. SUFRAMA informada: - Inscrição com dígito verificador inválido                              | Obrig.  | 235 | Rej. | Rejeição: Inscrição SUFRAMA inválida
-//GE18.1 | E18 | Inscr. SUFRAMA informada:- UF destinatário difere de AC-Acre, ou AM-Amazonas, ou RO-Rondônia, ou 
-//               RR-Roraima, ou AP-Amapá (só para municípios 1600303-Macapá e 1600600-Santana)                      | Obrig.  | 251 | Rej. | Rejeição: UF/Município destinatário não pertence a SUFRAMA  
+//GE18.1 | E18 | Inscr. SUFRAMA informada:- UF destinatário difere de AC-Acre, ou AM-Amazonas, ou RO-Rondônia, ou
+//               RR-Roraima, ou AP-Amapá (só para municípios 1600303-Macapá e 1600600-Santana)                      | Obrig.  | 251 | Rej. | Rejeição: UF/Município destinatário não pertence a SUFRAMA
 //
 //******************** F - Local da Retirada *****************
-//               
-//GF02   | F02 | Se informado Local de Retirada e CNPJ Retirada difere de nulo:- CNPJ com zeros ou dígito inválido  | Facult. | 512 | Rej. | Rejeição: CNPJ do Local de Retirada inválido 
+//
+//GF02   | F02 | Se informado Local de Retirada e CNPJ Retirada difere de nulo:- CNPJ com zeros ou dígito inválido  | Facult. | 512 | Rej. | Rejeição: CNPJ do Local de Retirada inválido
 //GF02a  | F02a| Se informada a TAG CPF: - CPF com zeros ou dígito de controle inválido                             | Facult. | 540 | Rej. | Rejeição: CPF do Local de Retirada inválido
-//GF07   | F07 | Se informado Local de Retirada e UF Retirada = “EX”: 
+//GF07   | F07 | Se informado Local de Retirada e UF Retirada = “EX”:
 //               -Código do Município do Local de Retirada difere de “9999999”                                      | Obrig.  | 513 | Rej. | Rejeição: Código Município do Local de Retirada deve ser 9999999 para UF retirada = “EX”.
-//GF07.1 | F07 | Se informado Local de Retirada e UF Retirada <> “EX”: 
+//GF07.1 | F07 | Se informado Local de Retirada e UF Retirada <> “EX”:
 //               -Código do Município do Local de Retirada com dígito verificador inválido                          | Obrig.  | 276 | Rej. | Rejeição: Código Município do Local de Retirada: dígito inválido
-//GF07.2 | F07 | - Código Município do Local de Retirada (2 primeiras posições) difere do 
-//               Código da UF do Local de Retirada                                                                  | Obrig.  | 277 | Rej. | Rejeição: Código Município do Local de Retirada: difere da UF do Local de Retirada 
-// 
+//GF07.2 | F07 | - Código Município do Local de Retirada (2 primeiras posições) difere do
+//               Código da UF do Local de Retirada                                                                  | Obrig.  | 277 | Rej. | Rejeição: Código Município do Local de Retirada: difere da UF do Local de Retirada
+//
 //***********   G - Local da Entrega      *******************
-// 
+//
 TRY
    IF !EMPTY(::aEntrega[ "xLgr" ])
       IF !EMPTY(::aEntrega[ "CNPJ" ])
@@ -2761,7 +2729,7 @@ TRY
    ENDIF
 CATCH
 END
-//GG07   | G07 | Se informado Local de Entrega e UF Entrega = “EX”: 
+//GG07   | G07 | Se informado Local de Entrega e UF Entrega = “EX”:
 //               -Código do Município do Local de Entrega difere de “9999999”                                       | Obrig.  | 515 | Rej. | Rejeição: Código Município do Local de Entrega deve ser 9999999 para UF entrega = “EX”.
 TRY
    IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))='EX' .AND. VAL(::aEntrega[ "cMun" ])<>9999999
@@ -2769,10 +2737,10 @@ TRY
    ENDIF
 CATCH
 END
-//GG07.1 | G07 | Se informado Local de Entrega e UF Entrega <> “EX”: 
+//GG07.1 | G07 | Se informado Local de Entrega e UF Entrega <> “EX”:
 //               -Código Município do Local de Entrega com dígito verificador inválido                              | Obrig.  | 278 | Rej. | Rejeição: Código Município do Local de Entrega: dígito inválido
-//GG07.2 | G07 | - Código Município do Local de Entrega (2 primeiras posições) difere do 
-//                 Código da UF do Local de Entrega                                                                 | Obrig.  | 279 | Rej. | Rejeição: Código Município do Local de Entrega:                 
+//GG07.2 | G07 | - Código Município do Local de Entrega (2 primeiras posições) difere do
+//                 Código da UF do Local de Entrega                                                                 | Obrig.  | 279 | Rej. | Rejeição: Código Município do Local de Entrega:
 TRY
    IF !EMPTY(::aEntrega[ "xLgr" ]) .AND. ALLTRIM(UPPER(::aEntrega[ "UF" ]))<>'EX' .AND. LEFT( ALLTRIM(::aEntrega[ "cMun" ]),2 )<>CODIGO_UF(::aEntrega[ "UF" ],2)
       AADD(aMSGvld,{.T.,'Rejeição: Código Município do Local de Entrega Difere do Código da Unidade Federativa da Entrega. '+CHR(10)+CHR(13)+'DICA: Favor a cidade e o estado do local de entrega.'})
@@ -2798,7 +2766,7 @@ FOR mI:=1 TO nItem
    IF VAL(::aIde[ "tpNF" ])=0 .AND. (VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 5 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 6 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 )) = 7)
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de saída para NF-e de entrada. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-   
+
    //GI08.2 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e UF destinatário <> “EX”                        | Facult. | 520 | Rej. | Rejeição: CFOP de Operação com Exterior e UF destinatário difere de “EX”
    IF ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7) .AND. ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX'
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Operação com Exterior e UF destinatário difere de “EX”. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
@@ -2808,7 +2776,7 @@ FOR mI:=1 TO nItem
    IF ALLTRIM(UPPER(::aDest[ "UF" ]))<>'EX' .AND. ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7)
       AADD(aMSGvld,{.F.,'Rejeição: CFOP não é de Operação com Exterior e UF destinatário é “EX”. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-   
+
    //GI08.4 | I08 | CFOP de Operação no Estado (inicia por 1 ou 5) e UF emitente difere da UF destinatário             | Facult. | 522 | Rej. | Rejeição: CFOP de Operação Estadual e UF emitente difere UF destinatário.
    IF ( VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=1 .OR.;
         VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=5) .AND.;
@@ -2823,19 +2791,19 @@ FOR mI:=1 TO nItem
       AADD(aMSGvld,{.F.,'Rejeição: CFOP não é de Operação Estadual e UF emitente igual a UF destinatário. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CFOP do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
 
-   //GI08.6 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e não informada TAG NCM 
+   //GI08.6 | I08 | CFOP de Operação com Exterior (inicia por 3 ou 7) e não informada TAG NCM
    //               (id:I05) completo (8 posições)                                                                     | Facult. | 524 | Rej. | Rejeição: CFOP de Operação com Exterior e não informado NCM completa
    IF (VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .OR. VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7) .AND. VAL(::aItem[ "item"+STRZERO(mI,3)+"_NCM" ])=0
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Operação com Exterior e não informado NCM completa. '+CHR(10)+CHR(13)+'DICA: Favor revisar o NCM do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-   
+
    //GI08.7 | I08 | CFOP de Importação (inicia por 3) e não informado a tag DI                                         | Facult. | 525 | Rej. | Rejeição: CFOP de Importação e não informado dados da DI
    IF VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=3 .AND. LEN(::aItemDI)=0
       AADD(aMSGvld,{.F.,'Rejeição: CFOP de Importação e não informado dados da DI. '+CHR(10)+CHR(13)+'DICA: Favor informar os dados da DI usando a aba (Declaração de Importação).'  })
    ENDIF
-   
-   //GI08.8 | I08 | CFOP de Exportação (inicia por 7) e não informado Local de Embarque (id:ZA01)                      | Facult. | 526 | Rej. | Rejeição: CFOP de Exportação e não informado Local de Embarque  
-   //***************** J - Item / Veículos Novos ****************  
+
+   //GI08.8 | I08 | CFOP de Exportação (inicia por 7) e não informado Local de Embarque (id:ZA01)                      | Facult. | 526 | Rej. | Rejeição: CFOP de Exportação e não informado Local de Embarque
+   //***************** J - Item / Veículos Novos ****************
    //***************** K - Item / Medicamentos ***************
    //***************** L - Item / Armamentos ****************
    //***************** L1 - Item / Combustível ******************
@@ -2845,8 +2813,8 @@ FOR mI:=1 TO nItem
    IF VAL(LEFT( ALLTRIM(::aItem[ "item"+STRZERO(mI,3)+"_CFOP" ]),1 ))=7 .AND. VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_CST" ])<>41
       AADD(aMSGvld,{.F.,'Rejeição: Operação de Exportação com informação de ICMS incompatível. '+CHR(10)+CHR(13)+'DICA: Favor revisar o CST do ICMS do item na sequência: '+ALLTRIM(STR(mI))+'.'  })
    ENDIF
-   //GN17   | N17 | Se CST de ICMS = 00, 10, 20, 51, 70, 90: - Valor ICMS (id:N17) difere de Base de 
-   //           Cálculo (id:N15) * Alíquota (id:N16) (*3)                                                              | Facult. | 528 | Rej. | Rejeição: Valor do ICMS difere do produto BC e Alíquota  
+   //GN17   | N17 | Se CST de ICMS = 00, 10, 20, 51, 70, 90: - Valor ICMS (id:N17) difere de Base de
+   //           Cálculo (id:N15) * Alíquota (id:N16) (*3)                                                              | Facult. | 528 | Rej. | Rejeição: Valor do ICMS difere do produto BC e Alíquota
    //
 
    IF VAL(::aIde[ "finNFe" ])=1  // FINALIDADE NORMAL
@@ -2862,7 +2830,7 @@ FOR mI:=1 TO nItem
    ENDIF
    //*************** O - Item / Tributo: IPI ****************
 
-   //GO07   | O07 | Informada tributação do IPI (id:O07) sem informar a TAG NCM (id:I05) completo (8 posições)         | Facult. | 529 | Rej. | Rejeição: NCM de informação obrigatória para produto tributado pelo IPI  
+   //GO07   | O07 | Informada tributação do IPI (id:O07) sem informar a TAG NCM (id:I05) completo (8 posições)         | Facult. | 529 | Rej. | Rejeição: NCM de informação obrigatória para produto tributado pelo IPI
    TRY
       IF VAL(::aItemIPI[ "item"+STRZERO(mI,3)+"_pIPI" ])>0 .AND. VAL(::aItem[ "item"+STRZERO(mI,3)+"_NCM" ])=0
          AADD(aMSGvld,{.F.,'Rejeição: NCM de informação obrigatória para produto tributado pelo IPI. '+CHR(10)+CHR(13)+'DICA: Favor revisar o NCM para o item na sequência: '+ALLTRIM(STR(mI))+'.'  })
@@ -2878,10 +2846,10 @@ FOR mI:=1 TO nItem
    //****************** U - Item / Tributo: ISSQN ***************
    //
    //GU01   | U01 | Informado grupo de tributação do ISSQN (id:U01) sem informar a Inscrição Municipal (id:C19)        | Facult. | 530 | Rej. | Rejeição: Operação com tributação de ISSQN sem informar a Inscrição Municipal
-   //GU05   | U05 | Se informado Código Município do FG - ISSQN: – Código Município do FG - ISSQN com dígito inválido  | Obrig.  | 287 | Rej. | Rejeição: Código Município do FG - ISSQN: dígito inválido  
+   //GU05   | U05 | Se informado Código Município do FG - ISSQN: – Código Município do FG - ISSQN com dígito inválido  | Obrig.  | 287 | Rej. | Rejeição: Código Município do FG - ISSQN: dígito inválido
    //
    //***************** V - Item / Informação Adicional  *****************
-   
+
    IF VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_CST" ])<>51
       nVALbcl+=VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_vBC" ])
       nVALicm+=VAL(::aItemICMS[ "item"+STRZERO(mI,3)+"_vICMS" ])
@@ -2918,13 +2886,13 @@ NEXT
 
 //***************** W - Total da NF-e *****************
 //
-//GW03   |     | Total da BC ICMS (id:W03) difere do somatório do valor dos itens (id:N15) (*3). 
+//GW03   |     | Total da BC ICMS (id:W03) difere do somatório do valor dos itens (id:N15) (*3).
 //               O Total não deve considerar o valor informado para o CST 51.                                       | Facult. | 531 | Rej. | Rejeição: Total da BC ICMS difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vBC" ]),2)<>ROUND(nVALbcl,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total da BC ICMS difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o total da nota fiscal e a somatoria das bases de calculos de todos os itens excluindo os CST 51.'  })
 ENDIF
 
-//GW04   |     | Total do ICMS (id:W04) difere do somatório do valor dos itens (id:N17) (*3). 
+//GW04   |     | Total do ICMS (id:W04) difere do somatório do valor dos itens (id:N17) (*3).
 //               O Total não deve considerar o valor informado para o CST 51.                                       | Facult. | 532 | Rej. | Rejeição: Total do ICMS difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vICMS" ]),2)<>ROUND(nVALicm,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do ICMS difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total de ICMS da nota fiscal e a somatoria dos valores de ICMS de todos os itens excluindo os CST 51.'  })
@@ -2940,7 +2908,7 @@ IF ROUND(VAL(::aICMSTotal[ "vST" ]),2)<>ROUND(nVALstt,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do ICMS-ST difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total de ICMS-ST da nota fiscal e a somatoria dos valores de ICMS-ST de todos os itens.'  })
 ENDIF
 
-//GW07   |     | Total dos Produtos e Serviços (id:W07) difere do somatório do valor dos itens (id:I11). 
+//GW07   |     | Total dos Produtos e Serviços (id:W07) difere do somatório do valor dos itens (id:I11).
 //               Considerar somente os valores dos itens com a TAG indTot (id:I17b) = 1 (*3)                        | Facult. | 564 | Rej. | Rejeição: Total do Produto / Serviço difere do somatório dos itens
 IF ROUND(VAL(::aICMSTotal[ "vProd" ]),2)<>ROUND(nVALitn,2)
    AADD(aMSGvld,{.F.,'Rejeição: Total do Produto / Serviço difere do somatório dos itens. '+CHR(10)+CHR(13)+'DICA: Favor verificar o valor total dos itens da nota fiscal e a somatoria dos valores total de todos os itens.'  })
@@ -2968,8 +2936,8 @@ ENDIF
 
 //******************* X - Transporte da NF-e ******************
 //
-//GX04   | X04 | Validar CNPJ do transportador.se informado. Obrig. 542 Rej. Rejeição: CNPJ do Transportador inválido 
-//GX05   | X05 | Validar CPF do transportador.se informado.                                                         | Obrig.  | 543 | Rej. | Rejeição: CPF do Transportador inválido 
+//GX04   | X04 | Validar CNPJ do transportador.se informado. Obrig. 542 Rej. Rejeição: CNPJ do Transportador inválido
+//GX05   | X05 | Validar CPF do transportador.se informado.                                                         | Obrig.  | 543 | Rej. | Rejeição: CPF do Transportador inválido
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
@@ -2988,7 +2956,7 @@ TRY
 CATCH
 END
 
-//GX07   | X07 | Se informada a IE do Transportador: - UF do Transportador (id:X10) não informada                   | Obrig.  | 559 | Rej. | Rejeição: UF do Transportador não informada 
+//GX07   | X07 | Se informada a IE do Transportador: - UF do Transportador (id:X10) não informada                   | Obrig.  | 559 | Rej. | Rejeição: UF do Transportador não informada
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
@@ -3001,7 +2969,7 @@ TRY
 CATCH
 END
 
-//GX07.1 | X07 | Validar IE do transportador.se informado. Utilizar a UF informada para escolha do algoritmo.       | Obrig.  | 544 | Rej. | Rejeição: IE do Transportador inválida    
+//GX07.1 | X07 | Validar IE do transportador.se informado. Utilizar a UF informada para escolha do algoritmo.       | Obrig.  | 544 | Rej. | Rejeição: IE do Transportador inválida
 TRY
    IF !EMPTY( ::aTransp[ "xNome" ] )
       TRY
@@ -3014,46 +2982,46 @@ TRY
 CATCH
 END
 
-//GX17   | X17 | Se informado Código Município do FG - Transporte (id:X17): 
-//               -Código do Município do FG - Transporte com dígito inválido                                        | Obrig.  | 288 | Rej. | Rejeição: Código Município do FG - Transporte: dígito inválido  
+//GX17   | X17 | Se informado Código Município do FG - Transporte (id:X17):
+//               -Código do Município do FG - Transporte com dígito inválido                                        | Obrig.  | 288 | Rej. | Rejeição: Código Município do FG - Transporte: dígito inválido
 //
-//               
-//               
+//
+//
 //****************** Y - Dados da Cobrança *********************
 //****************** Z - Informação Adicional da NF-e *****************
 //****************** ZA - Comércio Exterior *********************
 //****************** ZB - Informação de Compra *********************
 //****************** ZC - Informações do Registro de Aquisição de Cana **************
 //****************** ZD – Informação de Crédito do Simples Nacional ****************
-//               
+//
 //******************* Banco de Dados: Emitente  ***************************
 //  PULA POR ENQUANTO...
-//G1C02  | C02 | Acessar Cadastro Contribuinte p/ Emitente: – CNPJ emitente não cadastrado                          | Facult. | 245 | Rej. | Rejeição: CNPJ Emitente não cadastrado 
+//G1C02  | C02 | Acessar Cadastro Contribuinte p/ Emitente: – CNPJ emitente não cadastrado                          | Facult. | 245 | Rej. | Rejeição: CNPJ Emitente não cadastrado
 //G1C02.1| C02 | – Emitente não autorizado                                                                          | Obrig.  | 203 | Rej. | Rejeição: Emissor não habilitado para emissão da NF-e
-//G1C17  | C17 | – IE Emitente não cadastrada                                                                       | Facult. | 230 | Rej. | Rejeição: IE do emitente não cadastrada 
+//G1C17  | C17 | – IE Emitente não cadastrada                                                                       | Facult. | 230 | Rej. | Rejeição: IE do emitente não cadastrada
 //G1C17.1| C17 | – IE Emitente não vinculada ao CNPJ                                                                | Obrig.  | 231 | Rej. | Rejeição: IE do emitente não vinculada ao CNPJ
-//G1C17.2| C17 | – Emitente em situação irregular perante o Fisco Obrig. 301 Den. Uso Denegado: 
-//               Irregularidade fiscal do emitente Banco de Dados: Chave da NF-e G1B08 B08 
-//               Acesso BD NFE (Chave: Ano, CNPJ Emitente, Modelo, Série, Nro): 
+//G1C17.2| C17 | – Emitente em situação irregular perante o Fisco Obrig. 301 Den. Uso Denegado:
+//               Irregularidade fiscal do emitente Banco de Dados: Chave da NF-e G1B08 B08
+//               Acesso BD NFE (Chave: Ano, CNPJ Emitente, Modelo, Série, Nro):
 //               –NF-e já cadastrada, com diferença na Chave de Acesso (campo de Código Numérico difere)            | Facult. | 539 | Rej. | Rejeição: Duplicidade de NF-e, com diferença na Chave de Acesso [99999999999999999999999999999999999999999]
-//G1B08.1| B08 | – NF-e já cadastrada e não Cancelada/Denegada                                                      | Obrig.  | 204 | Rej. | Rejeição: Duplicidade de NF-e 
+//G1B08.1| B08 | – NF-e já cadastrada e não Cancelada/Denegada                                                      | Obrig.  | 204 | Rej. | Rejeição: Duplicidade de NF-e
 //G1B08.2| B08 | - NF-e já cadastrada e está Cancelada                                                              | Obrig.  | 218 | Rej. | Rejeição: NF-e já esta cancelada na base de dados da SEFAZ
-//G1B08.3| B08 | - NF-e já cadastrada e está Denegada                                                               | Obrig.  | 205 | Rej. | Rejeição: NF-e está denegada na base de dados da SEFAZ 
-//G1B08.4| B08 | Acesso BD de Inutilização (Chave: Ano, CNPJ, Modelo, Série, Nro): 
+//G1B08.3| B08 | - NF-e já cadastrada e está Denegada                                                               | Obrig.  | 205 | Rej. | Rejeição: NF-e está denegada na base de dados da SEFAZ
+//G1B08.4| B08 | Acesso BD de Inutilização (Chave: Ano, CNPJ, Modelo, Série, Nro):
 //              -Numeração da NF-e está inutilizada                                                                 | Obrig.  | 206 | Rej. | Rejeição: NF-e já está inutilizada na Base de dados da SEFAZ Banco de Dados: NF-e Complementar
-//G1B25  | B25 | Se NF-e complementar (finNFe=2) e informado NF-e referenciada (Campo: refNFe): 
+//G1B25  | B25 | Se NF-e complementar (finNFe=2) e informado NF-e referenciada (Campo: refNFe):
 //               .Acessar BD NFE com a Chave de Acesso informada (Campo: refNFe);
 //               - NF-e referenciada inexistente                                                                    | Facult. | 267 | Rej. | Rejeição: NF Complementar referencia uma NF-e inexistente
 //G1B25.1| B25 | - NF-e referenciada acessada também é uma NF-e Complementar (finNFe=2)                             | Facult. | 268 | Rej. | Rejeição: NF Complementar referencia uma outra NF-e Complementar Banco de Dados: Destinatário
 //G1E17  | E17 | Se Operação no Estado (UF emitente = UF destinatário) e informado IE Destinatário: .
 //               Acessar Cadastro Contribuinte (Chave: IE / CNPJ destinatário)- CNPJ destinatário não cadastrado    | Facult. | 246 | Rej. | Rejeição: CNPJ Destinatário não cadastrado
-//G1E17.1| E17 | - IE destinatário não cadastrada                                                                   | Facult. | 233 | Rej. | Rejeição: IE do destinatário não cadastrada 
+//G1E17.1| E17 | - IE destinatário não cadastrada                                                                   | Facult. | 233 | Rej. | Rejeição: IE do destinatário não cadastrada
 //G1E17.2| E17 | - IE destinatário não vinculada ao CNPJ                                                            | Facult. | 234 | Rej. | Rejeição: IE do destinatário não vinculada ao CNPJ
-//G1E17.3| E17 | - Destinatário em situação irregular perante o Fisco                                               | Facult. | 302 | Den. | Uso Denegado: Irregularidade fiscal do destinatário  
-  
+//G1E17.3| E17 | - Destinatário em situação irregular perante o Fisco                                               | Facult. | 302 | Den. | Uso Denegado: Irregularidade fiscal do destinatário
+
 // (*1) Não validar o dígito de controle para os Códigos de Município que seguem: 2201919 - Bom Princípio do Piauí/PI; 2202251 - Canavieira /PI; 2201988 - Brejo do Piauí/PI; 2611533 – Quixaba/PE; 3117836 - Cônego Marinho/MG; 3152131 - Ponto Chique/MG; 4305871 - Coronel Barros/RS; 5203939 - Buriti de Goiás/GO; 5203962 – Buritinópolis/GO.
 // (*2) O tamanho da IE deve ser normalizado, na aplicação da SEFAZ, com acréscimo de zeros não significativos, se necessário, antes da verificação do dígito de controle.
-// (*3) Considerar uma tolerância de R$ 1,00 para mais ou para menos.    
+// (*3) Considerar uma tolerância de R$ 1,00 para mais ou para menos.
 
 RETURN(.T.)
 
@@ -3106,7 +3074,7 @@ ENDIF
 IF RESTO = 0 OU 1
    DV= 0
 ELSE
-  DV = 11 - 10 = 1  
+  DV = 11 - 10 = 1
 ENIDF
 
 

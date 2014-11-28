@@ -60,7 +60,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    cXML := cXML +'</soap12:Envelope>'
 
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::nRec+"-ped-rec.xml",cXMLDadosMsg,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::nRec + "-ped-rec.xml", cXMLDadosMsg )
    CATCH
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := 'Problema ao gravar pedido de situação do recibo '+::ohbNFe:pastaEnvRes+"\"+::nRec+"-ped-rec.xml"
@@ -107,31 +107,26 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
        curl_global_cleanup()
      #endif
   ELSE // MSXML
-     #ifdef __XHARBOUR__
-        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-     #else
-        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-     #endif
+
+     oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+
      oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
      oServerWS:open("POST", cUrlWS, .F.)
      oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
      oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
-  
-     #ifdef __XHARBOUR__
-        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-     #else
-        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-     #endif
+
+     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+
      oDOMDoc:async = .F.
      oDOMDoc:validateOnParse  = .T.
      oDOMDoc:resolveExternals := .F.
      oDOMDoc:preserveWhiteSpace = .T.
      oDOMDoc:LoadXML(cXML)
      IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() + ;
-                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() + ;
-                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() + ;
-                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() + ;
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() + ;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() + ;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() + ;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() + ;
                     " Code: "+STR(oDOMDoc:parseError:errorCode)
         aRetorno['OK']       := .F.
         aRetorno['MsgErro']  := cMSgErro
@@ -140,11 +135,11 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
      TRY
         oServerWS:send(oDOMDoc:xml)
      CATCH oError
-       cMsgErro := "Falha "+HB_OsNewLine()+ ;
-               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+       cMsgErro := "Falha "+HB_EOL()+ ;
+               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
               	 "Mensagem: " + oError:Description
         aRetorno['OK']       := .F.
         aRetorno['MsgErro']  := cMSgErro
@@ -157,15 +152,15 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    ENDIF
    //cXMLResp := oFuncoes:pegaTag( cXMLResp , "nfeRetRecepcao2Result")
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-pro-rec.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\debug-pro-rec.xml", cXMLResp )
    CATCH
    END
-   
+
    cXMLResp := oFuncoes:pegaTag( cXMLResp , "retConsReciNFe") // Ajuste NFe2 - Mauricio Cruz - 31/10/2012
-   
-   
+
+
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::nRec+"-pro-rec.xml",cXMLResp,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::nRec + "-pro-rec.xml", cXMLResp )
    CATCH
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := 'Problema ao gravar protocolo do recibo '+::ohbNFe:pastaEnvRes+"\"+::nRec+"-pro-rec.xml"
@@ -183,7 +178,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    cXMLResp2 := oFuncoes:pegaTag(cXMLResp, "protNFe")
 
    TRY
-      MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-aRetorno.xml",cXMLResp2,.F.)
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\debug-aRetorno.xml", cXMLResp2 )
    CATCH
    END
 

@@ -38,7 +38,7 @@ CLASS hbNFeEmail
 ENDCLASS
 
 METHOD execute() CLASS hbNFeEmail
-LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, xa, cArg, retorno
+LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, xa, cArg
 
    IF VALTYPE( ::aTo ) == "C"
       ::aTo := { ::aTo }
@@ -85,11 +85,9 @@ LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, x
 
    // preparar
    TRY
-     #ifdef __XHARBOUR__
-        oCfg := xhb_CreateObject( "CDO.Configuration" )
-     #else
-        oCfg := win_oleCreateObject( "CDO.Configuration" )
-     #endif
+
+     oCfg := win_oleCreateObject( "CDO.Configuration" )
+
      WITH OBJECT oCfg:Fields
        :Item( "http://schemas.microsoft.com/cdo/configuration/smtpserver"      ):Value := ::cServerIP
        :Item( "http://schemas.microsoft.com/cdo/configuration/smtpserverport"  ):Value := ::nPortSMTP
@@ -103,22 +101,20 @@ LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, x
      END WITH
    CATCH oError
    	aRetorno[ "OK" ] = .F.
-      aRetorno[ "MsgErro" ] := "Falha conexão com o smtp"+HB_OsNewLine()+ ;
-                               "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                      		    "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-                      		    "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-                      		    "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+      aRetorno[ "MsgErro" ] := "Falha conexão com o smtp"+HB_EOL()+ ;
+                               "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                      		    "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+                      		    "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+                      		    "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
                       		    "Mensangem: " + oError:Description
       RETURN( aRetorno )
    END
 
    // enviar
    FOR nITo:=1 TO LEN( ::aTo )
-      #ifdef __XHARBOUR__
-         oMsg := xhb_CreateObject ( "CDO.Message" )
-      #else
-         oMsg := win_oleCreateObject ( "CDO.Message" )
-      #endif
+
+      oMsg := win_oleCreateObject ( "CDO.Message" )
+
       WITH OBJECT oMsg
         :Configuration := oCfg
         :From := ::cFrom
@@ -154,7 +150,7 @@ LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, x
         ENDIF
       END WITH
       TRY
-        retorno := oMsg:Send()
+        oMsg:Send() // retorno :=
       CATCH oError
 	      cFilename := ""
 	      IF oError:Filename<>NIL
@@ -174,7 +170,7 @@ LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, x
 	            cArgs := TRANSFORM(oError:Args,Nil)
 	         ELSEIF VALTYPE(oError:Args) = "A"
 	            FOR xA = 1 TO LEN(oError:Args)
-	               cArg := ""
+	               // cArg := ""
 	               IF VALTYPE(oError:Args[xA])="C"
       	            cArg := oError:Args[xA]
 	               ELSEIF VALTYPE(oError:Args[xA])="N"
@@ -188,14 +184,14 @@ LOCAL aRetorno := hash(), oCfg, oMsg, oError, nITo, nIFiles, cArgs, cFileName, x
 	           cArgs := VALTYPE(oError:Args)
 	         ENDIF
 			ENDIF
-			aRetorno[ "MsgErro" ] := "Falha envio de email"+HB_OsNewLine()+ ;
-                	                "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                	      		    "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-                	      		    "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-                	      		    "SubSystem: " + IF(oError:SubSystem=NIL,"",oError:SubSystem) + ";" +HB_OsNewLine()+ ;
-                	      		    "Operation: " + IF(oError:Operation=NIL,"",IF(ISCHARACTER(oError:Operation),oError:Operation,STR(oError:Operation))) + ";" +HB_OsNewLine()+ ;
-                	      		    "Filename: " + cFilename + ";" +HB_OsNewLine()+ ;
-                	      		    "Args: " + cArgs + ";" +HB_OsNewLine()+ ;
+			aRetorno[ "MsgErro" ] := "Falha envio de email"+HB_EOL()+ ;
+                	                "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                	      		    "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+                	      		    "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+                	      		    "SubSystem: " + IF(oError:SubSystem=NIL,"",oError:SubSystem) + ";" +HB_EOL()+ ;
+                	      		    "Operation: " + IF(oError:Operation=NIL,"",IF(ISCHARACTER(oError:Operation),oError:Operation,STR(oError:Operation))) + ";" +HB_EOL()+ ;
+                	      		    "Filename: " + cFilename + ";" +HB_EOL()+ ;
+                	      		    "Args: " + cArgs + ";" +HB_EOL()+ ;
                 	      		    "Mensangem: " + IF(oError:Description=NIL,"",oError:Description) + ";"
          #ifndef __XHARBOUR__
              aRetorno[ "MsgErro" ] += "WinOle: "+ win_oleErrorText()

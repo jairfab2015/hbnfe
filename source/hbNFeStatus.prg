@@ -61,11 +61,11 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
   cXML := cXML +       cXMLDadosMsg
   cXML := cXML +     '</nfeDadosMsg>'
   cXML := cXML +   '</soap12:Body>'
-  cXML := cXML +'</soap12:Envelope>'    
-  
+  cXML := cXML +'</soap12:Envelope>'
+
   cFileEnvRes := oFuncoes:formatDate( DATE(), "YYMMDD")+SUBS(TIME(),1,2)+SUBS(TIME(),4,2)+SUBS(TIME(),7,2)
   TRY
-     MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-ped-sta.xml",cXMLDadosMsg,.F.)
+     hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + cFileEnvRes + "-ped-sta.xml", cXMLDadosMsg )
   CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar pedido de status '+::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-ped-sta.xml"
@@ -74,7 +74,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
 
   cUrlWS := ::ohbNFe:getURLWS(_STATUSSERVICO)
   if cUrlWS = nil
-      cMsgErro := "Serviço não mapeado" + HB_OSNEWLINE()+;
+      cMsgErro := "Serviço não mapeado" + HB_EOL()+;
                   "Serviço solicitado : STATUS DO SERVIÇO."
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := cMsgErro
@@ -119,11 +119,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
      #endif
   ELSE // MSXML
 
-      #ifdef __XHARBOUR__
-         oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
-      #else
-         oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-      #endif
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
 
       IF oServerWS = Nil
          aRetorno['OK'] := .F.
@@ -136,11 +132,7 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
       oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
 
-      #ifdef __XHARBOUR__
-         oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
-      #else
-         oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-      #endif
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
 
       IF oDOMDoc = Nil
          aRetorno['OK'] := .F.
@@ -155,10 +147,10 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       oDOMDoc:LoadXML(cXML)
 
       IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-         cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine()+;
-                     " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine()+;
-                     " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine()+;
-                     " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine()+;
+         cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL()+;
+                     " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL()+;
+                     " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL()+;
+                     " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL()+;
                      " Code: "+STR(oDOMDoc:parseError:errorCode)
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := cMsgErro
@@ -167,11 +159,11 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       TRY
          oServerWS:send(oDOMDoc:xml)
       CATCH oError
-        cMsgErro := "Falha "+HB_OsNewLine()+ ;
-                	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
-                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
-                	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
-                	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+        cMsgErro := "Falha "+HB_EOL()+ ;
+                	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
+                	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
+                	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
                 	 "Mensangem: " + oError:Description
          aRetorno['OK']       := .F.
          aRetorno['MsgErro']  := cMsgErro
@@ -180,12 +172,12 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cMsgErro,;
       DO WHILE oServerWS:readyState <> 4
          millisec(500)
       ENDDO
-    
+
       //cXMLResp := oFuncoes:pegaTag( HB_ANSITOOEM(oServerWS:responseText), 'retConsStatServ' )
       cXMLResp := oFuncoes:pegaTag( oServerWS:responseText , 'retConsStatServ' )
   ENDIF
   TRY
-     MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-sta.xml",cXMLResp,.F.)
+     hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + cFileEnvRes + "-sta.xml", cXMLResp )
   CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar retorno de status '+::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-sta.xml"
