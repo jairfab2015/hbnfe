@@ -14,6 +14,10 @@
 #endif
 #include "hbnfe.ch"
 
+// So pra evitar erro de compilação no Harbour
+// Mas significa que a rotina não é usada porque tá errado
+MEMVAR oNFe
+
 CLASS hbNFeIniToXML
    DATA ohbNFe
    DATA cIniFile
@@ -75,6 +79,7 @@ ENDCLASS
 
 METHOD execute() CLASS hbNFeIniToXML
 LOCAL aRetorno := hash(), hIniData, cComando, cXML, oAssina, aRetornoAss, oValida, aRetornoVal, oCancela, aRetornoCan
+LOCAL oStatus, aRetornoSta
    IF ::lValida = Nil
       ::lValida := .F.
    ENDIF
@@ -216,7 +221,7 @@ LOCAL oFuncoes := hbNFeFuncoes(), aRetorno := hash(), cDV, cChaveNFe, ;
       nICob, nNICob, nItem, nNItem, nObs, nAdi, nDI, mI, mY
 LOCAL nItnRef:=0
 LOCAL aMSGvld:={}
-LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
+LOCAL cOBSFISCO, cOBSADICIONAL
 
    aRetorno['OK'] := .T.
 
@@ -1192,8 +1197,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	TRY
        	::aObsCont[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Campo'] )
     	CATCH
-    	   nObs --
-       	EXIT
+           EXIT
     	END
     	::aObsCont[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['infAdic'+STRZERO(nObs,3)]['Texto'] )
    ENDDO
@@ -1205,8 +1209,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	TRY
        	::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xCampo" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Campo'] )
     	CATCH
-    	   nObs --
-       	EXIT
+           EXIT
     	END
     	::aObsFisco[ "obs"+STRZERO(nObs,3)+"_xTexto" ] := oFuncoes:parseEncode( hIniData['ObsFisco'+STRZERO(nObs,3)]['Texto'] )
    ENDDO
@@ -1219,8 +1222,7 @@ LOCAL cOBSFISCO:='', cOBSADICIONAL:=''
     	TRY
        	::aObsFisco[ "pref"+STRZERO(nObs,3)+"_nProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['nProc']
     	CATCH
-    	   nObs --
-       	EXIT
+        	EXIT
     	END
     	::aObsFisco[ "pref"+STRZERO(nObs,3)+"_indProc" ] := hIniData['procRef'+STRZERO(nObs,3)]['indProc']
    ENDDO
@@ -2397,7 +2399,7 @@ METHOD REGRAS_NFE(aMSGvld,cChaveNFe,nItem) CLASS hbNFeIniToXML
    valida as regras de negocios da nota fiscal eletronica
    Mauricio Cruz - 02/05/2012
 */
-LOCAL nItnRef:=0, cCHV:='', mI:=0, nVALbcl:=0, nVALicm:=0, nVALbst:=0, nVALstt:=0, nVALitn:=0, nVALfrt:=0, nVALseg:=0, nVALdes:=0, nVALipi:=0
+LOCAL nItnRef, cCHV:='', mI, nVALbcl:=0, nVALicm:=0, nVALbst:=0, nVALstt:=0, nVALitn:=0, nVALfrt:=0, nVALseg:=0, nVALdes:=0, nVALipi:=0
 
 aMSGvld:={}
 
@@ -2541,7 +2543,6 @@ IF VAL(::aIde[ "finNFe" ])=2
       TRY
          cCHV:=::aRefNfe['CNPJ'+STRZERO(nItnRef,3)]
       CATCH
-         nItnRef--
          EXIT
       END
    ENDDO
@@ -3033,7 +3034,8 @@ FUNCTION VERIFICA_DV_CHV_NFE(cCHV)
    verifica o DV da chave de acesso.
    Mauricio Cruz - 02/05/2012
 */
-LOCAL aCHV:={}, nDV:=VAL(RIGHT(ALLTRIM(cCHV),1)), mI:=0, nSOM:=0, nPES:=2, nDIV:=0, nRES:=0, lRET:=.T.
+LOCAL nDV:=VAL(RIGHT(ALLTRIM(cCHV),1)), mI, nSOM:=0, nPES:=2, nDIV, nRES, lRET:=.T.
+LOCAL nDVG
 cCHV:=ALLTRIM(cCHV)
 IF EMPTY(cCHV)
    RETURN(.T.)
