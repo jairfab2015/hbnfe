@@ -11,6 +11,7 @@
    #include "harupdf.ch"
    #include "hbzebra.ch"
    #include "hbcompat.ch"
+   #include "hbcurl.ch"
 #endif
 #include "hbnfe.ch"
 
