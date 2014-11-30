@@ -15,7 +15,7 @@
 #include "hbnfe.ch"
 
 // So pra evitar erro de compilação no Harbour
-// Mas significa que a rotina não é usada porque tá errado
+// Mas significa que a rotina dá erro aonde usa esta variável
 MEMVAR oNFe
 
 CLASS hbNFeIniToXML
