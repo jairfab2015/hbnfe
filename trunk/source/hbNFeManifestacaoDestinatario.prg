@@ -37,8 +37,8 @@ METHOD ConsultaNFeDest() CLASS hbNFeManifestacao
    Mauricio Cruz - 08/10/2012
 */
 LOCAL oServerWS, oDOMDoc, oError, oFuncoes := hbNFeFuncoes()
-LOCAL cCN:='', cUrlWS:='', cMsgErro:='', cSOAPAction:='http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsultaDest/nfeConsultaNFDest'
-LOCAL cXMLped:='', cXML:='', cXMLResp:=''
+LOCAL cCN, cUrlWS, cMsgErro, cSOAPAction:='http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsultaDest/nfeConsultaNFDest'
+LOCAL cXMLped, cXML, cXMLResp
 LOCAL aRetorno:=HASH(), hresNFe:=HASH(), hresCanc:=HASH(), hresCCe:=HASH(), hCOUNT:=HASH()
 LOCAL cLinha
 
@@ -260,7 +260,7 @@ METHOD nfeDownloadNF() CLASS hbNFeManifestacao
    Mauricio Cruz - 15/10/2012
 */
 LOCAL oFuncoes := hbNFeFuncoes()
-LOCAL cCN:='', cUrlWS:='', cMsgErro:='', cXMLped:='', cXML:='', cSOAPAction:='http://www.portalfiscal.inf.br/nfe/wsdl/NfeDownloadNF/nfeDownloadNF'
+LOCAL cCN, cUrlWS, cMsgErro, cXMLped, cXML, cSOAPAction:='http://www.portalfiscal.inf.br/nfe/wsdl/NfeDownloadNF/nfeDownloadNF'
 LOCAL aRetorno:=HASH(), cXmlResp, oServerWs, oDomDoc, oError
 
 aRetorno['OK'] := .T.

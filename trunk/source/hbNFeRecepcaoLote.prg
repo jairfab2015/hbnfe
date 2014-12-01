@@ -11,6 +11,7 @@
    #include "harupdf.ch"
    #include "hbzebra.ch"
    #include "hbcompat.ch"
+   #include "hbcurl.ch"
 #endif
 #include "hbnfe.ch"
 
@@ -30,7 +31,7 @@ ENDCLASS
 METHOD execute() CLASS hbNFeRecepcaoLote
 LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, nI,;
       aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2',;
-      cXMLSai, nI2, aRetornoRet, oRetornoNFe, oError, oCurl, aHeader, retHTTP, nVezesRet
+      cXMLSai, nI2, aRetornoRet, oRetornoNFe, oError, oCurl, aHeader, retHTTP // , nVezesRet
 
    IF ::cUFWS = Nil
       ::cUFWS := ::ohbNFe:cUFWS
@@ -203,7 +204,8 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    aRetorno['tMed']     := oFuncoes:pegaTag(cXMLResp, "tMed")
 
    IF ::lAguardaRetorno
-   	  FOR nVezesRet = 1 to ::nVezesTentaRetorno              // Anderson Camilo  10/11/2011
+      // Como tem EXIT antes do NEXT, este FOR/NEXT não serve pra nada
+   	  //FOR nVezesRet = 1 to ::nVezesTentaRetorno              // Anderson Camilo  10/11/2011
          FOR nI = 1 TO ::nTempoAguardaRetorno              // Anderson Camilo  10/11/2011
             millisec(1000)
          NEXT
@@ -263,8 +265,8 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
             NEXT
          ENDIF
 
-         EXIT
-  	   NEXT nVezesRet
+         //EXIT
+  	   //NEXT nVezesRet
 
    ENDIF
 

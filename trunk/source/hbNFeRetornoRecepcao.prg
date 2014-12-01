@@ -11,6 +11,7 @@
    #include "harupdf.ch"
    #include "hbzebra.ch"
    #include "hbcompat.ch"
+   #include "hbcurl.ch"
 #endif
 #include "hbnfe.ch"
 
@@ -27,7 +28,7 @@ ENDCLASS
 METHOD execute() CLASS hbNFeRetornoRecepcao
 LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, nI,;
       aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeRetRecepcao2',;
-      cXMLResp2, oError, aRetornoNF, oCurl, aHeader, retHTTP
+      cXMLResp2, oError, oCurl, aHeader, retHTTP // aRetornoNF,
 
    IF ::cUFWS = Nil
       ::cUFWS := ::ohbNFe:cUFWS
@@ -182,7 +183,7 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
    CATCH
    END
 
-   aRetornoNF := hash()
+   //aRetornoNF := hash()
    nI := 0
    DO WHILE .T.
       nI ++
