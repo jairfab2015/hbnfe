@@ -1,0 +1,42 @@
+# Atencao
+# Criado pra teste
+# Nao serve pra gerar a LIB
+#
+
+-ohbnfe
+hbini.prg
+hbMDFe.prg
+hbNFe.prg
+hbNFeAssina.prg
+hbNFeCancela.prg
+hbNFeCCe.prg
+hbNFeConsulta.prg
+hbNFeConsultaCadastro.prg
+hbNFeCreator.prg
+hbNFeDanfe.prg
+hbNFeDanfeCCe.PRG
+hbNFeDSF.prg
+hbNFeEmail.prg
+hbNFeEvento.prg
+hbNFeFuncoes.prg
+hbNFeIniToXML.prg
+hbNFeInutiliza.prg
+hbNFeManifestacaoDestinatario.prg
+hbNFeRecepcaoLote.prg
+hbNFeRetornoRecepcao.prg
+hbNFeSefaz.prg
+hbNFeSemCurl.prg
+hbNFeStatus.prg
+hbNFeValida.prg
+
+hbwin.hbc
+hbhpdf.hbc
+hbzebra.hbc
+
+-w3
+-es2
+-inc
+-workdir=d:\temp\
+-hblib
+-compr
+-strip

@@ -16,14 +16,13 @@
 #include "hbnfe.ch"
 
 CLASS hbNFeConsulta
-   DATA ohbNFe
-   DATA cUFWS
-   DATA versaoDados
-   DATA tpAmb
-   DATA cNFeFile  //pode ser um xml
-   DATA cChaveNFe //pode ser uma chave
-
-   METHOD execute()
+   DATA   ohbNFe
+   DATA   cUFWS
+   DATA   versaoDados
+   DATA   tpAmb
+   DATA   cNFeFile  //pode ser um xml
+   DATA   cChaveNFe //pode ser uma chave
+   METHOD Execute()
 ENDCLASS
 
 METHOD execute() CLASS hbNFeConsulta
@@ -31,35 +30,35 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
       oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2',;
       oError, cXMLSai, cXMLFile, cXMLDadosMsg, oCurl, aHeader, retHTTP
 
-   IF ::cUFWS = Nil
+   IF ::cUFWS = NIL
       ::cUFWS := ::ohbNFe:cUFWS
    ENDIF
    IF ::versaoDados = Nil
       ::versaoDados := '2.01'
    ENDIF
 
-   IF ::tpAmb = Nil
+   IF ::tpAmb = NIL
       ::tpAmb := ::ohbNFe:tpAmb
    ENDIF
 
-   IF !EMPTY( ::cNFeFile )
-      IF !FILE( ::cNFeFile )
-         aRetorno['OK']       := .F.
-         aRetorno['MsgErro']  := 'Arquivo n�o encontrado '+::cNFeFile
+   IF .NOT. Empty( ::cNFeFile )
+      IF .NOT. File( ::cNFeFile )
+         aRetorno[ 'OK' ]       := .F.
+         aRetorno[ 'MsgErro' ]  := 'Arquivo n�o encontrado ' + ::cNFeFile
          RETURN(aRetorno)
       ENDIF
       TRY
          cXMLFile := MEMOREAD( ::cNFeFile )
       CATCH
-         aRetorno['OK']       := .F.
-         aRetorno['MsgErro']  := 'Erro ao abrir '+::cNFeFile
-         RETURN(aRetorno)
+         aRetorno[ 'OK' ]       := .F.
+         aRetorno[ 'MsgErro' ]  := 'Erro ao abrir ' + ::cNFeFile
+         RETURN( aRetorno )
       END
-      ::cChaveNFe := SUBS( ::cNFeFile ,AT('-nfe',::cNFeFile)-44 ,44 )
+      ::cChaveNFe := Substr( ::cNFeFile ,AT('-nfe',::cNFeFile)-44 ,44 )
       IF 'retCancNFe' $ cXMLFile
-         aRetorno['OK']       := .F.
-         aRetorno['MsgErro']  := 'NFe '+::cNFeFile+' cancelada'
-         RETURN(aRetorno)
+         aRetorno[ 'OK' ]       := .F.
+         aRetorno[ 'MsgErro' ]  := 'NFe ' + ::cNFeFile+' cancelada'
+         RETURN aRetorno
       ENDIF
    ENDIF
 
@@ -102,39 +101,39 @@ LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := has
    END
 
   IF ::ohbNFe:nSOAP = HBNFE_CURL
-     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
-                 'SOAPAction: "NfeConsulta2"',;
-                 'Content-length: '+ALLTRIM(STR(len(cXML))) }
+     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="' + cSoapAction + '"', ;
+                 'SOAPAction: "NfeConsulta2"', ;
+                 'Content-length: ' + AllTrim( Str( Len( cXML ) ) ) }
 
      #ifndef __XHARBOUR__
        curl_global_init()
        oCurl = curl_easy_init()
 
-       curl_easy_setopt(oCurl, HB_CURLOPT_URL, cUrlWS)
-       curl_easy_setopt(oCurl, HB_CURLOPT_PORT , 443)
-       curl_easy_setopt(oCurl, HB_CURLOPT_VERBOSE, .F.) // 1
-       curl_easy_setopt(oCurl, HB_CURLOPT_HEADER, 1) //retorna o cabeçalho de resposta
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLVERSION, 3)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub)
-       curl_easy_setopt(oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv)
-       curl_easy_setopt(oCurl, HB_CURLOPT_POST, 1)
-       curl_easy_setopt(oCurl, HB_CURLOPT_POSTFIELDS, cXML)
-       curl_easy_setopt(oCurl, HB_CURLOPT_WRITEFUNCTION, 1)
-       curl_easy_setopt(oCurl, HB_CURLOPT_DL_BUFF_SETUP )
-       curl_easy_setopt(oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
-       curl_easy_perform(oCurl)
-       retHTTP := curl_easy_getinfo(oCurl,HB_CURLINFO_RESPONSE_CODE) //informações da conexão
+       curl_easy_setopt( oCurl, HB_CURLOPT_URL, cUrlWS )
+       curl_easy_setopt( oCurl, HB_CURLOPT_PORT , 443 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_VERBOSE, .F. ) // 1
+       curl_easy_setopt( oCurl, HB_CURLOPT_HEADER, 1 ) //retorna o cabeçalho de resposta
+       curl_easy_setopt( oCurl, HB_CURLOPT_SSLVERSION, 3 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub )
+       curl_easy_setopt( oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass )
+       curl_easy_setopt( oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv )
+       curl_easy_setopt( oCurl, HB_CURLOPT_POST, 1 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_POSTFIELDS, cXML )
+       curl_easy_setopt( oCurl, HB_CURLOPT_WRITEFUNCTION, 1 )
+       curl_easy_setopt( oCurl, HB_CURLOPT_DL_BUFF_SETUP )
+       curl_easy_setopt( oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
+       curl_easy_perform( oCurl )
+       retHTTP := curl_easy_getinfo( oCurl, HB_CURLINFO_RESPONSE_CODE ) //informações da conexão
 
        cXMLResp := ''
        IF retHTTP = 200 // OK
           curl_easy_setopt( ocurl, HB_CURLOPT_DL_BUFF_GET, @cXMLResp )
-          cXMLResp := SUBS(cXMLResp,AT('<?xml',cXMLResp))
+          cXMLResp := Substr( cXMLResp, AT( '<?xml', cXMLResp ) )
        ENDIF
 
-       curl_easy_cleanup(oCurl)
+       curl_easy_cleanup( oCurl )
        curl_global_cleanup()
      #endif
   ELSE // MSXML
