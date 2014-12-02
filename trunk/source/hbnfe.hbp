@@ -24,10 +24,11 @@ hbNFeInutiliza.prg
 hbNFeManifestacaoDestinatario.prg
 hbNFeRecepcaoLote.prg
 hbNFeRetornoRecepcao.prg
-hbNFeSefaz.prg
 hbNFeSemCurl.prg
 hbNFeStatus.prg
 hbNFeValida.prg
+zz_xharbour.prg
+zz_xmlfun.prg
 
 hbwin.hbc
 hbhpdf.hbc
