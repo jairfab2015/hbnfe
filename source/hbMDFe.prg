@@ -1,8 +1,6 @@
-#include "common.ch"
 #include "hbclass.ch"
 #include "hbnfe.ch"
 #include "HBXML.ch"
-#include "hbcompat.ch"
 
 class hbMDFe
    DATA oFuncoes INIT hbNFeFuncoes()
@@ -165,7 +163,7 @@ IF ::UFFim=NIL .OR. EMPTY(::UFFim)
    aRETORNO['MSG']:='Favor informar a UF de final de transporte'
 ENDIF
 IF ::aMUNcarregamento=NIL .OR. LEN(::aMUNcarregamento)<=0
-   aRETORNO['MSG']:='Favor informar os municípios de carregamentos'
+   aRETORNO['MSG']:='Favor informar os municípios de carregamento'
 ENDIF
 IF ::tpEmis=NIL .OR. EMPTY(::tpEmis)
    aRETORNO['MSG']:='Favor informar o tipo de emitente'

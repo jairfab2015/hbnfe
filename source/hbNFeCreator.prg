@@ -4,12 +4,8 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-#include "common.ch"
+
 #include "hbclass.ch"
-#ifndef __XHARBOUR__
-   #include "hbwin.ch"
-   #include "hbcompat.ch"
-#endif
 #include "hbnfe.ch"
 
 CREATE CLASS hbNFeCreator

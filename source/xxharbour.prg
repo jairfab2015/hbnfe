@@ -4,6 +4,11 @@
 
 #ifdef __XHARBOUR__
 
+// Existia o método na classe de funções, mas não usado
+FUNCTION hb_CurDrive( xValue )
+   RETURN CurDrive( xValue )
+
+
 // Funcões de OLE
 FUNCTION win_OleCreateObject( cObjeto )
    RETURN xhb_CreateObject( cObjeto )
