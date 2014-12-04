@@ -1,23 +1,10 @@
 *****************************************************************
 * ZE_XMLFUN - FUNCOES XML                                       *
-* 2012.02.11 - José M. C. Quintas                               *
+* José M. C. Quintas                                            *
 *****************************************************************
 
-* 12.03.12 - Titulo no fonte
-* 16.04.12 - Retirada mudanca de XML
-* 03.05.12 - Ia retirar UTF8, mas melhor deixar como diferenca aceita
-* 27.06.12 - Ajuste em XmlNode ref tag com elementos
-* 27.06.12 - Reescrita XmlNode() permite com/sem
-* 22.08.12 - Tipo de XML movido pra ZE_SEFAZ por ser especifico
-* 15.10.12 - Correcao em XmlElement
-* 17.12.12 - Letras acentuadas
-* 07.01.13 - Retira declaracao padrao de xml
-* 07.02.13 - Outra diferenca no emissor oficial afff
-* 2013.06.13.1130 - Uso de conversao Utf8
-* 2013.06.26.1217 - Compatibilidade com novos XMLs
-* 2014.09.13.1140 - Funções XML aqui
-* 2014.11.20.2000 - Ajuste UTF8
 *----------------------------------------------------------------
+
 
 FUNCTION XmlTransform( cXml )
    LOCAL nCont, cRemoveTag, lUtf8
@@ -191,7 +178,7 @@ FUNCTION NumberXml( nValue, nDecimals )
 
 
 FUNCTION SoNumeros( cTxt )
-   LOCAL cTxt2 := ""
+   LOCAL cTxt2 := "", nCont
    FOR nCont = 1 TO Len( cTxt )
       IF Substr( cTxt, nCont, 1 ) $ "0123456789"
          cTxt2 += Substr( cTxt, nCont, 1 )
