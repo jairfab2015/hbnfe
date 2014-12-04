@@ -47,7 +47,6 @@ FUNCTION HB_EOL()
          hb_retc( lpDefault );
    }
 
-
    #pragma ENDDUMP
 
 #else

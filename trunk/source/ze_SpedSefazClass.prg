@@ -1,19 +1,8 @@
 *****************************************************************
 * ZE_SEFAZ - ROTINAS PRA SPED NFE/CTE/MDFE
-* 2012.01.01 - José M. C. Quintas
+* José M. C. Quintas
 *****************************************************************
 
-* 2013.03.26.0000 - Alterado pra nao parar com erro
-* 2013.04.25.1908 - Apenas ajuste de fonte
-* 2013.05.28.2346 - Ajuste no envelope pra mdfe
-* 2013.05.30.1030 - Organizado fonte
-* 2013.06.08.2109 - Organizado fonte e variaveis
-* 2013.06.26.1115 - Organizado e liberado
-* 2014.04.02.1000 - Apenas ajuste de fonte
-* 2014.05.23.1016 - Ajuste no fonte
-* 2014.06.28.0842 - Teste ref MG usando SCAN
-* 2014.06.28.1014 - Adicionado ref cancelamento MDFE
-* 2014.08.30.1218 - Adicionada contingência SVC
 *----------------------------------------------------------------
 
 #include "hbclass.ch"
@@ -434,7 +423,7 @@ METHOD XmlSoapEnvelope() CLASS SefazClass
 
 
 METHOD MicrosoftXmlSoapPost() CLASS SefazClass
-   LOCAL oServer, nCont, cRetorno := "*ERRO*"
+   LOCAL oServer, nCont, cRetorno := "*ERRO* com Microsoft SOAP"
    BEGIN SEQUENCE WITH { |e| Break(e) }
       oServer := win_OleCreateObject( "MSXML2.ServerXMLHTTP")
       IF ::cCertificado != NIL
@@ -450,7 +439,7 @@ METHOD MicrosoftXmlSoapPost() CLASS SefazClass
    IF ValType( cRetorno ) == "C"
       ::cXmlRetorno := cRetorno
    ELSEIF cRetorno == NIL
-      ::cXmlRetorno := "*ERRO*"
+      ::cXmlRetorno := "*ERRO* Não houve retorno"
    ELSE
       ::cXmlRetorno := ""
       FOR nCont = 1 TO Len( cRetorno )
@@ -464,7 +453,7 @@ METHOD MicrosoftXmlSoapPost() CLASS SefazClass
 
 
 METHOD CurlSoapPost()
-   LOCAL aHeader := Array(3), oCurl, cXmlResp := "*ERRO*", nStatus
+   LOCAL aHeader := Array(3), oCurl, cXmlResp := "*ERRO* com libCurl", nStatus
 
    aHeader[ 1 ] := [Content-Type: application/soap+xml;charset=utf-8;action="] + ::cServico + ["]
    aHeader[ 2 ] := [SOAPAction: "] + ::cSoapAction + ["]
@@ -495,7 +484,7 @@ METHOD CurlSoapPost()
    ENDIF
    curl_easy_cleanup( oCurl )
    curl_global_cleanup()
-   RETURN NIL
+   RETURN cXmlResp
 *----------------------------------------------------------------
 
 
