@@ -7,16 +7,8 @@
 ****************************************************************************************************
 
 
-#include "common.ch"
 #include "hbclass.ch"
-#ifndef __XHARBOUR__
-   #include "hbwin.ch"     // Harbour 3.2 nao precisa se indicar hbwin.hbc
-   #include "harupdf.ch"   // Harbour 3.2 nao precisa se indicar hbhpdf.hbc
-   #include "hbzebra.ch"   // Harbour 3.2 nao precisa se indicar hbzebra.hbc
-   #include "hbcompat.ch"  // A confirmar
-#endif
 #include "hbnfe.ch"
-
 
 CLASS hbNFeAssina
    DATA   ohbNFe

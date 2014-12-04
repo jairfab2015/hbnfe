@@ -27,9 +27,10 @@ hbNFeRetornoRecepcao.prg
 hbNFeSemCurl.prg
 hbNFeStatus.prg
 hbNFeValida.prg
-ze_spedsefazclass.prg
-ze_xharbour.prg
-ze_xmlfun.prg
+hbnfeSpedAssina.prg
+hbnfeSpedSefazClass.prg
+xxharbour.prg
+hbnfeXmlFun.prg
 
 hbwin.hbc
 hbhpdf.hbc

@@ -3,14 +3,7 @@
    Mauricio Cruz - 09/10/2012 - cruz@sygecom.com.br
    Projeto principal: hbNfe de Fernando Athayde
 */
-#include "common.ch"
 #include "hbclass.ch"
-#ifndef __XHARBOUR__
-   #include "hbwin.ch"
-   #include "harupdf.ch"
-   #include "hbzebra.ch"
-   #include "hbcompat.ch"
-#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeEvento

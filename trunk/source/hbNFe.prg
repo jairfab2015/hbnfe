@@ -5,14 +5,9 @@
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
 *xsd.exe cancNFe_v1.07.xsd xmldsig-core-schema_v1.01.xsd /l:vb /c /n:cancNFe /edb /o:"c:\tmp"
-#include "common.ch"
+
+
 #include "hbclass.ch"
-#ifndef __XHARBOUR__
-   #include "hbwin.ch"
-   #include "harupdf.ch"
-   #include "hbzebra.ch"
-   #include "hbcompat.ch"
-#endif
 #include "hbnfe.ch"
 
 CLASS hbNFe

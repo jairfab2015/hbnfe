@@ -1,7 +1,5 @@
-#include "common.ch"
 #include "hbclass.ch"
 #include "hbnfe.ch"
-#include "hbcompat.ch"
 
 class hbNFSe_DSF
    DATA oFuncoes INIT hbNFeFuncoes()

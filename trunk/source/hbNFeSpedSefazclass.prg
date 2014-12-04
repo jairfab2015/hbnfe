@@ -62,7 +62,7 @@ CREATE CLASS SefazClass
    METHOD XmlSoapEnvelope()
    METHOD XmlSoapPost()
    METHOD MicrosoftXmlSoapPost()
-   METHOD CurlSoapPost()
+//   METHOD CurlSoapPost()
    ENDCLASS
 
 
@@ -451,7 +451,7 @@ METHOD MicrosoftXmlSoapPost() CLASS SefazClass
    // ENDIF
    RETURN NIL
 
-
+#ifdef __LIBCURL___
 METHOD CurlSoapPost()
    LOCAL aHeader := Array(3), oCurl, cXmlResp := "*ERRO* com libCurl", nStatus
 
@@ -485,6 +485,7 @@ METHOD CurlSoapPost()
    curl_easy_cleanup( oCurl )
    curl_global_cleanup()
    RETURN cXmlResp
+#endif
 *----------------------------------------------------------------
 
 

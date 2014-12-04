@@ -28,8 +28,6 @@ CLASS hbNFeFuncoes
    METHOD DesFormatDate(cData)
 *  // Funcoes de Valores
    METHOD ponto(nValor,nTamanho,nDecimais,cTipo,cSigla)
-*  // Funcoes de Diretorios
-   METHOD curDrive()
 *  // Funcoes de Calculos
    METHOD modulo11(cStr,nPeso1,nPeso2)
    METHOD BringToDate(cStr)
@@ -167,13 +165,6 @@ LOCAL cRetorno, nIncPonto, nQuantidadeMaior
 
   ENDIF
 RETURN(cRetorno)
-
-METHOD curDrive() CLASS hbNFeFuncoes
-#ifdef __XHARBOUR__
-   RETURN( CURDRIVE() )
-#else
-   RETURN( HB_CURDRIVE() )
-#endif
 
 * modulo11 Baseado na função modulo11 do maligno
 METHOD modulo11(cStr,nPeso1,nPeso2) CLASS hbNFeFuncoes  // módulo 11, com pesos nPeso1 (inicial) a nPeso2 (final), que
