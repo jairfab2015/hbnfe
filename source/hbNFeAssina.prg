@@ -26,19 +26,21 @@ METHOD Execute() CLASS hbNFeAssina
    LOCAL nP, nResult, PosFim
    LOCAL cXmlTagInicial := "", cXmlTagFinal := "", nCont
    LOCAL aDelimitadores := { ;
-      { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contem CTe e NFe
-      { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contem NFe - esquisito mas infCte e nao infCTe
-      { "<infNFe",    "</NFe>"       }, ; // NFE
-      { "<infCanc",   "</cancNFe>"   }, ; // Cancelamento antigo
-      { "<infDPEC",   "</envDPEC>"   }, ; // DPEC
-      { "<infInut",   "</inutNFe>"   }, ; // Inutilizacao
-      { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correcao
-      { "<infEvento", "</evento>"    }, ; // Evento 110111 cancelamento
-      { "<infEvento", "</evento>"    }, ; // Evento 210200 manifestacao
-      { "<infEvento", "</evento>"    }, ; // Evento 210210 manifestacao
-      { "<infEvento", "</evento>"    }, ; // Evento 210220 manifestacao
-      { "<infEvento", "</evento>"    }, ; // Evento 210240 manifestacao
-      { "<infEvento", "</evento>"    } }  // Evento 110112 manifesto encerramento
+      { "<enviMDFe",   "</MDFe></enviMDFe>"   }, ; // MDFE envio - no fonte hbmdfe assina envio completo
+      { "<eventoMDFe", "</eventoMDFe>"        }, ; // MDFE evento
+      { "<infMDFe",    "</MDFe>"              }, ; // MDFE - antes porque MDFe contém CTe e NFe
+      { "<infCte",     "</CTe>"               }, ; // CTE  - antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
+      { "<infNFe",     "</NFe>"               }, ; // NFE
+      { "<infCanc",    "</cancNFe>"           }, ; // Cancelamento antigo
+      { "<infDPEC",    "</envDPEC>"           }, ; // DPEC
+      { "<infInut",    "</inutNFe>"           }, ; // Inutilização
+      { "<infEvento",  "</evento>"            }, ; // Evento 110110 carta de correção
+      { "<infEvento",  "</evento>"            }, ; // Evento 110111 cancelamento
+      { "<infEvento",  "</evento>"            }, ; // Evento 210200 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210210 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210220 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210240 manifestação
+      { "<infEvento",  "</evento>"            } }  // Evento 110112 manifesto encerramento
 
    IF ::lMemFile = NIL
       ::lMemFile = .F.

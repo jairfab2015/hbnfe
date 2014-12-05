@@ -23,7 +23,7 @@
 #define WSMDFERECEPCAO             14
 #define WSMDFERETRECEPCAO          15
 #define WSMDFERECEPCAOEVENTO       16
-#define WSMDFECONSULTAPROTOCOLO    17
+#define WSMDFECONSULTA             17
 #define WSMDFESTATUSSERVICO        18
 
 #define WSHOMOLOGACAO   "2"
@@ -122,7 +122,7 @@ METHOD MDFEConsulta( cChave, cCertificado ) CLASS SefazClass
    ::cUf         := Substr( cChave, 1, 2 )
    ::cServico    := "http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeConsulta"
    ::cSoapAction := "http://www.portalfiscal.inf.br/mdfe/wsdl/MDFeConsulta/MDFeConsultaMDF"
-   ::cWebService := ::GetWebService( UfCodigo( ::cUf ), WSMDFECONSULTAPROTOCOLO )
+   ::cWebService := ::GetWebService( UfCodigo( ::cUf ), WSMDFECONSULTA )
    ::cXmlDados   := ""
    ::cXmlDados   += [<consSitMDFe versao="] + ::cVersao + [" xmlns="http://www.portalfiscal.inf.br/mdfe">]
    ::cXmlDados   += [<tpAmb>] + ::cAmbiente + [</tpAmb>]
@@ -370,7 +370,9 @@ METHOD GetWebService( cUf, cServico ) CLASS SefazClass
    // SVAN: ES,MA,PA,PI,RN
    // SVRS: AC,AL,AM,AP,DF,MS,PB,RJ,RO,RR,SC,SE,TO
    // Autorizadores: AM,BA,CE,GO,MG,MS,MT,PE,PR,RN,RS,SP,SVAN,SVRS,SCAN
-   IF ::cScan == "SCAN"
+   IF ::cProjeto == "mdfe" // mdfe esta no RS
+      cTexto := UrlWebService( "RS", ::cAmbiente, cServico )
+   ELSEIF ::cScan == "SCAN"
       cTexto := UrlWebService( "SCAN", ::cAmbiente, cServico )
    ELSEIF ::cScan == "SVCAN"
       IF cUF $ "AC,AL,AM,AP,DF,MS,PB,RJ,RO,RR,SE,TO"
@@ -378,8 +380,6 @@ METHOD GetWebService( cUf, cServico ) CLASS SefazClass
       ELSE
          cTexto := UrlWebService( "SVCAN", ::cAmbiente, cServico )
       ENDIF
-   ELSEIF ::cProjeto == "mdfe" // mdfe esta no RS
-      cTexto := UrlWebService( "RS", ::cAmbiente, cServico )
    ELSE
       cTexto := UrlWebService( cUf, ::cAmbiente, cServico )
    ENDIF
@@ -735,7 +735,7 @@ STATIC FUNCTION UrlWebService( cUf, cAmbiente, nWsService )
 
    CASE cUf == "RS" .AND. cAmbiente == WSPRODUCAO
       DO CASE
-      CASE nWsService == WSMDFECONSULTAPROTOCOLO ;     cUrlWs := "https://mdfe.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx"
+      CASE nWsService == WSMDFECONSULTA ;              cUrlWs := "https://mdfe.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx"
       CASE nWsService == WSMDFERECEPCAO ;              cUrlWs := "https://mdfe.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx"
       CASE nWsService == WSMDFERECEPCAOEVENTO ;        cUrlWs := "https://mdfe.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx"
       CASE nWsService == WSMDFERETRECEPCAO ;           cUrlWs := "https://mdfe.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx"
@@ -759,7 +759,7 @@ STATIC FUNCTION UrlWebService( cUf, cAmbiente, nWsService )
 
    CASE cUf == "RS" .AND. cAmbiente == WSHOMOLOGACAO
       DO CASE
-      CASE nWsService == WSMDFECONSULTAPROTOCOLO ;     cUrlWs := "https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx"
+      CASE nWsService == WSMDFECONSULTA ;              cUrlWs := "https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx"
       CASE nWsService == WSMDFERECEPCAO ;              cUrlWs := "https://mdfe-hml.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx"
       CASE nWsService == WSMDFERECEPCAOEVENTO ;        cUrlWs := "https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx"
       CASE nWsService == WSMDFERETRECEPCAO ;           cUrlWs := "https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx"

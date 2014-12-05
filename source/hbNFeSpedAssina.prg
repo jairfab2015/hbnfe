@@ -12,25 +12,27 @@
 #include "capicom.ch"
 
 FUNCTION AssinaXml( cTxtXml, cCertCN )
-   LOCAL oDOMDoc, nPosIni, nPosFim, xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois
-   LOCAL XMLAssinado, SIGNEDKEY, DSIGKEY, SCONTAINER, SPROVIDER, ETYPE, cURI, cRetorno, nP, nResult
+   LOCAL nPosIni, nPosFim, xmlHeaderAntes, xmlHeaderDepois
+   LOCAL XMLAssinado, cURI, cRetorno, lIsLibCurl := .F.
    LOCAL aDelimitadores, nCont
    LOCAL cXmlTagInicio := "", cXmlTagFinal := ""
 
    aDelimitadores := { ;
-      { "<infMDFe",   "</MDFe>"      }, ; // MDFE - antes porque MDFe contém CTe e NFe
-      { "<infCte",    "</CTe>"       }, ; // CTE  - antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
-      { "<infNFe",    "</NFe>"       }, ; // NFE
-      { "<infCanc",   "</cancNFe>"   }, ; // Cancelamento antigo
-      { "<infDPEC",   "</envDPEC>"   }, ; // DPEC
-      { "<infInut",   "</inutNFe>"   }, ; // Inutilização
-      { "<infEvento", "</evento>"    }, ; // Evento 110110 carta de correção
-      { "<infEvento", "</evento>"    }, ; // Evento 110111 cancelamento
-      { "<infEvento", "</evento>"    }, ; // Evento 210200 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210210 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210220 manifestação
-      { "<infEvento", "</evento>"    }, ; // Evento 210240 manifestação
-      { "<infEvento", "</evento>"    } }  // Evento 110112 manifesto encerramento
+      { "<enviMDFe",   "</MDFe></enviMDFe>"   }, ; // MDFE envio - no fonte hbmdfe assina envio completo
+      { "<eventoMDFe", "</eventoMDFe>"        }, ; // MDFE evento
+      { "<infMDFe",    "</MDFe>"              }, ; // MDFE - antes porque MDFe contém CTe e NFe
+      { "<infCte",     "</CTe>"               }, ; // CTE  - antes porque CTe  contém NFe - esquisito mas é infCte e não infCTe
+      { "<infNFe",     "</NFe>"               }, ; // NFE
+      { "<infCanc",    "</cancNFe>"           }, ; // Cancelamento antigo
+      { "<infDPEC",    "</envDPEC>"           }, ; // DPEC
+      { "<infInut",    "</inutNFe>"           }, ; // Inutilização
+      { "<infEvento",  "</evento>"            }, ; // Evento 110110 carta de correção
+      { "<infEvento",  "</evento>"            }, ; // Evento 110111 cancelamento
+      { "<infEvento",  "</evento>"            }, ; // Evento 210200 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210210 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210220 manifestação
+      { "<infEvento",  "</evento>"            }, ; // Evento 210240 manifestação
+      { "<infEvento",  "</evento>"            } }  // Evento 110112 manifesto encerramento
 
    // Define Tipo de Documento
 
@@ -66,7 +68,7 @@ FUNCTION AssinaXml( cTxtXml, cCertCN )
       cURI := Substr( cTxtXml, nPosIni + 1, nPosFim - nPosIni - 1 )
 
       // Adiciona bloco de assinatura no local apropriado
-      cTxtXml := Substr( cTxtXml, 1, At( cXmlTagFinal, cTxtXml ) - 1 ) + SignatureNode( cURI ) + cXmlTagFinal
+      cTxtXml := Substr( cTxtXml, 1, At( cXmlTagFinal, cTxtXml ) - 1 ) + SignatureNode( cURI, lIsLibCurl ) + cXmlTagFinal
    ENDIF
 
 //   HB_MemoWrit( "NFE\Ultimo-1.XML", cTxtXml )
@@ -76,6 +78,33 @@ FUNCTION AssinaXml( cTxtXml, cCertCN )
    IF nPosIni > 0
       xmlHeaderAntes := Substr( cTxtXml, 1, nPosIni + 1 )
    ENDIF
+
+   XmlAssinado := cTxtXml
+   cRetorno    := CapicomSignature( @XmlAssinado, cCertCn )
+   IF cRetorno != "OK"
+      RETURN cRetorno
+   ENDIF
+   IF xmlHeaderAntes <> ""
+      nPosIni := At( XMLAssinado, [?>] )
+      IF nPosIni > 0
+         xmlHeaderDepois := Substr( XMLAssinado, 1, nPosIni + 1 )
+         IF xmlHeaderAntes <> xmlHeaderDepois
+            * ? "entrou stuff"
+            * XMLAssinado := StuffString( XMLAssinado, 1, Length( xmlHeaderDepois ), xmlHeaderAntes )
+         ENDIF
+      ELSE
+         XMLAssinado := xmlHeaderAntes + XMLAssinado
+      ENDIF
+   ENDIF
+   cTxtXml  := XmlAssinado
+   cRetorno := "OK"
+   RETURN cRetorno
+*----------------------------------------------------------------
+
+
+STATIC FUNCTION CapicomSignature( cTxtXml, cCertCn )
+   LOCAL oDOMDoc, nPosIni, nPosFim, xmldsig, dsigns, oCert, oStoreMem, oError
+   LOCAL XMLAssinado, SIGNEDKEY, DSIGKEY, SCONTAINER, SPROVIDER, ETYPE, cRetorno, nP, nResult
 
    BEGIN SEQUENCE
       oDOMDoc := Win_OleCreateObject( "MSXML2.DOMDocument.5.0" )
@@ -178,32 +207,20 @@ FUNCTION AssinaXml( cTxtXml, cCertCN )
          nP := hb_At( [<X509Certificate>], XMLAssinado, nP + 1 )
       ENDDO
       nPosFim     := nResult
-      XMLAssinado := Substr( XMLAssinado, 1, nPosIni ) + Substr( XMLAssinado, nPosFim, Len( XMLAssinado ) )
+      cTxtXml     := Substr( XMLAssinado, 1, nPosIni ) + Substr( XMLAssinado, nPosFim )
    ELSE
       cRetorno := "Assinatura Falhou."
       RETURN cRetorno
    ENDIF
-
-   IF xmlHeaderAntes <> ""
-      nPosIni := At( XMLAssinado, [?>] )
-      IF nPosIni > 0
-         xmlHeaderDepois := Substr( XMLAssinado, 1, nPosIni + 1 )
-         IF xmlHeaderAntes <> xmlHeaderDepois
-            * ? "entrou stuff"
-            * XMLAssinado := StuffString( XMLAssinado, 1, Length( xmlHeaderDepois ), xmlHeaderAntes )
-         ENDIF
-      ELSE
-         XMLAssinado := xmlHeaderAntes + XMLAssinado
-      ENDIF
-   ENDIF
-   cTxtXml  := XmlAssinado
-   cRetorno := "OK"
-   RETURN cRetorno
+   RETURN "OK"
 *----------------------------------------------------------------
 
 
-STATIC FUNCTION SignatureNode( cUri )
+STATIC FUNCTION SignatureNode( cUri, lIsLibCurl )
    LOCAL cSignatureNode := ""
+
+   lIsLibCurl := iif( lIsLibCurl == NIL, .F., lIsLibCurl )
+
    cSignatureNode += [<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">]
    cSignatureNode +=    [<SignedInfo>]
    cSignatureNode +=       [<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>]
@@ -221,6 +238,10 @@ STATIC FUNCTION SignatureNode( cUri )
    cSignatureNode +=    [<SignatureValue>]
    cSignatureNode +=    [</SignatureValue>]
    cSignatureNode +=    [<KeyInfo>]
+   IF lIsLibCurl
+      cSignatureNode += [<X509Data>]
+      cSignatureNode += [</X509Data>]
+   ENDIF
    cSignatureNode +=    [</KeyInfo>]
    cSignatureNode += [</Signature>]
    RETURN cSignatureNode
@@ -293,3 +314,4 @@ FUNCTION PegaPropriedadesCertificado()
    RETURN aRetorno
 *----------------------------------------------------------------
 */
+

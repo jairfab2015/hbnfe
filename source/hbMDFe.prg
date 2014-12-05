@@ -2,7 +2,7 @@
 #include "hbnfe.ch"
 #include "HBXML.ch"
 
-class hbMDFe
+CREATE CLASS hbMDFe
    DATA oFuncoes INIT hbNFeFuncoes()
    DATA cXML
    DATA ohbNFe
@@ -95,95 +95,95 @@ class hbMDFe
    Method MDFeEncerra()
    Method MDFeImprimeFastReport()
 
-EndCLass
+   END CLASS
 
 
-Method LinkWebService( cServ ) Class hbMDFe
-/*
+METHOD LinkWebService( cServ ) Class hbMDFe
+   /*
    Links dos webservices do MDFe
    Mauricio Cruz - 22/05/2013
-*/
-LOCAL aWEB:={}
-LOCAL nSCAN
-LOCAL cRET:=''
-//          Serviço              Verc  Produção                                                                    Homologação
-AADD(aWEB,{'MDFeRecepcao'      ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            })
-AADD(aWEB,{'MDFeRetRecepcao'   ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx'      ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx'      })
-AADD(aWEB,{'MDFeRecepcaoEvento','1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx','https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx'})
-AADD(aWEB,{'MDFeConsulta'      ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx'            ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx'            })
-AADD(aWEB,{'MDFeStatusServico' ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeStatusServico/MDFeStatusServico.asmx'  ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeStatusServico/MDFeStatusServico.asmx'  })
+   */
+   LOCAL aWEB:={}
+   LOCAL nSCAN
+   LOCAL cRET:=''
+   //          Serviço              Verc  Produção                                                                    Homologação
+   AADD(aWEB,{'MDFeRecepcao'      ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFerecepcao/MDFeRecepcao.asmx'            })
+   AADD(aWEB,{'MDFeRetRecepcao'   ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx'      ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRetRecepcao/MDFeRetRecepcao.asmx'      })
+   AADD(aWEB,{'MDFeRecepcaoEvento','1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx','https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx'})
+   AADD(aWEB,{'MDFeConsulta'      ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx'            ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx'            })
+   AADD(aWEB,{'MDFeStatusServico' ,'1.0','https://mdfe.sefaz.rs.gov.br/ws/MDFeStatusServico/MDFeStatusServico.asmx'  ,'https://mdfe-hml.sefaz.rs.gov.br/ws/MDFeStatusServico/MDFeStatusServico.asmx'  })
 
-nSCAN:=ASCAN(aWEB,{|x| x[1]=cServ})
-IF nSCAN>0
-   cRET:=aWEB[nSCAN,IF(::ohbNFe:tpAmb='1',3,4)]
-ENDIF
-return(cRET)
+   nSCAN:=ASCAN(aWEB,{|x| x[1]=cServ})
+   IF nSCAN>0
+      cRET:=aWEB[nSCAN,IF(::ohbNFe:tpAmb='1',3,4)]
+   ENDIF
+   RETURN cRet
 
 
-Method XMLide() Class hbMDFe
-/*
+METHOD XMLide() Class hbMDFe
+   /*
    cria o grupo IDE do xml
    Mauricio Cruz - 21/05/2031
-*/
-LOCAL aRETORNO:=HASH()
-LOCAL mI // :=0
-LOCAL cXML:=''
+   */
+   LOCAL aRETORNO:=HASH()
+   LOCAL mI // :=0
+   LOCAL cXML:=''
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF ::ohbNFe=NIL
-   aRETORNO['MSG']:='Favor informar as propriedades da hbNFe'
-ENDIF
-IF ::tpEmit=NIL .OR. ::tpEmit<=0
-   aRETORNO['MSG']:='Favor informar tipo de emitente'
-ENDIF
-IF ::mod=NIL .OR. EMPTY(::mod)
-   ::mod:='58'
-ENDIF
-IF ::serie=NIL .OR. EMPTY(::serie)
-   ::serie:='0'
-ENDIF
-IF ::nMDF=NIL .OR. ::nMDF<=0
-   aRETORNO['MSG']:='Favor informar o número do manifesto'
-ENDIF
-IF ::dhEmi=NIL .OR. DAY(::dhEmi)<=0
-   aRETORNO['MSG']:='Favor informar a data de emissão'
-ENDIF
-IF ::CNPJ=NIL .OR. EMPTY(::CNPJ)
-   aRETORNO['MSG']:='Favor informar o cnpj do emitente'
-ENDIF
-IF ::modal=NIL .OR. ::modal<=0
-   aRETORNO['MSG']:='Favor informar a modalidade de transporte'
-ENDIF
-IF ::UFIni=NIL .OR. EMPTY(::UFIni)
-   aRETORNO['MSG']:='Favor informar a UF de inicio de transporte'
-ENDIF
-IF ::UFFim=NIL .OR. EMPTY(::UFFim)
-   aRETORNO['MSG']:='Favor informar a UF de final de transporte'
-ENDIF
-IF ::aMUNcarregamento=NIL .OR. LEN(::aMUNcarregamento)<=0
-   aRETORNO['MSG']:='Favor informar os municípios de carregamento'
-ENDIF
-IF ::tpEmis=NIL .OR. EMPTY(::tpEmis)
-   aRETORNO['MSG']:='Favor informar o tipo de emitente'
-ENDIF
+   IF ::ohbNFe=NIL
+      aRETORNO['MSG']:='Favor informar as propriedades da hbNFe'
+   ENDIF
+   IF ::tpEmit=NIL .OR. ::tpEmit<=0
+      aRETORNO['MSG']:='Favor informar tipo de emitente'
+   ENDIF
+   IF ::mod=NIL .OR. EMPTY(::mod)
+      ::mod:='58'
+   ENDIF
+   IF ::serie=NIL .OR. EMPTY(::serie)
+      ::serie:='0'
+   ENDIF
+   IF ::nMDF=NIL .OR. ::nMDF<=0
+      aRETORNO['MSG']:='Favor informar o número do manifesto'
+   ENDIF
+   IF ::dhEmi=NIL .OR. DAY(::dhEmi)<=0
+      aRETORNO['MSG']:='Favor informar a data de emissão'
+   ENDIF
+   IF ::CNPJ=NIL .OR. EMPTY(::CNPJ)
+      aRETORNO['MSG']:='Favor informar o cnpj do emitente'
+   ENDIF
+   IF ::modal=NIL .OR. ::modal<=0
+      aRETORNO['MSG']:='Favor informar a modalidade de transporte'
+   ENDIF
+   IF ::UFIni=NIL .OR. EMPTY(::UFIni)
+      aRETORNO['MSG']:='Favor informar a UF de inicio de transporte'
+   ENDIF
+   IF ::UFFim=NIL .OR. EMPTY(::UFFim)
+      aRETORNO['MSG']:='Favor informar a UF de final de transporte'
+   ENDIF
+   IF ::aMUNcarregamento=NIL .OR. LEN(::aMUNcarregamento)<=0
+      aRETORNO['MSG']:='Favor informar os municípios de carregamento'
+   ENDIF
+   IF ::tpEmis=NIL .OR. EMPTY(::tpEmis)
+      aRETORNO['MSG']:='Favor informar o tipo de emitente'
+   ENDIF
 
-/*
-IF ::aUFpercurso=NIL .OR. LEN(::aUFpercurso)<=0
-   aRETORNO['MSG']:='Favor informar as UFs de percurso'
-ENDIF
-*/
+   /*
+   IF ::aUFpercurso=NIL .OR. LEN(::aUFpercurso)<=0
+      aRETORNO['MSG']:='Favor informar as UFs de percurso'
+   ENDIF
+   */
 
-IF !EMPTY(aRETORNO['MSG'])
-   RETURN(aRETORNO)
-ENDIF
+   IF !EMPTY(aRETORNO['MSG'])
+      RETURN(aRETORNO)
+   ENDIF
 
-cXML:='<enviMDFe versao="1.00" xmlns="http://www.portalfiscal.inf.br/mdfe"><idLote>'+ALLTRIM(STR(::nMDF))+'</idLote><MDFe xmlns="http://www.portalfiscal.inf.br/mdfe">'
+   cXML:='<enviMDFe versao="1.00" xmlns="http://www.portalfiscal.inf.br/mdfe"><idLote>'+ALLTRIM(STR(::nMDF))+'</idLote><MDFe xmlns="http://www.portalfiscal.inf.br/mdfe">'
 
-::cMDF:=STRZERO(::nMDF,8)
+   ::cMDF:=STRZERO(::nMDF,8)
 
-::cCHAVE:=::ohbNFe:empresa_UF+;
+   ::cCHAVE:=::ohbNFe:empresa_UF+;
           ::oFuncoes:FormatDate(::dhEmi,"YYMM","")+;
           PADL(::CNPJ,14,'0')+;
           PADL(::mod,2,'0')+;
@@ -192,351 +192,345 @@ cXML:='<enviMDFe versao="1.00" xmlns="http://www.portalfiscal.inf.br/mdfe"><idLo
           ::tpEmis+;
           ::cMDF
 
-::cDV := ::oFuncoes:modulo11( ::cCHAVE, 2, 9 )
+   ::cDV := ::oFuncoes:modulo11( ::cCHAVE, 2, 9 )
 
-::cCHAVE+=::cDV
+   ::cCHAVE+=::cDV
 
-cXML+='<infMDFe versao="1.00" Id="MDFe'+::cCHAVE+'">'
+   cXML+='<infMDFe versao="1.00" Id="MDFe'+::cCHAVE+'">'
 
-cXML+='<ide>'
-cXML+=   '<cUF>'+::ohbNFe:empresa_UF+'</cUF>'
-cXML+=   '<tpAmb>'+::ohbNFe:tpAmb+'</tpAmb>'
-cXML+=   '<tpEmit>'+ALLTRIM(STR(::tpEmit))+'</tpEmit>'
-cXML+=   '<mod>'+::mod+'</mod>'
-cXML+=   '<serie>'+::serie+'</serie>'
-cXML+=   '<nMDF>'+ALLTRIM(STR(::nMDF))+'</nMDF>'
-cXML+=   '<cMDF>'+::cMDF+'</cMDF>'
-cXML+=   '<cDV>'+::cDV+'</cDV>'
-cXML+=   '<modal>'+ALLTRIM(STR(::modal))+'</modal>'
-cXML+=   '<dhEmi>'+::oFuncoes:FormatDate(::dhEmi,'YYYY-MM-DD','-')+'T'+LEFT(TIME(),8)+'</dhEmi>'
-cXML+=   '<tpEmis>'+::tpEmis+'</tpEmis>'
-cXML+=   '<procEmi>0</procEmi>'
-cXML+=   '<verProc>'+::ohbNFe:versaoSistema+'</verProc>'
-cXML+=   '<UFIni>'+::UFIni+'</UFIni>'
-cXML+=   '<UFFim>'+::UFFim+'</UFFim>'
-FOR mI:=1 TO LEN(::aMUNcarregamento)
-   cXML+='<infMunCarrega>'
-   cXML+=   '<cMunCarrega>'+ALLTRIM(STR(::aMUNcarregamento[mI,1]))+'</cMunCarrega>'
-   cXML+=   '<xMunCarrega>'+ALLTRIM(::aMUNcarregamento[mI,2])+'</xMunCarrega>'
-   cXML+='</infMunCarrega>'
-NEXT
-FOR mI:=1 TO LEN(::aUFpercurso)
-   cXML+='<infPercurso>'
-   cXML+=   '<UFPer>'+::aUFpercurso[mI,1]+'</UFPer>'
-   cXML+='</infPercurso>'
-NEXT
-cXML+='</ide>'
+   cXML+='<ide>'
+   cXML+=   '<cUF>'+::ohbNFe:empresa_UF+'</cUF>'
+   cXML+=   '<tpAmb>'+::ohbNFe:tpAmb+'</tpAmb>'
+   cXML+=   '<tpEmit>'+ALLTRIM(STR(::tpEmit))+'</tpEmit>'
+   cXML+=   '<mod>'+::mod+'</mod>'
+   cXML+=   '<serie>'+::serie+'</serie>'
+   cXML+=   '<nMDF>'+ALLTRIM(STR(::nMDF))+'</nMDF>'
+   cXML+=   '<cMDF>'+::cMDF+'</cMDF>'
+   cXML+=   '<cDV>'+::cDV+'</cDV>'
+   cXML+=   '<modal>'+ALLTRIM(STR(::modal))+'</modal>'
+   cXML+=   '<dhEmi>'+::oFuncoes:FormatDate(::dhEmi,'YYYY-MM-DD','-')+'T'+LEFT(TIME(),8)+'</dhEmi>'
+   cXML+=   '<tpEmis>'+::tpEmis+'</tpEmis>'
+   cXML+=   '<procEmi>0</procEmi>'
+   cXML+=   '<verProc>'+::ohbNFe:versaoSistema+'</verProc>'
+   cXML+=   '<UFIni>'+::UFIni+'</UFIni>'
+   cXML+=   '<UFFim>'+::UFFim+'</UFFim>'
+   FOR mI:=1 TO LEN(::aMUNcarregamento)
+      cXML+='<infMunCarrega>'
+      cXML+=   '<cMunCarrega>'+ALLTRIM(STR(::aMUNcarregamento[mI,1]))+'</cMunCarrega>'
+      cXML+=   '<xMunCarrega>'+ALLTRIM(::aMUNcarregamento[mI,2])+'</xMunCarrega>'
+      cXML+='</infMunCarrega>'
+   NEXT
+   FOR mI:=1 TO LEN(::aUFpercurso)
+      cXML+='<infPercurso>'
+      cXML+=   '<UFPer>'+::aUFpercurso[mI,1]+'</UFPer>'
+      cXML+='</infPercurso>'
+   NEXT
+   cXML+='</ide>'
 
-aRETORNO['XML']:=::ohbNFe:pastaEnvRes+'\MDFe_'+::cCHAVE+'.xml'
-IF FILE(aRETORNO['XML'])
-   FERASE(aRETORNO['XML'])
-ENDIF
-IF hb_MemoWrit( aRETORNO[ 'XML' ], cXML )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='Grupo IDE criado com sucesso.'
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para Grupo IDE'
-ENDIF
+   aRETORNO['XML']:=::ohbNFe:pastaEnvRes+'\MDFe_'+::cCHAVE+'.xml'
+   IF FILE(aRETORNO['XML'])
+      FERASE(aRETORNO['XML'])
+   ENDIF
+   IF hb_MemoWrit( aRETORNO[ 'XML' ], cXML )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='Grupo IDE criado com sucesso.'
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para Grupo IDE'
+   ENDIF
 
-Return(aRETORNO)
+   RETURN aRETORNO
 
 
 
-Method XMLemit() Class hbMDFe
-/*
+METHOD XMLemit() Class hbMDFe
+   /*
    cria o grupo emit do XML da MDF
    Mauricio Cruz - 21/05/2013
-*/
-LOCAL aRETORNO:=HASH()
-LOCAL cXML:=''
+   */
+   LOCAL aRETORNO:=HASH()
+   LOCAL cXML:=''
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF ::cXML=NIL .OR. !FILE(::cXML)
-   aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
-ENDIF
-IF ::CNPJ=NIL .OR. EMPTY(::CNPJ)
-   aRETORNO['MSG']:='Favor informar o cnpj do emitente'
-ENDIF
-IF ::emit_IE=NIL .OR. EMPTY(::emit_IE)
-   aRETORNO['MSG']:='Favor informar a inscrição estadual do emitente'
-ENDIF
-IF ::emit_xNome=NIL .OR. EMPTY(::emit_xNome)
-   aRETORNO['MSG']:='Favor informar o nome do emitente'
-ENDIF
-IF ::emit_xLgr=NIL .OR. EMPTY(::emit_xLgr)
-   aRETORNO['MSG']:='Favor informar o endereço do emitente'
-ENDIF
-IF ::emit_nro=NIL .OR. EMPTY(::emit_nro)
-   aRETORNO['MSG']:='Favor informar o número do endereço do emitente'
-ENDIF
-IF ::emit_xBairro=NIL .OR. EMPTY(::emit_xBairro)
-   aRETORNO['MSG']:='Favor informar o bairro do emitente'
-ENDIF
-IF ::emit_cMun=NIL .OR. EMPTY(::emit_cMun)
-   aRETORNO['MSG']:='Favor informar o código do município do emitente'
-ENDIF
-IF ::emit_xMun=NIL .OR. EMPTY(::emit_xMun)
-   aRETORNO['MSG']:='Favor informar o município do emitente'
-ENDIF
-IF ::emit_CEP=NIL .OR. EMPTY(::emit_CEP)
-   aRETORNO['MSG']:='Favor informar o CEP do emitente'
-ENDIF
-IF ::emit_UF=NIL .OR. EMPTY(::emit_UF)
-   aRETORNO['MSG']:='Favor informar a UF do emitente'
-ENDIF
-
-
-IF !EMPTY(aRETORNO['MSG'])
-   RETURN(aRETORNO)
-ENDIF
-
-cXML:=MEMOREAD(::cXML)
-FERASE(::cXML)
-
-
-cXML+='<emit>'
-cXML+=   '<CNPJ>'+PADL(::CNPJ,14,'0')+'</CNPJ>'
-cXML+=   '<IE>'+ALLTRIM(::emit_IE)+'</IE>'
-cXML+=   '<xNome>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xNome))+'</xNome>'
-TRY
-   IF !EMPTY(::emit_xFant)
-      cXML+='<xFant>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xFant))+'</xFant>'
+   IF ::cXML=NIL .OR. !FILE(::cXML)
+      aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
    ENDIF
-CATCH
-END
-cXML+=   '<enderEmit>'
-cXML+=      '<xLgr>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xLgr))+'</xLgr>'
-cXML+=      '<nro>'+ALLTRIM(::emit_nro)+'</nro>'
-TRY
-   IF !EMPTY(::emit_xCpl)
-      cXML+='<xCpl>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xCpl))+'</xCpl>'
+   IF ::CNPJ=NIL .OR. EMPTY(::CNPJ)
+      aRETORNO['MSG']:='Favor informar o cnpj do emitente'
    ENDIF
-CATCH
-END
-cXML+=      '<xBairro>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xBairro))+'</xBairro>'
-cXML+=      '<cMun>'+ALLTRIM(::emit_cMun)+'</cMun>'
-cXML+=      '<xMun>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xMun))+'</xMun>'
-TRY
-   IF !EMPTY(::emit_CEP)
-      cXML+='<CEP>'+ALLTRIM(::emit_CEP)+'</CEP>'
+   IF ::emit_IE=NIL .OR. EMPTY(::emit_IE)
+      aRETORNO['MSG']:='Favor informar a inscrição estadual do emitente'
    ENDIF
-CATCH
-END
-cXML+=      '<UF>'+ALLTRIM(::emit_UF)+'</UF>'
-TRY
-   IF !EMPTY(::emit_fone)
-      cXML+='<fone>'+ALLTRIM(::emit_fone)+'</fone>'
+   IF ::emit_xNome=NIL .OR. EMPTY(::emit_xNome)
+      aRETORNO['MSG']:='Favor informar o nome do emitente'
    ENDIF
-CATCH
-END
-TRY
-   IF !EMPTY(::emit_email)
-      cXML+='<email>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_email))+'</email>'
+   IF ::emit_xLgr=NIL .OR. EMPTY(::emit_xLgr)
+      aRETORNO['MSG']:='Favor informar o endereço do emitente'
    ENDIF
-CATCH
-END
-cXML+=   '</enderEmit>'
-cXML+='</emit>'
+   IF ::emit_nro=NIL .OR. EMPTY(::emit_nro)
+      aRETORNO['MSG']:='Favor informar o número do endereço do emitente'
+   ENDIF
+   IF ::emit_xBairro=NIL .OR. EMPTY(::emit_xBairro)
+      aRETORNO['MSG']:='Favor informar o bairro do emitente'
+   ENDIF
+   IF ::emit_cMun=NIL .OR. EMPTY(::emit_cMun)
+      aRETORNO['MSG']:='Favor informar o código do município do emitente'
+   ENDIF
+   IF ::emit_xMun=NIL .OR. EMPTY(::emit_xMun)
+      aRETORNO['MSG']:='Favor informar o município do emitente'
+   ENDIF
+   IF ::emit_CEP=NIL .OR. EMPTY(::emit_CEP)
+      aRETORNO['MSG']:='Favor informar o CEP do emitente'
+   ENDIF
+   IF ::emit_UF=NIL .OR. EMPTY(::emit_UF)
+      aRETORNO['MSG']:='Favor informar a UF do emitente'
+   ENDIF
 
-aRETORNO['XML']:=::cXML
+   IF !EMPTY(aRETORNO['MSG'])
+      RETURN(aRETORNO)
+   ENDIF
 
-IF hb_MemoWrit( ::cXML, cXML )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='Grupo EMIT criado com sucesso.'
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo EMIT'
-ENDIF
+   cXML:=MEMOREAD(::cXML)
+   FERASE(::cXML)
 
-Return(aRETORNO)
+   cXML+='<emit>'
+   cXML+=   '<CNPJ>'+PADL(::CNPJ,14,'0')+'</CNPJ>'
+   cXML+=   '<IE>'+ALLTRIM(::emit_IE)+'</IE>'
+   cXML+=   '<xNome>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xNome))+'</xNome>'
+   TRY
+      IF !EMPTY(::emit_xFant)
+         cXML+='<xFant>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xFant))+'</xFant>'
+      ENDIF
+   CATCH
+   END
+   cXML+=   '<enderEmit>'
+   cXML+=      '<xLgr>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xLgr))+'</xLgr>'
+   cXML+=      '<nro>'+ALLTRIM(::emit_nro)+'</nro>'
+   TRY
+      IF !EMPTY(::emit_xCpl)
+         cXML+='<xCpl>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xCpl))+'</xCpl>'
+      ENDIF
+   CATCH
+   END
+   cXML+=      '<xBairro>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xBairro))+'</xBairro>'
+   cXML+=      '<cMun>'+ALLTRIM(::emit_cMun)+'</cMun>'
+   cXML+=      '<xMun>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_xMun))+'</xMun>'
+   TRY
+      IF !EMPTY(::emit_CEP)
+         cXML+='<CEP>'+ALLTRIM(::emit_CEP)+'</CEP>'
+      ENDIF
+   CATCH
+   END
+   cXML+=      '<UF>'+ALLTRIM(::emit_UF)+'</UF>'
+   TRY
+      IF !EMPTY(::emit_fone)
+         cXML+='<fone>'+ALLTRIM(::emit_fone)+'</fone>'
+      ENDIF
+   CATCH
+   END
+   TRY
+      IF !EMPTY(::emit_email)
+         cXML+='<email>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::emit_email))+'</email>'
+      ENDIF
+   CATCH
+   END
+   cXML+=   '</enderEmit>'
+   cXML+='</emit>'
+
+   aRETORNO['XML']:=::cXML
+
+   IF hb_MemoWrit( ::cXML, cXML )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='Grupo EMIT criado com sucesso.'
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo EMIT'
+   ENDIF
+
+   RETURN aRETORNO
 
 
-
-
-Method XMLmodalRodoviario() Class hbMDFe
-/*
+METHOD XMLmodalRodoviario() Class hbMDFe
+   /*
    Modal Rodoviario
    Mauricio Cruz - 22/05/2013
-*/
-LOCAL aRETORNO:=HASH()
-LOCAL cXML:='', cXMLmod:=''
-LOCAL mI
+   */
+   LOCAL aRETORNO:=HASH()
+   LOCAL cXML:='', cXMLmod:=''
+   LOCAL mI
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF ::cXML=NIL .OR. !FILE(::cXML)
-   aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
-ENDIF
-IF ::modRod_placa=NIL .OR. EMPTY(::modRod_placa)
-   aRETORNO['MSG']:='Favor informar a placa do veículo principal.'
-ENDIF
-IF ::modRod_tara=NIL .OR. ::modRod_tara<0
-   aRETORNO['MSG']:='Favor informar a tara do veículo principal.'
-ENDIF
-IF ::modRod_condutor=NIL .OR. LEN(::modRod_condutor)<=0
-   aRETORNO['MSG']:='Favor informar o(s) condutor(es).'
-ENDIF
-IF LEN(::modRod_condutor)>10
-   aRETORNO['MSG']:='Informado mais de 10 condutores.'
-ENDIF
-IF ::modRod_reboque<>NIL .AND. LEN(::modRod_reboque)>3
-   aRETORNO['MSG']:='Informado mais de 3 veículos reboque.'
-ENDIF
-
-IF !EMPTY(aRETORNO['MSG'])
-   RETURN(aRETORNO)
-ENDIF
-
-cXML:=MEMOREAD(::cXML)
-FERASE(::cXML)
-
-cXML+='<infModal versaoModal="1.00">'
-
-//cXMLmod+='<rodo  xmlns="http://www.portalfiscal.inf.br/mdfe">'
-TRY
-   IF !EMPTY(::modRod_RNTRC)
-      cXMLmod+='<RNTRC>'+ALLTRIM(STR(::modRod_RNTRC))+'</RNTRC>'
+   IF ::cXML=NIL .OR. !FILE(::cXML)
+      aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
    ENDIF
-CATCH
-END
-TRY
-   IF !EMPTY(::modRod_CIOT)
-      cXMLmod+='<CIOT>'+ALLTRIM(STR(::modRod_CIOT))+'</CIOT>'
+   IF ::modRod_placa=NIL .OR. EMPTY(::modRod_placa)
+      aRETORNO['MSG']:='Favor informar a placa do veículo principal.'
    ENDIF
-CATCH
-END
-//cXMLmod+=      '<veicPrincipal>'   QQQ
-cXMLmod+=      '<veicTracao>'
-TRY
-   IF !EMPTY(::modRod_cInt)
-      cXMLmod+=   '<cInt>'+ALLTRIM(::modRod_cInt)+'</cInt>'
+   IF ::modRod_tara=NIL .OR. ::modRod_tara<0
+      aRETORNO['MSG']:='Favor informar a tara do veículo principal.'
    ENDIF
-CATCH
-END
-cXMLmod+=         '<placa>'+ALLTRIM(::modRod_placa)+'</placa>'
-cXMLmod+=         '<tara>'+ALLTRIM(STRTRAN(STR(::modRod_tara),'.'))+'</tara>'
-TRY
-   IF ::modRod_capKG>0
-      cXMLmod+=   '<capKG>'+ALLTRIM(STRTRAN(STR(::modRod_capKG),'.'))+'</capKG>'
+   IF ::modRod_condutor=NIL .OR. LEN(::modRod_condutor)<=0
+      aRETORNO['MSG']:='Favor informar o(s) condutor(es).'
    ENDIF
-CATCH
-END
-TRY
-   IF ::modRod_capM3>0
-      cXMLmod+=   '<capM3>'+ALLTRIM(STRTRAN(STR(::modRod_capM3),'.'))+'</capM3>'
+   IF LEN(::modRod_condutor)>10
+      aRETORNO['MSG']:='Informado mais de 10 condutores.'
    ENDIF
-CATCH
-END
-cXMLmod+=         '<prop>'
-cXMLmod+=            '<RNTRC>'+ALLTRIM(::modRod_RNTRC_prop)+'</RNTRC>'
-cXMLmod+=         '</prop>'
-FOR mI:=1 TO LEN(::modRod_condutor)
-   cXMLmod+=      '<condutor>'
-   cXMLmod+=         '<xNome>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::modRod_condutor[mI,1]))+'</xNome>'
-   cXMLmod+=         '<CPF>'+ALLTRIM(::modRod_condutor[mI,2])+'</CPF>'
-   cXMLmod+=      '</condutor>'
-NEXT
-//cXMLmod+=      '</veicPrincipal>' QQQ
-cXMLmod+=      '</veicTracao>'
-TRY
-   FOR mI:=1 TO LEN(::modRod_reboque)
-      cXMLmod+='<veicReboque>'
-      IF !EMPTY(::modRod_reboque[mI,1])
-         cXMLmod+='<cInt>'+ALLTRIM(::modRod_reboque[mI,1])+'</cInt>'
+   IF ::modRod_reboque<>NIL .AND. LEN(::modRod_reboque)>3
+      aRETORNO['MSG']:='Informado mais de 3 veículos reboque.'
+   ENDIF
+
+   IF !EMPTY(aRETORNO['MSG'])
+      RETURN(aRETORNO)
+   ENDIF
+
+    cXML:=MEMOREAD(::cXML)
+    FERASE(::cXML)
+
+   cXML+='<infModal versaoModal="1.00">'
+
+   //cXMLmod+='<rodo  xmlns="http://www.portalfiscal.inf.br/mdfe">'
+   TRY
+      IF !EMPTY(::modRod_RNTRC)
+         cXMLmod+='<RNTRC>'+ALLTRIM(STR(::modRod_RNTRC))+'</RNTRC>'
       ENDIF
-      cXMLmod+=   '<placa>'+ALLTRIM(::modRod_reboque[mI,2])+'</placa>'
-      cXMLmod+=   '<tara>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,3]),'.'))+'</tara>'
-      IF ::modRod_reboque[mI,4]>0
-         cXMLmod+='<capKG>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,4]),'.'))+'</capKG>'
+   CATCH
+   END
+   TRY
+      IF !EMPTY(::modRod_CIOT)
+         cXMLmod+='<CIOT>'+ALLTRIM(STR(::modRod_CIOT))+'</CIOT>'
       ENDIF
-      IF ::modRod_reboque[mI,5]>0
-         cXMLmod+='<capM3>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,5]),'.'))+'</capM3>'
+   CATCH
+   END
+   //cXMLmod+=      '<veicPrincipal>'   QQQ
+   cXMLmod+=      '<veicTracao>'
+   TRY
+      IF !EMPTY(::modRod_cInt)
+         cXMLmod+=   '<cInt>'+ALLTRIM(::modRod_cInt)+'</cInt>'
       ENDIF
-      IF !EMPTY(::modRod_reboque[mI,6])
-         cXMLmod+='<prop>'
-         cXMLmod+=   '<RNTRC>'+ALLTRIM(::modRod_reboque[mI,6])+'</RNTRC>'
-         cXMLmod+='</prop>'
+   CATCH
+   END
+   cXMLmod+=         '<placa>'+ALLTRIM(::modRod_placa)+'</placa>'
+   cXMLmod+=         '<tara>'+ALLTRIM(STRTRAN(STR(::modRod_tara),'.'))+'</tara>'
+   TRY
+      IF ::modRod_capKG>0
+         cXMLmod+=   '<capKG>'+ALLTRIM(STRTRAN(STR(::modRod_capKG),'.'))+'</capKG>'
       ENDIF
-      cXMLmod+='</veicReboque>'
+   CATCH
+   END
+   TRY
+      IF ::modRod_capM3>0
+         cXMLmod+=   '<capM3>'+ALLTRIM(STRTRAN(STR(::modRod_capM3),'.'))+'</capM3>'
+      ENDIF
+   CATCH
+   END
+   cXMLmod+=         '<prop>'
+   cXMLmod+=            '<RNTRC>'+ALLTRIM(::modRod_RNTRC_prop)+'</RNTRC>'
+   cXMLmod+=         '</prop>'
+   FOR mI:=1 TO LEN(::modRod_condutor)
+      cXMLmod+=      '<condutor>'
+      cXMLmod+=         '<xNome>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::modRod_condutor[mI,1]))+'</xNome>'
+      cXMLmod+=         '<CPF>'+ALLTRIM(::modRod_condutor[mI,2])+'</CPF>'
+      cXMLmod+=      '</condutor>'
    NEXT
-CATCH
-END
-TRY
-   FOR mI:=1 TO LEN(::modRod_pedagio)
-      IF EMPTY(::modRod_pedagio[mI,1]) .OR. EMPTY(::modRod_pedagio[mI,3])
-         ::modRod_pedagio:={}
-      ENDIF
-   NEXT
-   IF LEN(::modRod_pedagio)>0
-      cXMLmod+=   '<valePed>'
-      FOR mI:=1 TO LEN(::modRod_pedagio)
-         cXMLmod+=   '<disp>'
-         cXMLmod+=      '<CNPJForn>'+ALLTRIM(::modRod_pedagio[mI,1])+'</CNPJForn>'
-         IF !EMPTY(::modRod_pedagio[mI,2])
-            cXMLmod+=   '<CNPJPg>'+ALLTRIM(::modRod_pedagio[mI,2])+'</CNPJPg>'
+   //cXMLmod+=      '</veicPrincipal>' QQQ
+   cXMLmod+=      '</veicTracao>'
+   TRY
+      FOR mI:=1 TO LEN(::modRod_reboque)
+         cXMLmod+='<veicReboque>'
+         IF !EMPTY(::modRod_reboque[mI,1])
+            cXMLmod+='<cInt>'+ALLTRIM(::modRod_reboque[mI,1])+'</cInt>'
          ENDIF
-         cXMLmod+=      '<nCompra>'+ALLTRIM(::modRod_pedagio[mI,3])+'</nCompra>'
-         cXMLmod+=   '</disp>'
+         cXMLmod+=   '<placa>'+ALLTRIM(::modRod_reboque[mI,2])+'</placa>'
+         cXMLmod+=   '<tara>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,3]),'.'))+'</tara>'
+         IF ::modRod_reboque[mI,4]>0
+            cXMLmod+='<capKG>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,4]),'.'))+'</capKG>'
+         ENDIF
+         IF ::modRod_reboque[mI,5]>0
+            cXMLmod+='<capM3>'+ALLTRIM(STRTRAN(STR(::modRod_reboque[mI,5]),'.'))+'</capM3>'
+         ENDIF
+         IF !EMPTY(::modRod_reboque[mI,6])
+            cXMLmod+='<prop>'
+            cXMLmod+=   '<RNTRC>'+ALLTRIM(::modRod_reboque[mI,6])+'</RNTRC>'
+            cXMLmod+='</prop>'
+         ENDIF
+         cXMLmod+='</veicReboque>'
       NEXT
-      cXMLmod+=   '</valePed>'
+   CATCH
+   END
+   TRY
+      FOR mI:=1 TO LEN(::modRod_pedagio)
+         IF EMPTY(::modRod_pedagio[mI,1]) .OR. EMPTY(::modRod_pedagio[mI,3])
+            ::modRod_pedagio:={}
+         ENDIF
+      NEXT
+      IF LEN(::modRod_pedagio)>0
+         cXMLmod+=   '<valePed>'
+         FOR mI:=1 TO LEN(::modRod_pedagio)
+            cXMLmod+=   '<disp>'
+            cXMLmod+=      '<CNPJForn>'+ALLTRIM(::modRod_pedagio[mI,1])+'</CNPJForn>'
+            IF !EMPTY(::modRod_pedagio[mI,2])
+               cXMLmod+=   '<CNPJPg>'+ALLTRIM(::modRod_pedagio[mI,2])+'</CNPJPg>'
+            ENDIF
+            cXMLmod+=      '<nCompra>'+ALLTRIM(::modRod_pedagio[mI,3])+'</nCompra>'
+            cXMLmod+=   '</disp>'
+         NEXT
+         cXMLmod+=   '</valePed>'
+      ENDIF
+   CATCH
+   END
+   cXMLmod+='</rodo>'
+   // QQQ
+
+   aRETORNO:=::Valida_XML('<rodo xmlns="http://www.portalfiscal.inf.br/mdfe">'+cXMLmod)
+   IF !aRETORNO['STATUS']
+      RETURN(aRETORNO)
    ENDIF
-CATCH
-END
-cXMLmod+='</rodo>'
-// QQQ
 
-aRETORNO:=::Valida_XML('<rodo xmlns="http://www.portalfiscal.inf.br/mdfe">'+cXMLmod)
-IF !aRETORNO['STATUS']
-   RETURN(aRETORNO)
-ENDIF
+   cXML+='<rodo>'+cXMLmod
+   cXML+='</infModal>'
 
+   aRETORNO['XML']:=::cXML
 
-cXML+='<rodo>'+cXMLmod
-cXML+='</infModal>'
-
-aRETORNO['XML']:=::cXML
-
-IF hb_MemoWrit( ::cXML, cXML )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='Grupo Modal Ferroviário criado com sucesso.'
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo Modal Ferroviário'
-ENDIF
-
-Return(aRETORNO)
+   IF hb_MemoWrit( ::cXML, cXML )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='Grupo Modal Ferroviário criado com sucesso.'
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo Modal Ferroviário'
+   ENDIF
+   RETURN aRETORNO
 
 
-Method XMLDocumentos() Class hbMDFe
-/*
+METHOD XMLDocumentos() Class hbMDFe
+   /*
    Documentos vinculados
    Mauricio Cruz - 22/05/2013
-*/
-LOCAL aRETORNO:=HASH()
-LOCAL cXML:=''
-LOCAL mI, cI, CCI, CCCI, CCCCI
+   */
+   LOCAL aRETORNO:=HASH()
+   LOCAL cXML:=''
+   LOCAL mI, cI, CCI, CCCI, CCCCI
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
+   aRETORNO['MSG']:=''
 
-IF ::cXML=NIL .OR. !FILE(::cXML)
-   aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
-ENDIF
+   IF ::cXML=NIL .OR. !FILE(::cXML)
+      aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
+   ENDIF
 
-IF ::munDes_municipio=NIL .OR. LEN(::munDes_municipio)<=0
-   aRETORNO['MSG']:='Favor informar os municípios de descarregamento.'
-ENDIF
+   IF ::munDes_municipio=NIL .OR. LEN(::munDes_municipio)<=0
+      aRETORNO['MSG']:='Favor informar os municípios de descarregamento.'
+   ENDIF
 
-IF !EMPTY(aRETORNO['MSG'])
-   RETURN(aRETORNO)
-ENDIF
+   IF !EMPTY(aRETORNO['MSG'])
+      RETURN(aRETORNO)
+   ENDIF
 
-cXML:=MEMOREAD(::cXML)
-FERASE(::cXML)
+   cXML:=MEMOREAD(::cXML)
+   FERASE(::cXML)
 
-/*  Municipio de descarregamento (munDes_municipio): array multidimencional:
+   /*  Municipio de descarregamento (munDes_municipio): array multidimencional:
 
        1          2            3          4          5      6
 {cMunDescarga,xMunDescarga,{<infCTe>},{<infNFe>},<infCT>,<infNF> } 1 2  3     4    5    6   7         8
@@ -565,737 +559,733 @@ FERASE(::cXML)
 */
 
 
-cXML+='<infDoc>'
-FOR mI:=1 TO LEN(::munDes_municipio)
-   cXML+='<infMunDescarga>'
-   cXML+=   '<cMunDescarga>'+ALLTRIM(STR(::munDes_municipio[mI,1]))+'</cMunDescarga>'
-   cXML+=   '<xMunDescarga>'+ALLTRIM(::munDes_municipio[mI,2])+'</xMunDescarga>'
-   // CTe
-   FOR cI:=1 TO LEN(::munDes_municipio[mI,3])
-      cXML+='<infCTe>'
-      cXML+=   '<chCTe>'+ALLTRIM(::munDes_municipio[mI,3,cI,1])+'</chCTe>'
-      IF !EMPTY(::munDes_municipio[mI,3,cI,2])
-         cXML+='<SegCodBarra>'+ALLTRIM(::munDes_municipio[mI,3,cI,2])+'</SegCodBarra>'
-      ENDIF
-      TRY
-         IF LEN(::munDes_municipio[mI,3,cI,3])>0
-            cXML+='<infUnidTransp>'
-            FOR ccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3])
-               cXML+='<tpUnidTransp>'+::munDes_municipio[mI,3,cI,3,ccI,1]+'</tpUnidTransp>'
-               cXML+='<idUnidTransp>'+::munDes_municipio[mI,3,cI,3,ccI,2]+'</idUnidTransp>'
-               TRY
-                  cXML+='<lacUnidTransp>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,3])
-                     cXML+='<nLacre>'+::munDes_municipio[mI,3,cI,3,ccI,3,cccI,1]+'</nLacre>'
-                  NEXT
-                  cXML+='</lacUnidTransp>'
-               CATCH
-               END
-               TRY
-                  cXML+='<infUnidCarga>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,4])
-                     cXML+='<tpUnidCarga>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,1]+'</tpUnidCarga>'
-                     cXML+='<idUnidCarga>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,2]+'</idUnidCarga>'
-                     TRY
-                        cXML+='<lacUnidCarga>'
-                        FOR ccccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,4,cccI,3])
-                           cXML+='<nLacre>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,3,cccI,1]+'</nLacre>'
-                        NEXT
-                        cXML+='</lacUnidCarga>'
-                     CATCH
-                     END
-                  NEXT
+   cXML+='<infDoc>'
+   FOR mI:=1 TO LEN(::munDes_municipio)
+      cXML+='<infMunDescarga>'
+      cXML+=   '<cMunDescarga>'+ALLTRIM(STR(::munDes_municipio[mI,1]))+'</cMunDescarga>'
+      cXML+=   '<xMunDescarga>'+ALLTRIM(::munDes_municipio[mI,2])+'</xMunDescarga>'
+      // CTe
+      FOR cI:=1 TO LEN(::munDes_municipio[mI,3])
+         cXML+='<infCTe>'
+         cXML+=   '<chCTe>'+ALLTRIM(::munDes_municipio[mI,3,cI,1])+'</chCTe>'
+         IF !EMPTY(::munDes_municipio[mI,3,cI,2])
+            cXML+='<SegCodBarra>'+ALLTRIM(::munDes_municipio[mI,3,cI,2])+'</SegCodBarra>'
+         ENDIF
+         TRY
+            IF LEN(::munDes_municipio[mI,3,cI,3])>0
+               cXML+='<infUnidTransp>'
+               FOR ccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3])
+                  cXML+='<tpUnidTransp>'+::munDes_municipio[mI,3,cI,3,ccI,1]+'</tpUnidTransp>'
+                  cXML+='<idUnidTransp>'+::munDes_municipio[mI,3,cI,3,ccI,2]+'</idUnidTransp>'
                   TRY
-                     cXML+='<qtdRat>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,4]+'</qtdRat>'
+                     cXML+='<lacUnidTransp>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,3])
+                        cXML+='<nLacre>'+::munDes_municipio[mI,3,cI,3,ccI,3,cccI,1]+'</nLacre>'
+                     NEXT
+                     cXML+='</lacUnidTransp>'
                   CATCH
                   END
-                  cXML+='</infUnidCarga>'
-               CATCH
-               END
-               TRY
-                  cXML+='<qtdRat>'+::munDes_municipio[mI,3,cI,3,ccI,5]+'</qtdRat>'
-               CATCH
-               END
-            NEXT
-            cXML+='</infUnidTransp>'
-         ENDIF
-      CATCH
-      END
-      cXML+='</infCTe>'
-      ::qCTe++
-   NEXT
-   //CT
-   FOR cI:=1 TO LEN(::munDes_municipio[mI,5])
-      cXML+='<infCT>'
-      cXML+=   '<nCT>'+ALLTRIM(STR(::munDes_municipio[mI,5,cI,1]))+'</nCT>'
-      cXML+=   '<serie>'+ALLTRIM(::munDes_municipio[mI,5,cI,2])+'</serie>'
-      IF !EMPTY(::munDes_municipio[mI,5,cI,3])
-         cXML+='<subser>'+ALLTRIM(::munDes_municipio[mI,5,cI,3])+'</subser>'
-      ENDIF
-      cXML+=   '<dEmi>'+ALLTRIM( ::oFuncoes:FormatDate(::munDes_municipio[mI,5,cI,4],'YYYY-MM-DD','-'))+'</dEmi>'
-      cXML+=   '<vCarga>'+ALLTRIM(STR(::munDes_municipio[mI,5,cI,5]))+'</vCarga>'
-      TRY
-         IF LEN(::munDes_municipio[mI,5,cI,6])>0
-            cXML+='<infUnidTransp>'
-            FOR ccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6])
-               cXML+='<tpUnidTransp>'+::munDes_municipio[mI,5,cI,6,ccI,1]+'</tpUnidTransp>'
-               cXML+='<idUnidTransp>'+::munDes_municipio[mI,5,cI,6,ccI,2]+'</idUnidTransp>'
-               TRY
-                  cXML+='<lacUnidTransp>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,3])
-                     cXML+='<nLacre>'+::munDes_municipio[mI,5,cI,6,ccI,3,cccI,1]+'</nLacre>'
-                  NEXT
-                  cXML+='</lacUnidTransp>'
-               CATCH
-               END
-               TRY
-                  cXML+='<infUnidCarga>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,4])
-                     cXML+='<tpUnidCarga>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,1]+'</tpUnidCarga>'
-                     cXML+='<idUnidCarga>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,2]+'</idUnidCarga>'
+                  TRY
+                     cXML+='<infUnidCarga>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,4])
+                        cXML+='<tpUnidCarga>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,1]+'</tpUnidCarga>'
+                        cXML+='<idUnidCarga>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,2]+'</idUnidCarga>'
+                        TRY
+                           cXML+='<lacUnidCarga>'
+                           FOR ccccI:=1 TO LEN(::munDes_municipio[mI,3,cI,3,ccI,4,cccI,3])
+                              cXML+='<nLacre>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,3,cccI,1]+'</nLacre>'
+                           NEXT
+                           cXML+='</lacUnidCarga>'
+                        CATCH
+                        END
+                     NEXT
                      TRY
-                        cXML+='<lacUnidCarga>'
-                        FOR ccccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,4,cccI,3])
-                           cXML+='<nLacre>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,3,cccI,1]+'</nLacre>'
-                        NEXT
-                        cXML+='</lacUnidCarga>'
+                        cXML+='<qtdRat>'+::munDes_municipio[mI,3,cI,3,ccI,4,cccI,4]+'</qtdRat>'
                      CATCH
                      END
-                  NEXT
-                  TRY
-                     cXML+='<qtdRat>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,4]+'</qtdRat>'
+                     cXML+='</infUnidCarga>'
                   CATCH
                   END
-                  cXML+='</infUnidCarga>'
-               CATCH
-               END
-               TRY
-                  cXML+='<qtdRat>'+::munDes_municipio[mI,5,cI,6,ccI,5]+'</qtdRat>'
-               CATCH
-               END
-            NEXT
-            cXML+='</infUnidTransp>'
+                  TRY
+                     cXML+='<qtdRat>'+::munDes_municipio[mI,3,cI,3,ccI,5]+'</qtdRat>'
+                  CATCH
+                  END
+               NEXT
+               cXML+='</infUnidTransp>'
+            ENDIF
+         CATCH
+         END
+         cXML+='</infCTe>'
+         ::qCTe++
+      NEXT
+      //CT
+      FOR cI:=1 TO LEN(::munDes_municipio[mI,5])
+         cXML+='<infCT>'
+         cXML+=   '<nCT>'+ALLTRIM(STR(::munDes_municipio[mI,5,cI,1]))+'</nCT>'
+         cXML+=   '<serie>'+ALLTRIM(::munDes_municipio[mI,5,cI,2])+'</serie>'
+         IF !EMPTY(::munDes_municipio[mI,5,cI,3])
+            cXML+='<subser>'+ALLTRIM(::munDes_municipio[mI,5,cI,3])+'</subser>'
          ENDIF
-      CATCH
-      END
-      cXML+='</infCT>'
-      ::qCT++
-   NEXT
-   //NFe
-   FOR cI:=1 TO LEN(::munDes_municipio[mI,4])
-      cXML+='<infNFe>'
-      cXML+=   '<chNFe>'+ALLTRIM(::munDes_municipio[mI,4,cI,1])+'</chNFe>'
-      IF !EMPTY(::munDes_municipio[mI,4,cI,2])
-         cXML+='<SegCodBarra>'+ALLTRIM(::munDes_municipio[mI,4,cI,2])+'</SegCodBarra>'
-      ENDIF
-      TRY
-         IF LEN(::munDes_municipio[mI,4,cI,3])>0
-            cXML+='<infUnidTransp>'
-            FOR ccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3])
-               cXML+='<tpUnidTransp>'+::munDes_municipio[mI,4,cI,3,ccI,1]+'</tpUnidTransp>'
-               cXML+='<idUnidTransp>'+::munDes_municipio[mI,4,cI,3,ccI,2]+'</idUnidTransp>'
-               TRY
-                  cXML+='<lacUnidTransp>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,3])
-                     cXML+='<nLacre>'+::munDes_municipio[mI,4,cI,3,ccI,3,cccI,1]+'</nLacre>'
-                  NEXT
-                  cXML+='</lacUnidTransp>'
-               CATCH
-               END
-               TRY
-                  cXML+='<infUnidCarga>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,4])
-                     cXML+='<tpUnidCarga>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,1]+'</tpUnidCarga>'
-                     cXML+='<idUnidCarga>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,2]+'</idUnidCarga>'
+         cXML+=   '<dEmi>'+ALLTRIM( ::oFuncoes:FormatDate(::munDes_municipio[mI,5,cI,4],'YYYY-MM-DD','-'))+'</dEmi>'
+         cXML+=   '<vCarga>'+ALLTRIM(STR(::munDes_municipio[mI,5,cI,5]))+'</vCarga>'
+         TRY
+            IF LEN(::munDes_municipio[mI,5,cI,6])>0
+               cXML+='<infUnidTransp>'
+               FOR ccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6])
+                  cXML+='<tpUnidTransp>'+::munDes_municipio[mI,5,cI,6,ccI,1]+'</tpUnidTransp>'
+                  cXML+='<idUnidTransp>'+::munDes_municipio[mI,5,cI,6,ccI,2]+'</idUnidTransp>'
+                  TRY
+                     cXML+='<lacUnidTransp>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,3])
+                        cXML+='<nLacre>'+::munDes_municipio[mI,5,cI,6,ccI,3,cccI,1]+'</nLacre>'
+                     NEXT
+                     cXML+='</lacUnidTransp>'
+                  CATCH
+                  END
+                  TRY
+                     cXML+='<infUnidCarga>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,4])
+                        cXML+='<tpUnidCarga>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,1]+'</tpUnidCarga>'
+                        cXML+='<idUnidCarga>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,2]+'</idUnidCarga>'
+                        TRY
+                           cXML+='<lacUnidCarga>'
+                           FOR ccccI:=1 TO LEN(::munDes_municipio[mI,5,cI,6,ccI,4,cccI,3])
+                              cXML+='<nLacre>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,3,cccI,1]+'</nLacre>'
+                           NEXT
+                           cXML+='</lacUnidCarga>'
+                        CATCH
+                        END
+                     NEXT
                      TRY
-                        cXML+='<lacUnidCarga>'
-                        FOR ccccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,4,cccI,3])
-                           cXML+='<nLacre>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,3,cccI,1]+'</nLacre>'
-                        NEXT
-                        cXML+='</lacUnidCarga>'
+                        cXML+='<qtdRat>'+::munDes_municipio[mI,5,cI,6,ccI,4,cccI,4]+'</qtdRat>'
                      CATCH
                      END
-                  NEXT
-                  TRY
-                     cXML+='<qtdRat>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,4]+'</qtdRat>'
+                     cXML+='</infUnidCarga>'
                   CATCH
                   END
-                  cXML+='</infUnidCarga>'
-               CATCH
-               END
-               TRY
-                  cXML+='<qtdRat>'+::munDes_municipio[mI,4,cI,3,ccI,5]+'</qtdRat>'
-               CATCH
-               END
-            NEXT
-            cXML+='</infUnidTransp>'
+                  TRY
+                     cXML+='<qtdRat>'+::munDes_municipio[mI,5,cI,6,ccI,5]+'</qtdRat>'
+                  CATCH
+                  END
+               NEXT
+               cXML+='</infUnidTransp>'
+            ENDIF
+         CATCH
+         END
+         cXML+='</infCT>'
+         ::qCT++
+      NEXT
+      //NFe
+      FOR cI:=1 TO LEN(::munDes_municipio[mI,4])
+         cXML+='<infNFe>'
+         cXML+=   '<chNFe>'+ALLTRIM(::munDes_municipio[mI,4,cI,1])+'</chNFe>'
+         IF !EMPTY(::munDes_municipio[mI,4,cI,2])
+            cXML+='<SegCodBarra>'+ALLTRIM(::munDes_municipio[mI,4,cI,2])+'</SegCodBarra>'
          ENDIF
-      CATCH
-      END
-      cXML+='</infNFe>'
-      ::qNFe++
-   NEXT
-   //NF
-   FOR cI:=1 TO LEN(::munDes_municipio[mI,6])
-      cXML+='<infNF>'
-      cXML+=   '<CNPJ>'+ALLTRIM(::munDes_municipio[mI,6,cI,1])+'</CNPJ>'
-      cXML+=   '<UF>'+ALLTRIM(::munDes_municipio[mI,6,cI,2])+'</UF>'
-      cXML+=   '<nNF>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,3]))+'</nNF>'
-      cXML+=   '<serie>'+ALLTRIM(::munDes_municipio[mI,6,cI,4])+'</serie>'
-      cXML+=   '<dEmi>'+ALLTRIM(::oFuncoes:FormatDate(::munDes_municipio[mI,6,cI,5],'YYYY-MM-DD','-'))+'</dEmi>'
-      cXML+=   '<vNF>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,6]))+'</vNF>'
-      IF ::munDes_municipio[mI,6,cI,7]>0
-         cXML+='<PIN>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,7]))+'</PIN>'
-      ENDIF
-      TRY
-         IF LEN(::munDes_municipio[mI,6,cI,8])>0
-            cXML+='<infUnidTransp>'
-            FOR ccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8])
-               cXML+='<tpUnidTransp>'+::munDes_municipio[mI,6,cI,8,ccI,1]+'</tpUnidTransp>'
-               cXML+='<idUnidTransp>'+::munDes_municipio[mI,6,cI,8,ccI,2]+'</idUnidTransp>'
-               TRY
-                  cXML+='<lacUnidTransp>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,3])
-                     cXML+='<nLacre>'+::munDes_municipio[mI,6,cI,8,ccI,3,cccI,1]+'</nLacre>'
-                  NEXT
-                  cXML+='</lacUnidTransp>'
-               CATCH
-               END
-               TRY
-                  cXML+='<infUnidCarga>'
-                  FOR cccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,4])
-                     cXML+='<tpUnidCarga>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,1]+'</tpUnidCarga>'
-                     cXML+='<idUnidCarga>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,2]+'</idUnidCarga>'
+         TRY
+            IF LEN(::munDes_municipio[mI,4,cI,3])>0
+               cXML+='<infUnidTransp>'
+               FOR ccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3])
+                  cXML+='<tpUnidTransp>'+::munDes_municipio[mI,4,cI,3,ccI,1]+'</tpUnidTransp>'
+                  cXML+='<idUnidTransp>'+::munDes_municipio[mI,4,cI,3,ccI,2]+'</idUnidTransp>'
+                  TRY
+                     cXML+='<lacUnidTransp>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,3])
+                        cXML+='<nLacre>'+::munDes_municipio[mI,4,cI,3,ccI,3,cccI,1]+'</nLacre>'
+                     NEXT
+                     cXML+='</lacUnidTransp>'
+                  CATCH
+                  END
+                  TRY
+                     cXML+='<infUnidCarga>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,4])
+                        cXML+='<tpUnidCarga>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,1]+'</tpUnidCarga>'
+                        cXML+='<idUnidCarga>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,2]+'</idUnidCarga>'
+                        TRY
+                           cXML+='<lacUnidCarga>'
+                           FOR ccccI:=1 TO LEN(::munDes_municipio[mI,4,cI,3,ccI,4,cccI,3])
+                              cXML+='<nLacre>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,3,cccI,1]+'</nLacre>'
+                           NEXT
+                           cXML+='</lacUnidCarga>'
+                        CATCH
+                        END
+                     NEXT
                      TRY
-                        cXML+='<lacUnidCarga>'
-                        FOR ccccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,4,cccI,3])
-                           cXML+='<nLacre>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,3,cccI,1]+'</nLacre>'
-                        NEXT
-                        cXML+='</lacUnidCarga>'
+                        cXML+='<qtdRat>'+::munDes_municipio[mI,4,cI,3,ccI,4,cccI,4]+'</qtdRat>'
                      CATCH
                      END
-                  NEXT
-                  TRY
-                     cXML+='<qtdRat>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,4]+'</qtdRat>'
+                     cXML+='</infUnidCarga>'
                   CATCH
                   END
-                  cXML+='</infUnidCarga>'
-               CATCH
-               END
-               TRY
-                  cXML+='<qtdRat>'+::munDes_municipio[mI,6,cI,8,ccI,5]+'</qtdRat>'
-               CATCH
-               END
-            NEXT
-            cXML+='</infUnidTransp>'
+                  TRY
+                     cXML+='<qtdRat>'+::munDes_municipio[mI,4,cI,3,ccI,5]+'</qtdRat>'
+                  CATCH
+                  END
+               NEXT
+               cXML+='</infUnidTransp>'
+            ENDIF
+         CATCH
+         END
+         cXML+='</infNFe>'
+         ::qNFe++
+      NEXT
+      //NF
+      FOR cI:=1 TO LEN(::munDes_municipio[mI,6])
+         cXML+='<infNF>'
+         cXML+=   '<CNPJ>'+ALLTRIM(::munDes_municipio[mI,6,cI,1])+'</CNPJ>'
+         cXML+=   '<UF>'+ALLTRIM(::munDes_municipio[mI,6,cI,2])+'</UF>'
+         cXML+=   '<nNF>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,3]))+'</nNF>'
+         cXML+=   '<serie>'+ALLTRIM(::munDes_municipio[mI,6,cI,4])+'</serie>'
+         cXML+=   '<dEmi>'+ALLTRIM(::oFuncoes:FormatDate(::munDes_municipio[mI,6,cI,5],'YYYY-MM-DD','-'))+'</dEmi>'
+         cXML+=   '<vNF>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,6]))+'</vNF>'
+         IF ::munDes_municipio[mI,6,cI,7]>0
+            cXML+='<PIN>'+ALLTRIM(STR(::munDes_municipio[mI,6,cI,7]))+'</PIN>'
          ENDIF
-      CATCH
-      END
-      cXML+='</infNF>'
-      ::qNF++
+         TRY
+            IF LEN(::munDes_municipio[mI,6,cI,8])>0
+               cXML+='<infUnidTransp>'
+               FOR ccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8])
+                  cXML+='<tpUnidTransp>'+::munDes_municipio[mI,6,cI,8,ccI,1]+'</tpUnidTransp>'
+                  cXML+='<idUnidTransp>'+::munDes_municipio[mI,6,cI,8,ccI,2]+'</idUnidTransp>'
+                  TRY
+                     cXML+='<lacUnidTransp>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,3])
+                        cXML+='<nLacre>'+::munDes_municipio[mI,6,cI,8,ccI,3,cccI,1]+'</nLacre>'
+                     NEXT
+                     cXML+='</lacUnidTransp>'
+                  CATCH
+                  END
+                  TRY
+                     cXML+='<infUnidCarga>'
+                     FOR cccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,4])
+                        cXML+='<tpUnidCarga>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,1]+'</tpUnidCarga>'
+                        cXML+='<idUnidCarga>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,2]+'</idUnidCarga>'
+                        TRY
+                           cXML+='<lacUnidCarga>'
+                           FOR ccccI:=1 TO LEN(::munDes_municipio[mI,6,cI,8,ccI,4,cccI,3])
+                              cXML+='<nLacre>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,3,cccI,1]+'</nLacre>'
+                           NEXT
+                           cXML+='</lacUnidCarga>'
+                        CATCH
+                        END
+                     NEXT
+                     TRY
+                        cXML+='<qtdRat>'+::munDes_municipio[mI,6,cI,8,ccI,4,cccI,4]+'</qtdRat>'
+                     CATCH
+                     END
+                     cXML+='</infUnidCarga>'
+                  CATCH
+                  END
+                  TRY
+                     cXML+='<qtdRat>'+::munDes_municipio[mI,6,cI,8,ccI,5]+'</qtdRat>'
+                  CATCH
+                  END
+               NEXT
+               cXML+='</infUnidTransp>'
+            ENDIF
+         CATCH
+         END
+         cXML+='</infNF>'
+         ::qNF++
+      NEXT
+      cXML+='</infMunDescarga>'
    NEXT
-   cXML+='</infMunDescarga>'
-NEXT
-cXML+='</infDoc>'
+   cXML+='</infDoc>'
 
-aRETORNO['XML']:=::cXML
+   aRETORNO['XML']:=::cXML
 
-IF hb_MemoWrit( ::cXML, cXML )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='Grupo de Documentos criado com sucesso.'
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo de Documentos'
-ENDIF
-
-Return(aRETORNO)
+   IF hb_MemoWrit( ::cXML, cXML )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='Grupo de Documentos criado com sucesso.'
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo de Documentos'
+   ENDIF
+   RETURN aRetorno
 
 
-Method XMLtot() Class hbMDFe
-/*
+METHOD XMLtot() Class hbMDFe
+   /*
    Totalizadores
    Mauricio Cruz - 22/05/2013
-*/
-LOCAL aRETORNO:=HASH()
-LOCAL cXML:=''
-LOCAL mI
+   */
+   LOCAL aRETORNO:=HASH()
+   LOCAL cXML:=''
+   LOCAL mI
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF ::cXML=NIL .OR. !FILE(::cXML)
-   aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
-ENDIF
-IF ::vCarga=NIL .OR. ::vCarga<=0
-   aRETORNO['MSG']:='Favor informar o valor da carga.'
-ENDIF
-IF ::cUnid=NIL .OR. EMPTY(::cUnid)
-   aRETORNO['MSG']:='Favor informar a unidade de peso.'
-ENDIF
-IF ::qCarga=NIL .OR. ::qCarga<=0
-   aRETORNO['MSG']:='Favor informar o peso da carga.'
-ENDIF
-
-IF !EMPTY(aRETORNO['MSG'])
-   RETURN(aRETORNO)
-ENDIF
-
-cXML:=MEMOREAD(::cXML)
-FERASE(::cXML)
-
-cXML+='<tot>'
-IF ::qCTe>0
-   cXML+='<qCTe>'+ALLTRIM(STRTRAN(STR(::qCTe),'.'))+'</qCTe>'
-ENDIF
-IF ::qCT>0
-   cXML+='<qCT>'+ALLTRIM(STRTRAN(STR(::qCT),'.'))+'</qCT>'
-ENDIF
-IF ::qNFe>0
-   cXML+='<qNFe>'+ALLTRIM(STRTRAN(STR(::qNFe),'.'))+'</qNFe>'
-ENDIF
-IF ::qNF>0
-   cXML+='<qNF>'+ALLTRIM(STRTRAN(STR(::qNF),'.'))+'</qNF>'
-ENDIF
-cXML+=   '<vCarga>'+ALLTRIM(STR(::vCarga))+'</vCarga>'
-cXML+=   '<cUnid>'+ALLTRIM(::cUnid)+'</cUnid>'
-cXML+=   '<qCarga>'+ALLTRIM(STR(::qCarga),'.')+'</qCarga>'
-cXML+='</tot>'
-
-FOR mI:=1 TO LEN(::aLACRE)
-   IF !EMPTY(::aLACRE[mI])
-      cXML+='<lacres>'
-      cXML+=   '<nLacre>'+ALLTRIM(::aLACRE[mI])+'</nLacre>'
-      cXML+='</lacres>'
+   IF ::cXML=NIL .OR. !FILE(::cXML)
+      aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
    ENDIF
-NEXT
+   IF ::vCarga=NIL .OR. ::vCarga<=0
+      aRETORNO['MSG']:='Favor informar o valor da carga.'
+   ENDIF
+   IF ::cUnid=NIL .OR. EMPTY(::cUnid)
+      aRETORNO['MSG']:='Favor informar a unidade de peso.'
+   ENDIF
+   IF ::qCarga=NIL .OR. ::qCarga<=0
+      aRETORNO['MSG']:='Favor informar o peso da carga.'
+   ENDIF
 
-IF (::infAdFisco<>NIL .AND. !EMPTY(::infAdFisco)) .OR. (::infCpl<>NIL .AND. !EMPTY(::infCpl))
-   cXML+='<infAdic>'
-   TRY
-      IF !EMPTY(::infAdFisco)
-         cXML+='<infAdFisco>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::infAdFisco))+'</infAdFisco>'
+   IF !EMPTY(aRETORNO['MSG'])
+      RETURN(aRETORNO)
+   ENDIF
+
+   cXML:=MEMOREAD(::cXML)
+   FERASE(::cXML)
+
+   cXML+='<tot>'
+   IF ::qCTe>0
+      cXML+='<qCTe>'+ALLTRIM(STRTRAN(STR(::qCTe),'.'))+'</qCTe>'
+   ENDIF
+   IF ::qCT>0
+      cXML+='<qCT>'+ALLTRIM(STRTRAN(STR(::qCT),'.'))+'</qCT>'
+   ENDIF
+   IF ::qNFe>0
+      cXML+='<qNFe>'+ALLTRIM(STRTRAN(STR(::qNFe),'.'))+'</qNFe>'
+   ENDIF
+   IF ::qNF>0
+      cXML+='<qNF>'+ALLTRIM(STRTRAN(STR(::qNF),'.'))+'</qNF>'
+   ENDIF
+   cXML+=   '<vCarga>'+ALLTRIM(STR(::vCarga))+'</vCarga>'
+   cXML+=   '<cUnid>'+ALLTRIM(::cUnid)+'</cUnid>'
+   cXML+=   '<qCarga>'+ALLTRIM(STR(::qCarga),'.')+'</qCarga>'
+   cXML+='</tot>'
+
+   FOR mI:=1 TO LEN(::aLACRE)
+      IF !EMPTY(::aLACRE[mI])
+         cXML+='<lacres>'
+         cXML+=   '<nLacre>'+ALLTRIM(::aLACRE[mI])+'</nLacre>'
+         cXML+='</lacres>'
       ENDIF
-   CATCH
-   END
-   TRY
-      IF !EMPTY(::infCpl)
-         cXML+='<infCpl>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::infCpl))+'</infCpl>'
-      ENDIF
-   CATCH
-   END
-   cXML+='</infAdic>'
-ENDIF
+   NEXT
 
-cXML+='</infMDFe>'
+   IF (::infAdFisco<>NIL .AND. !EMPTY(::infAdFisco)) .OR. (::infCpl<>NIL .AND. !EMPTY(::infCpl))
+      cXML+='<infAdic>'
+      TRY
+         IF !EMPTY(::infAdFisco)
+            cXML+='<infAdFisco>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::infAdFisco))+'</infAdFisco>'
+         ENDIF
+      CATCH
+      END
+      TRY
+         IF !EMPTY(::infCpl)
+            cXML+='<infCpl>'+ALLTRIM(::oFuncoes:RemoveAcentuacao(::infCpl))+'</infCpl>'
+         ENDIF
+      CATCH
+      END
+      cXML+='</infAdic>'
+   ENDIF
 
-aRETORNO['XML']:=::cXML
+   cXML+='</infMDFe>'
 
-IF hb_MemoWrit( ::cXML, cXML )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='Grupo de totais criado com sucesso.'
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo de totais'
-ENDIF
+   aRETORNO['XML']:=::cXML
 
-Return(aRETORNO)
+   IF hb_MemoWrit( ::cXML, cXML )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='Grupo de totais criado com sucesso.'
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML para o Grupo de totais'
+   ENDIF
+
+   RETURN aRetorno
 
 
 
-Method Assina_XML() Class hbMDFe
-/*
+METHOD Assina_XML() Class hbMDFe
+   /*
    Finaliza a estrutura do arquivo XML e assina o XML
    Mauricio Cruz - 22/05/2013
-*/
-LOCAL oDOMDoc, oXmldsig, oCert, oStoreMem, dsigKey, signedKey
-LOCAL aRETORNO:=HASH()
-LOCAL cXML:='', cXMLSig
-LOCAL PosIni, PosFim, nP, nResult, oError
+   */
+   LOCAL oDOMDoc, oXmldsig, oCert, oStoreMem, dsigKey, signedKey
+   LOCAL aRETORNO:=HASH()
+   LOCAL cXML:='', cXMLSig
+   LOCAL PosIni, PosFim, nP, nResult, oError
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF ::cXML=NIL .OR. !FILE(::cXML)
-   aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
-   RETURN(aRETORNO)
-ENDIF
+   IF ::cXML=NIL .OR. !FILE(::cXML)
+      aRETORNO['MSG']:='Arquivo XML não informado ou inexistente.'
+      RETURN(aRETORNO)
+   ENDIF
 
-cXML:=MEMOREAD(::cXML)
-FERASE(::cXML)
+   cXML:=MEMOREAD(::cXML)
+   FERASE(::cXML)
 
-IF 'enviMDFe' $ cXML
-   cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
-   cXML+=   '<SignedInfo>'
-   cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
-   cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
-   cXML+=      '<Reference URI="#MDFe'+::cCHAVE+'">'
-   cXML+=         '<Transforms>'
-   cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>'
-   cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
-   cXML+=         '</Transforms>'
-   cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>'
-   cXML+=         '<DigestValue></DigestValue>'
-   cXML+=      '</Reference>'
-   cXML+=   '</SignedInfo>'
-   cXML+=   '<SignatureValue></SignatureValue>'
-   cXML+=   '<KeyInfo>'
-   cXML+=      '<X509Data>'
-   cXML+=         '<X509Certificate></X509Certificate>'
-   cXML+=      '</X509Data>'
-   cXML+=   '</KeyInfo>'
-   cXML+='</Signature>'
-   cXML+='</MDFe>'
-   cXML+='</enviMDFe>'
-ELSE
-   cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
-   cXML+=   '<SignedInfo>'
-   cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
-   cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
-   cXML+=      '<Reference URI="#ID'+::URIId+'">'
-   cXML+=         '<Transforms>'
-   cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />'
-   cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
-   cXML+=         '</Transforms>'
-   cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />'
-   cXML+=         '<DigestValue></DigestValue>'
-   cXML+=      '</Reference>'
-   cXML+=   '</SignedInfo>'
-   cXML+=   '<SignatureValue></SignatureValue>'
-   cXML+=   '<KeyInfo>'
-   cXML+=      '<X509Data>'
-   cXML+=         '<X509Certificate></X509Certificate>'
-   cXML+=      '</X509Data>'
-   cXML+=   '</KeyInfo>'
-   cXML+='</Signature>'
-   cXML+='</eventoMDFe>'
-ENDIF
+   IF 'enviMDFe' $ cXML
+      cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
+      cXML+=   '<SignedInfo>'
+      cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
+      cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
+      cXML+=      '<Reference URI="#MDFe'+::cCHAVE+'">'
+      cXML+=         '<Transforms>'
+      cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>'
+      cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
+      cXML+=         '</Transforms>'
+      cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>'
+      cXML+=         '<DigestValue></DigestValue>'
+      cXML+=      '</Reference>'
+      cXML+=   '</SignedInfo>'
+      cXML+=   '<SignatureValue></SignatureValue>'
+      cXML+=   '<KeyInfo>'
+      cXML+=      '<X509Data>'
+      cXML+=         '<X509Certificate></X509Certificate>'
+      cXML+=      '</X509Data>'
+      cXML+=   '</KeyInfo>'
+      cXML+='</Signature>'
+      cXML+='</MDFe>'
+      cXML+='</enviMDFe>'
+   ELSE
+      cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
+      cXML+=   '<SignedInfo>'
+      cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
+      cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
+      cXML+=      '<Reference URI="#ID'+::URIId+'">'
+      cXML+=         '<Transforms>'
+      cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />'
+      cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
+      cXML+=         '</Transforms>'
+      cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />'
+      cXML+=         '<DigestValue></DigestValue>'
+      cXML+=      '</Reference>'
+      cXML+=   '</SignedInfo>'
+      cXML+=   '<SignatureValue></SignatureValue>'
+      cXML+=   '<KeyInfo>'
+      cXML+=      '<X509Data>'
+      cXML+=         '<X509Certificate></X509Certificate>'
+      cXML+=      '</X509Data>'
+      cXML+=   '</KeyInfo>'
+      cXML+='</Signature>'
+      cXML+='</eventoMDFe>'
+   ENDIF
 
-// Inicializa o objeto do DOMDocument
-TRY
+   // Inicializa o objeto do DOMDocument
+   TRY
 
-   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
 
-CATCH
-   aRETORNO['MSG']:='Nao foi possível carregar '+ _MSXML2_DOMDocument
-   RETURN(aRETORNO)
-END
-oDOMDoc:async = .F.
-oDOMDoc:resolveExternals := .F.
-oDOMDoc:validateOnParse  = .T.
-oDOMDoc:preserveWhiteSpace = .T.
-
-
-// inicializa o objeto do MXDigitalSignature
-TRY
-
-   oXmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
-
-CATCH
-   aRETORNO['MSG']:='Nao foi possível carregar ' + _MSXML2_MXDigitalSignature
-   RETURN(aRETORNO)
-END
-
-// carrega o arquivo XML para o DOM
-oDOMDoc:LoadXML(cXML)
-IF oDOMDoc:parseError:errorCode<>0
-   aRETORNO['MSG']:=' Assinar: Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
-                    ' Linha: '              + STR(oDOMDoc:parseError:line)+HB_EOL()+;
-                    ' Caractere na linha: ' + STR(oDOMDoc:parseError:linepos)+HB_EOL()+;
-                    ' Causa do erro: '      + oDOMDoc:parseError:reason+HB_EOL()+;
-                    ' code: '               + STR(oDOMDoc:parseError:errorCode)
-   RETURN(aRETORNO)
-ENDIF
-
-// Localiza as assinaturas no XML
-oDOMDoc:setProperty('SelectionNamespaces',"xmlns:ds='http://www.w3.org/2000/09/xmldsig#'")
-oXmldsig:signature := oDOMDoc:selectSingleNode('.//ds:Signature')
-IF (oXmldsig:signature = nil)
-   aRETORNO['MSG'] := 'É preciso carregar o template antes de assinar.'
-   RETURN(aRETORNO)
-ENDIF
-
-// carrega o objeto do certificado digital
-oCert:=::ohbNFe:pegaObjetoCertificado(::ohbNFe:cSerialCert)
-IF oCert == Nil
-   aRETORNO['MSG']  := 'Certificado não encontrado, Favor revisar a instalação do Certificado'
-   RETURN(aRETORNO)
-ENDIF
-
-// cria o objeto de Store da capicom
-
-   oStoreMem := win_oleCreateObject('CAPICOM.Store')
-
-// Aloca o certificado na memoria
-TRY
-   oStoreMem:open(_CAPICOM_MEMORY_STORE,'Memoria',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
-CATCH oError
-   aRETORNO['MSG']:='Falha ao alocar o certificado na memoria '+HB_EOL()+ ;
-                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+ ;
-                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+ ;
-                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+ ;
-                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+ ;
-                    'Mensangem: ' + oError:Description
-   RETURN(aRETORNO)
-END
-
-// Aloca o certificado na Capicom
-TRY
-   oStoreMem:Add(oCert)
-CATCH oError
-   aRETORNO['MSG']:='Falha ao aloca o certificado na memoria da Capicom '+HB_EOL()+;
-                    'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+;
-                    'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+;
-                    'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+;
-                    'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+;
-                    'Mensangem: ' + oError:Description
-   RETURN(aRETORNO)
-END
-oXmldsig:store:=oStoreMem
-
-// Cria chave CSP
-TRY
-   dsigKey:=oXmldsig:createKeyFromCSP(oCert:PrivateKey:ProviderType, oCert:PrivateKey:ProviderName, oCert:PrivateKey:ContainerName, 0)
-CATCH
-   aRETORNO['MSG']:='Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-   RETURN(aRETORNO)
-END
-IF (dsigKey = nil)
-   aRETORNO['MSG']:='Erro ao criar a chave do CSP.'
-   RETURN(aRETORNO)
-ENDIF
-
-// Assina a chave do CSP
-TRY
-   signedKey:=oXmldsig:sign(dsigKey, 2)
-CATCH
-   aRETORNO['MSG']:='Erro ao assinar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-   RETURN(aRETORNO)
-END
-IF signedKey=NIL
-   aRETORNO['MSG']:='Assinatura Falhou.'
-   RETURN(aRetorno)
-ENDIF
-
-// Trata o formato da estrutura do XML
-cXMLSig := STRTRAN(STRTRAN(oDOMDoc:xml,CHR(10)),CHR(13))
-PosIni := AT('<SignatureValue>',cXMLSig)+len('<SignatureValue>')
-cXMLSig := SUBS(cXMLSig,1,PosIni-1)+STRTRAN( SUBS(cXMLSig,PosIni,len(cXMLSig)), ' ', '' )
-PosIni := AT('<X509Certificate>',cXMLSig)-1
-nP = AT('<X509Certificate>',cXMLSig)
-nResult := 0
-DO WHILE nP<>0
-   nResult := nP
-   nP = AT('<X509Certificate>',cXMLSig,nP+1)
-ENDDO
-PosFim := nResult
-cXMLSig := SUBS(cXMLSig,1,PosIni)+SUBS(cXMLSig,PosFim,len(cXMLSig))
-
-// valida o schema da assinatura
-aRETORNO:=::Valida_XML('<Signature '+::oFuncoes:pegaTag(cXMLSig,'Signature')+'</Signature>')
-IF !aRETORNO['STATUS']
-   RETURN(aRETORNO)
-ENDIF
-
-// valida com o schema da MDFe
-aRETORNO:=::Valida_XML(cXMLSig)
-IF !aRETORNO['STATUS']
-   RETURN(aRETORNO)
-ENDIF
-
-// grava o arquivo no disco
-aRETORNO['XML']:=::cXML
-IF hb_MemoWrit( ::cXML, cXMLSig )
-   aRETORNO['STATUS']:=.T.
-   aRETORNO['MSG']:='XML assinado e validado com sucesso em '+::cXML
-ELSE
-   aRETORNO['MSG']:='Não foi possível gravar o arquivo XML com a assinatura.'
-   RETURN(aRETORNO)
-ENDIF
-
-RETURN(aRETORNO)
-
-Method Valida_XML(cXML) Class hbMDFe
-/*
-   Valida o arquivo XML
-   Mauricio Cruz - 27/05/2013
-*/
-LOCAL oDOMDoc, oSchema, ParseError, oError
-LOCAL aRETORNO:=HASH()
-LOCAL cSchemaFilename:=''
-
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
-
-TRY
-   oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
-CATCH
-   aRETORNO['MSG']:='Não foi possível carregar o MSXML para validação do XML.'
-   RETURN(aRETORNO)
-END
-
-TRY
+   CATCH
+      aRETORNO['MSG']:='Nao foi possível carregar '+ _MSXML2_DOMDocument
+      RETURN(aRETORNO)
+   END
    oDOMDoc:async = .F.
    oDOMDoc:resolveExternals := .F.
    oDOMDoc:validateOnParse  = .T.
+   oDOMDoc:preserveWhiteSpace = .T.
+
+
+   // inicializa o objeto do MXDigitalSignature
+   TRY
+
+      oXmldsig := win_oleCreateObject( _MSXML2_MXDigitalSignature )
+
+   CATCH
+      aRETORNO['MSG']:='Nao foi possível carregar ' + _MSXML2_MXDigitalSignature
+      RETURN(aRETORNO)
+   END
+
+   // carrega o arquivo XML para o DOM
    oDOMDoc:LoadXML(cXML)
-CATCH
-   aRETORNO['MSG']:='Não foi possível carregar o arquivo XML para a validação.'
-   RETURN(aRETORNO)
-END
-IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
-                    'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_EOL()+;
-                    'Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                        +HB_EOL()+;
-                    'Causa do erro: '+oDOMDoc:parseError:reason                                   +HB_EOL()+;
-                    'Code: '+STR(oDOMDoc:parseError:errorCode)
-  RETURN(aRETORNO)
-ENDIF
-
-TRY
-   oSchema := win_OleCreateOject( _MSXML2_XMLSchemaCache )
-CATCH
-   aRETORNO['MSG']:='Não foi possível carregar o MSXML para o schema do XML.'
-   RETURN(aRETORNO)
-END
-
-IF '</enviMDFe>' $ cXML .AND. '</Signature>' $ cXML   // envio da mdf
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\enviMDFe_v1.00.xsd'
-ELSEIF '</rodo>' $ cXML  // Modal Rodoviario
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\mdfeModalRodoviario_v1.00.xsd'
-ELSEIF '</Signature>' $ cXML .AND. !'</enviMDFe>' $ cXML .AND. !'</eventoMDFe>' $ cXML // assinatura
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\xmldsig-core-schema_v1.01.xsd'
-ELSEIF '</eventoMDFe>' $ cXML  // eventos
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\eventoMDFe_v1.00.xsd'
-ELSEIF '</evCancMDFe>' $ cXML  .AND. !'</eventoMDFe>' $ cXML // cancelamento
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\evCancMDFe_v1.00.xsd'
-ELSEIF '</evEncMDFe>' $ cXML  .AND. !'</eventoMDFe>' $ cXML // encerramento
-   cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\evEncMDFe_v1.00.xsd'
-ENDIF
-
-IF !FILE(cSchemaFilename)
-  aRETORNO['MSG']:='Arquivo do schema não encontrado '+cSchemaFilename
-  RETURN(aRETORNO)
-ENDIF
-
-TRY
-  IF '</Signature>' $ cXML .AND. !'</enviMDFe>' $ cXML .AND. !'</rodo>' $ cXML .AND. !'</eventoMDFe>' $ cXML
-      oSchema:add( 'http://www.w3.org/2000/09/xmldsig#', cSchemaFilename )
-   ELSE
-      oSchema:add( 'http://www.portalfiscal.inf.br/mdfe', cSchemaFilename )
+   IF oDOMDoc:parseError:errorCode<>0
+      aRETORNO['MSG']:=' Assinar: Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+                       ' Linha: '              + STR(oDOMDoc:parseError:line)+HB_EOL()+;
+                       ' Caractere na linha: ' + STR(oDOMDoc:parseError:linepos)+HB_EOL()+;
+                       ' Causa do erro: '      + oDOMDoc:parseError:reason+HB_EOL()+;
+                       ' code: '               + STR(oDOMDoc:parseError:errorCode)
+      RETURN(aRETORNO)
    ENDIF
-CATCH oError
-   aRETORNO['MSG']:='Falha '+HB_EOL()+ ;
+
+   // Localiza as assinaturas no XML
+   oDOMDoc:setProperty('SelectionNamespaces',"xmlns:ds='http://www.w3.org/2000/09/xmldsig#'")
+   oXmldsig:signature := oDOMDoc:selectSingleNode('.//ds:Signature')
+   IF (oXmldsig:signature = nil)
+      aRETORNO['MSG'] := 'É preciso carregar o template antes de assinar.'
+      RETURN(aRETORNO)
+   ENDIF
+
+   // carrega o objeto do certificado digital
+   oCert:=::ohbNFe:pegaObjetoCertificado(::ohbNFe:cSerialCert)
+   IF oCert == Nil
+      aRETORNO['MSG']  := 'Certificado não encontrado, Favor revisar a instalação do Certificado'
+      RETURN(aRETORNO)
+   ENDIF
+
+   // cria o objeto de Store da capicom
+
+   oStoreMem := win_oleCreateObject('CAPICOM.Store')
+
+   // Aloca o certificado na memoria
+   TRY
+      oStoreMem:open(_CAPICOM_MEMORY_STORE,'Memoria',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
+   CATCH oError
+      aRETORNO['MSG']:='Falha ao alocar o certificado na memoria '+HB_EOL()+ ;
+                       'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+ ;
+                       'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+ ;
+                       'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+ ;
+                       'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+ ;
+                       'Mensangem: ' + oError:Description
+      RETURN(aRETORNO)
+   END
+
+   // Aloca o certificado na Capicom
+   TRY
+      oStoreMem:Add(oCert)
+   CATCH oError
+      aRETORNO['MSG']:='Falha ao aloca o certificado na memoria da Capicom '+HB_EOL()+;
+                       'Error: '     + Transform(oError:GenCode, nil)   + ';' +HB_EOL()+;
+                       'SubC: '      + Transform(oError:SubCode, nil)   + ';' +HB_EOL()+;
+                       'OSCode: '    + Transform(oError:OsCode,  nil)   + ';' +HB_EOL()+;
+                       'SubSystem: ' + Transform(oError:SubSystem, nil) + ';' +HB_EOL()+;
+                       'Mensangem: ' + oError:Description
+      RETURN(aRETORNO)
+   END
+   oXmldsig:store:=oStoreMem
+
+   // Cria chave CSP
+   TRY
+      dsigKey:=oXmldsig:createKeyFromCSP(oCert:PrivateKey:ProviderType, oCert:PrivateKey:ProviderName, oCert:PrivateKey:ContainerName, 0)
+   CATCH
+      aRETORNO['MSG']:='Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
+      RETURN(aRETORNO)
+   END
+   IF (dsigKey = nil)
+      aRETORNO['MSG']:='Erro ao criar a chave do CSP.'
+      RETURN(aRETORNO)
+   ENDIF
+
+   // Assina a chave do CSP
+   TRY
+      signedKey:=oXmldsig:sign(dsigKey, 2)
+   CATCH
+      aRETORNO['MSG']:='Erro ao assinar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
+      RETURN(aRETORNO)
+   END
+   IF signedKey=NIL
+      aRETORNO['MSG']:='Assinatura Falhou.'
+      RETURN(aRetorno)
+   ENDIF
+
+   // Trata o formato da estrutura do XML
+   cXMLSig := STRTRAN(STRTRAN(oDOMDoc:xml,CHR(10)),CHR(13))
+   PosIni := AT('<SignatureValue>',cXMLSig)+len('<SignatureValue>')
+   cXMLSig := SUBS(cXMLSig,1,PosIni-1)+STRTRAN( SUBS(cXMLSig,PosIni,len(cXMLSig)), ' ', '' )
+   PosIni := AT('<X509Certificate>',cXMLSig)-1
+   nP = AT('<X509Certificate>',cXMLSig)
+   nResult := 0
+   DO WHILE nP<>0
+      nResult := nP
+      nP = AT('<X509Certificate>',cXMLSig,nP+1)
+   ENDDO
+   PosFim := nResult
+   cXMLSig := SUBS(cXMLSig,1,PosIni)+SUBS(cXMLSig,PosFim,len(cXMLSig))
+
+   // valida o schema da assinatura
+   aRETORNO:=::Valida_XML('<Signature '+::oFuncoes:pegaTag(cXMLSig,'Signature')+'</Signature>')
+   IF !aRETORNO['STATUS']
+      RETURN(aRETORNO)
+   ENDIF
+
+   // valida com o schema da MDFe
+   aRETORNO:=::Valida_XML(cXMLSig)
+   IF !aRETORNO['STATUS']
+      RETURN(aRETORNO)
+   ENDIF
+
+   // grava o arquivo no disco
+   aRETORNO['XML']:=::cXML
+   IF hb_MemoWrit( ::cXML, cXMLSig )
+      aRETORNO['STATUS']:=.T.
+      aRETORNO['MSG']:='XML assinado e validado com sucesso em '+::cXML
+   ELSE
+      aRETORNO['MSG']:='Não foi possível gravar o arquivo XML com a assinatura.'
+      RETURN(aRETORNO)
+   ENDIF
+   RETURN aRetorno
+
+METHOD Valida_XML(cXML) Class hbMDFe
+   /*
+   Valida o arquivo XML
+   Mauricio Cruz - 27/05/2013
+   */
+   LOCAL oDOMDoc, oSchema, ParseError, oError
+   LOCAL aRETORNO:=HASH()
+   LOCAL cSchemaFilename:=''
+
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
+
+   TRY
+      oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
+   CATCH
+      aRETORNO['MSG']:='Não foi possível carregar o MSXML para validação do XML.'
+      RETURN(aRETORNO)
+   END
+
+   TRY
+      oDOMDoc:async = .F.
+      oDOMDoc:resolveExternals := .F.
+      oDOMDoc:validateOnParse  = .T.
+      oDOMDoc:LoadXML(cXML)
+   CATCH
+      aRETORNO['MSG']:='Não foi possível carregar o arquivo XML para a validação.'
+      RETURN(aRETORNO)
+   END
+   IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
+      aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+                       'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_EOL()+;
+                       'Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                        +HB_EOL()+;
+                       'Causa do erro: '+oDOMDoc:parseError:reason                                   +HB_EOL()+;
+                       'Code: '+STR(oDOMDoc:parseError:errorCode)
+     RETURN(aRETORNO)
+   ENDIF
+
+   TRY
+      oSchema := win_OleCreateOject( _MSXML2_XMLSchemaCache )
+   CATCH
+      aRETORNO['MSG']:='Não foi possível carregar o MSXML para o schema do XML.'
+      RETURN(aRETORNO)
+   END
+
+   IF '</enviMDFe>' $ cXML .AND. '</Signature>' $ cXML   // envio da mdf
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\enviMDFe_v1.00.xsd'
+   ELSEIF '</rodo>' $ cXML  // Modal Rodoviario
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\mdfeModalRodoviario_v1.00.xsd'
+   ELSEIF '</Signature>' $ cXML .AND. !'</enviMDFe>' $ cXML .AND. !'</eventoMDFe>' $ cXML // assinatura
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\xmldsig-core-schema_v1.01.xsd'
+   ELSEIF '</eventoMDFe>' $ cXML  // eventos
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\eventoMDFe_v1.00.xsd'
+   ELSEIF '</evCancMDFe>' $ cXML  .AND. !'</eventoMDFe>' $ cXML // cancelamento
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\evCancMDFe_v1.00.xsd'
+   ELSEIF '</evEncMDFe>' $ cXML  .AND. !'</eventoMDFe>' $ cXML // encerramento
+      cSchemaFilename := ::ohbNFe:cPastaSchemas+'\MDFe\evEncMDFe_v1.00.xsd'
+   ENDIF
+
+   IF !FILE(cSchemaFilename)
+      aRETORNO['MSG']:='Arquivo do schema não encontrado '+cSchemaFilename
+      RETURN(aRETORNO)
+   ENDIF
+
+   TRY
+      IF '</Signature>' $ cXML .AND. !'</enviMDFe>' $ cXML .AND. !'</rodo>' $ cXML .AND. !'</eventoMDFe>' $ cXML
+         oSchema:add( 'http://www.w3.org/2000/09/xmldsig#', cSchemaFilename )
+      ELSE
+         oSchema:add( 'http://www.portalfiscal.inf.br/mdfe', cSchemaFilename )
+      ENDIF
+   CATCH oError
+      aRETORNO['MSG']:='Falha '+HB_EOL()+ ;
                     'Error: '+Transform(oError:GenCode, nil)       + ';' +HB_EOL()+;
                     'SubC: '+Transform(oError:SubCode, nil)        + ';' +HB_EOL()+;
                     'OSCode: '+Transform(oError:OsCode,  nil)      + ';' +HB_EOL()+;
                     'SubSystem: '+Transform(oError:SubSystem, nil) + ';' +HB_EOL()+;
                     'Mensangem: '+oError:Description
-  RETURN(aRETORNO)
-END
+     RETURN(aRETORNO)
+   END
 
-oDOMDoc:Schemas := oSchema
-ParseError := oDOMDoc:validate
-IF ParseError:errorCode <> 0
-   aRetorno['nResult']  := ParseError:errorCode
-   aRETORNO['MSG']  := ParseError:reason
-   RETURN(aRetorno)
-ENDIF
-oDOMDoc := nil
-ParseError := nil
-oSchema := nil
-aRETORNO['STATUS']:=.T.
-
-RETURN(aRETORNO)
+   oDOMDoc:Schemas := oSchema
+   ParseError := oDOMDoc:validate
+   IF ParseError:errorCode <> 0
+      aRetorno['nResult']  := ParseError:errorCode
+      aRETORNO['MSG']  := ParseError:reason
+      RETURN(aRetorno)
+   ENDIF
+   oDOMDoc := nil
+   ParseError := nil
+   oSchema := nil
+   aRETORNO['STATUS']:=.T.
+   RETURN aRetorno
 
 
 
 Method ComunicaWebService(cXML,cSoap,cService) Class hbMDFe
-/*
+   /*
    Faz a comunicação com o webservice
    Mauricio Cruz - 23/05/2013
-*/
-LOCAL oServerWS
-LOCAL aRETORNO:=HASH()
-LOCAL cCERT:='', cUrlWS, e, oDomDoc
+   */
+   LOCAL oServerWS
+   LOCAL aRETORNO:=HASH()
+   LOCAL cCERT:='', cUrlWS, e, oDomDoc
 
-aRETORNO['STATUS']:=.F.
-aRETORNO['MSG']:=''
+   aRETORNO['STATUS']:=.F.
+   aRETORNO['MSG']:=''
 
-IF cXML=NIL .OR. EMPTY(cXML)
-   aRETORNO['MSG']:='Favor informar o arquivo de XML.'
-   RETURN(aRETORNO)
-ENDIF
+   IF cXML=NIL .OR. EMPTY(cXML)
+      aRETORNO['MSG']:='Favor informar o arquivo de XML.'
+      RETURN(aRETORNO)
+   ENDIF
 
+   TRY
+      cCERT := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
+   CATCH
+   END
+   IF EMPTY(cCERT)
+      aRETORNO['MSG']:='Não foi possível carregar as informações do certificado.'
+      RETURN(aRETORNO)
+   ENDIF
 
-TRY
-   cCERT := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
-CATCH
-END
-IF EMPTY(cCERT)
-   aRETORNO['MSG']:='Não foi possível carregar as informações do certificado.'
-   RETURN(aRETORNO)
-ENDIF
+   cUrlWS:=::LinkWebService(cService)
+   IF EMPTY(cUrlWS) .AND. 'https' $ cService
+      cUrlWS:=cService
+   ENDIF
+   IF EMPTY(cUrlWS)
+      aRETORNO['MSG']:='Webservice não localizado'
+      RETURN(aRETORNO)
+   ENDIF
 
-cUrlWS:=::LinkWebService(cService)
-IF EMPTY(cUrlWS) .AND. 'https' $ cService
-   cUrlWS:=cService
-ENDIF
-IF EMPTY(cUrlWS)
-   aRETORNO['MSG']:='Webservice não localizado'
-   RETURN(aRETORNO)
-ENDIF
+   TRY
+      oServerWS := win_OleCreateObject( _MSXML2_ServerXMLHTTP )
+      oServerWS:setOption( 3, 'CURRENT_USER\MY\'+cCERT )
+      oServerWS:open('POST', cUrlWS, .F.)
+      oServerWS:setRequestHeader('SOAPAction', cSoap )
+      oServerWS:setRequestHeader('Content-Type','application/soap+xml; charset=utf-8')
+   CATCH
+      aRETORNO['MSG']:='Não foi possível inicializar a conexão do webservice'
+      RETURN(aRETORNO)
+   END
 
-TRY
-   oServerWS := win_OleCreateObject( _MSXML2_ServerXMLHTTP )
-   oServerWS:setOption( 3, 'CURRENT_USER\MY\'+cCERT )
-   oServerWS:open('POST', cUrlWS, .F.)
-   oServerWS:setRequestHeader('SOAPAction', cSoap )
-   oServerWS:setRequestHeader('Content-Type','application/soap+xml; charset=utf-8')
-CATCH
-   aRETORNO['MSG']:='Não foi possível inicializar a conexão do webservice'
-   RETURN(aRETORNO)
-END
+   IF oServerWS=NIL
+      aRETORNO['MSG']:='Não foi possível inicializar o objeto de conexão do webservice'
+      RETURN(aRETORNO)
+   ENDIF
 
-IF oServerWS=NIL
-   aRETORNO['MSG']:='Não foi possível inicializar o objeto de conexão do webservice'
-   RETURN(aRETORNO)
-ENDIF
-
-TRY
-   oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
-   oDOMDoc:async = .F.
-   oDOMDoc:validateOnParse  = .T.
-   oDOMDoc:resolveExternals := .F.
-   oDOMDoc:preserveWhiteSpace = .T.
-   oDOMDoc:LoadXML(cXML)
-CATCH
-   aRETORNO['MSG']:='Não foi possível carregar o documento XML'
-   RETURN(aRETORNO)
-END
-IF oDOMDoc:parseError:errorCode <> 0
-   aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
+   TRY
+      oDOMDoc := win_OleCreateObject( _MSXML2_DOMDocument )
+      oDOMDoc:async = .F.
+      oDOMDoc:validateOnParse  = .T.
+      oDOMDoc:resolveExternals := .F.
+      oDOMDoc:preserveWhiteSpace = .T.
+      oDOMDoc:LoadXML(cXML)
+   CATCH
+      aRETORNO['MSG']:='Não foi possível carregar o documento XML'
+      RETURN(aRETORNO)
+   END
+   IF oDOMDoc:parseError:errorCode <> 0
+      aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_EOL()+;
                     ' Linha: '+STR(oDOMDoc:parseError:line)                                       +HB_EOL()+;
                     ' Caractere na linha: '+STR(oDOMDoc:parseError:linepos)                       +HB_EOL()+;
                     ' Causa do erro: '+oDOMDoc:parseError:reason                                  +HB_EOL()+;
                     ' Code: '+STR(oDOMDoc:parseError:errorCode)
-  RETURN(aRETORNO)
-ENDIF
+     RETURN(aRETORNO)
+   ENDIF
 
-TRY
-  oServerWS:send(oDOMDoc:xml)
-CATCH e
-   aRETORNO['MSG']:='Falha: Não foi possível conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.'+HB_EOL()+;
+   TRY
+     oServerWS:send(oDOMDoc:xml)
+   CATCH e
+      aRETORNO['MSG']:='Falha: Não foi possível conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.'+HB_EOL()+;
                     'Error: '+Transform(e:GenCode,nil)                                                      +';'+HB_EOL()+;
                     'SubC: '+Transform(e:SubCode,nil)                                                       +';'+HB_EOL()+;
                     'OSCode: '+Transform(e:OsCode,nil)                                                      +';'+HB_EOL()+;
                     'SubSystem: '+Transform(e:SubSystem,nil)                                                +';'+HB_EOL()+;
                     'Mensangem: '+e:Description
-  RETURN(aRETORNO)
-END
-DO WHILE oServerWS:readyState <> 4
-  millisec(500)
-ENDDO
-aRETORNO['MSG']:='Comunicação com o webservice finalizada com sucesso.'
-aRETORNO['STATUS']:=.T.
-aRETORNO['XML']:=::oFuncoes:RemoveAcentuacao(oServerWS:responseText)
+     RETURN(aRETORNO)
+   END
+   DO WHILE oServerWS:readyState <> 4
+     millisec(500)
+   ENDDO
+   aRETORNO['MSG']:='Comunicação com o webservice finalizada com sucesso.'
+   aRETORNO['STATUS']:=.T.
+   aRETORNO['XML']:=::oFuncoes:RemoveAcentuacao(oServerWS:responseText)
 
 RETURN(aRETORNO)
 
@@ -2022,19 +2012,6 @@ oFrPrn:=NIL
 aRETORNO['STATUS']:=.T.
 
 RETURN(aRETORNO)
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /*
