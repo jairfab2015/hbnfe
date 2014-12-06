@@ -629,29 +629,7 @@ ENDIF
 cXML:=MEMOREAD(::Xml)
 FERASE(::Xml)
 
-cXML:=STRTRAN(cXML,'<Signature></Signature>','<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'+;
-                                             '<SignedInfo>'+;
-                                                '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'+;
-                                                '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'+;
-                                                '<Reference URI="#lote:1ABCDZ">'+;
-                                                   '<Transforms>'+;
-                                                      '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />'+;
-                                                      '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'+;
-                                                   '</Transforms>'+;
-                                                   '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />'+;
-                                                   '<DigestValue>'+;
-                                                  '</DigestValue>'+;
-                                                '</Reference>'+;
-                                             '</SignedInfo>'+;
-                                             '<SignatureValue>'+;
-                                             '</SignatureValue>'+;
-                                             '<KeyInfo>'+;
-                                                '<X509Data>'+;
-                                                   '<X509Certificate>'+;
-                                                   '</X509Certificate>'+;
-                                                '</X509Data>'+;
-                                             '</KeyInfo>'+;
-                                          '</Signature>')
+cXML:=STRTRAN(cXML,'<Signature></Signature>', SefazSignatureNode( "#lote:1ABCDZ" ) )
 
 // Inicializa o objeto do DOMDocument
 TRY
