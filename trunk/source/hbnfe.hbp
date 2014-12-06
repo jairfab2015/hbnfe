@@ -27,7 +27,6 @@ hbNFeRetornoRecepcao.prg
 hbNFeSemCurl.prg
 hbNFeStatus.prg
 hbNFeValida.prg
-hbnfeSpedAssina.prg
 hbnfeSpedSefazClass.prg
 xxharbour.prg
 hbnfeXmlFun.prg

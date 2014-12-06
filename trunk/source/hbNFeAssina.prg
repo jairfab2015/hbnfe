@@ -22,9 +22,9 @@ METHOD Execute() CLASS hbNFeAssina
    LOCAL cXml, oDOMDoc, cMsgErro, aRetorno := hash(), I, ;
          xmlHeaderAntes, xmldsig, dsigns, oCert, oStoreMem, oError, xmlHeaderDepois, ;
          XMLAssinado, posini, SIGNEDKEY, DSIGKEY, SCONTAINER, ;
-         SPROVIDER, ETYPE, URI, J, nRandom, cXmlSig // , NFESW_SHOWNORMAL := 1
+         SPROVIDER, ETYPE, URI, J, nRandom // , NFESW_SHOWNORMAL := 1
    LOCAL nP, nResult, PosFim
-   LOCAL cXmlTagInicial := "", cXmlTagFinal := "", nCont
+   LOCAL cXmlTagInicial := "", cXmlTagFinal := "", nCont, lIsLibCurl
    LOCAL aDelimitadores := { ;
       { "<enviMDFe",   "</MDFe></enviMDFe>"   }, ; // MDFE envio - no fonte hbmdfe assina envio completo
       { "<eventoMDFe", "</eventoMDFe>"        }, ; // MDFE evento
@@ -42,6 +42,7 @@ METHOD Execute() CLASS hbNFeAssina
       { "<infEvento",  "</evento>"            }, ; // Evento 210240 manifestação
       { "<infEvento",  "</evento>"            } }  // Evento 110112 manifesto encerramento
 
+   lIsLibCurl := ( ::ohbNFe:nSOAP = HBNFE_CURL )
    IF ::lMemFile = NIL
       ::lMemFile = .F.
    ENDIF
@@ -93,31 +94,7 @@ METHOD Execute() CLASS hbNFeAssina
       ENDIF
       URI := Substr( cXml, I + 1, J - I - 1 )
 
-      cXmlSig := [<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">]
-      cXmlSig +=    [<SignedInfo>]
-      cXmlSig +=       [<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>]
-      cXmlSig +=       [<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />]
-      cXmlSig +=       [<Reference URI="#] + URI + [">]
-      cXmlSig +=          [<Transforms>]
-      cXmlSig +=             [<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />]
-      cXmlSig +=             [<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />]
-      cXmlSig +=          [</Transforms>]
-      cXmlSig +=          [<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />]
-      cXmlSig +=          [<DigestValue>]
-      cXmlSig +=          [</DigestValue>]
-      cXmlSig +=       [</Reference>]
-      cXmlSig +=    [</SignedInfo>]
-      cXmlSig +=    [<SignatureValue>]
-      cXmlSig +=    [</SignatureValue>]
-      cXmlSig +=    [<KeyInfo>]
-      IF ::ohbNFe:nSOAP = HBNFE_CURL
-         cXmlSig += [<X509Data>]
-         cXmlSig += [</X509Data>]
-      ENDIF
-      cXmlSig +=    [</KeyInfo>]
-      cXmlSig += [</Signature>]
-
-      cXml := Substr( cXml, 1, At( cXmlTagFinal, cXml ) - 1 ) + cXmlSig + cXmlTagFinal
+      cXml := Substr( cXml, 1, At( cXmlTagFinal, cXml ) - 1 ) + SignatureNode( URI, lIsLibCurl ) + cXmlTagFinal
   ENDIF
 
   IF ::ohbNFe:nSOAP = HBNFE_CURL
@@ -320,3 +297,34 @@ METHOD Execute() CLASS hbNFeAssina
    oDOMDoc          := NIL // Harbour 3.2 nao precisa
    aRetorno[ 'OK' ] := .T.
    RETURN aRetorno
+
+
+FUNCTION SignatureNode( cURI, lIsLibCurl )
+   LOCAL cXml := ""
+
+   lIsLibCurl := iif( lIsLibCurl == NIL, .F., lIsLibCurl )
+
+   cXml := [<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">]
+   cXml +=    [<SignedInfo>]
+   cXml +=       [<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>]
+   cXml +=       [<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />]
+   cXml +=       [<Reference URI="#] + cURI + [">]
+   cXml +=          [<Transforms>]
+   cXml +=             [<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />]
+   cXml +=             [<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />]
+   cXml +=          [</Transforms>]
+   cXml +=          [<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />]
+   cXml +=          [<DigestValue>]
+   cXml +=          [</DigestValue>]
+   cXml +=       [</Reference>]
+   cXml +=    [</SignedInfo>]
+   cXml +=    [<SignatureValue>]
+   cXml +=    [</SignatureValue>]
+   cXml +=    [<KeyInfo>]
+   IF lIsLibCurl
+      cXml += [<X509Data>]
+      cXml += [</X509Data>]
+   ENDIF
+   cXml +=    [</KeyInfo>]
+   cXml += [</Signature>]
+   RETURN cXml
