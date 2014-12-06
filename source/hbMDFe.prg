@@ -915,50 +915,12 @@ METHOD Assina_XML() Class hbMDFe
    FERASE(::cXML)
 
    IF 'enviMDFe' $ cXML
-      cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
-      cXML+=   '<SignedInfo>'
-      cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
-      cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
-      cXML+=      '<Reference URI="#MDFe'+::cCHAVE+'">'
-      cXML+=         '<Transforms>'
-      cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>'
-      cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'
-      cXML+=         '</Transforms>'
-      cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>'
-      cXML+=         '<DigestValue></DigestValue>'
-      cXML+=      '</Reference>'
-      cXML+=   '</SignedInfo>'
-      cXML+=   '<SignatureValue></SignatureValue>'
-      cXML+=   '<KeyInfo>'
-      cXML+=      '<X509Data>'
-      cXML+=         '<X509Certificate></X509Certificate>'
-      cXML+=      '</X509Data>'
-      cXML+=   '</KeyInfo>'
-      cXML+='</Signature>'
-      cXML+='</MDFe>'
-      cXML+='</enviMDFe>'
+      cXML += SefazSignatureNode( "#MDFe" + ::cCHAVE )
+      cXML += '</MDFe>'
+      cXML += '</enviMDFe>'
    ELSE
-      cXML+='<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'
-      cXML+=   '<SignedInfo>'
-      cXML+=      '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
-      cXML+=      '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" />'
-      cXML+=      '<Reference URI="#ID'+::URIId+'">'
-      cXML+=         '<Transforms>'
-      cXML+=            '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" />'
-      cXML+=            '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315" />'
-      cXML+=         '</Transforms>'
-      cXML+=         '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />'
-      cXML+=         '<DigestValue></DigestValue>'
-      cXML+=      '</Reference>'
-      cXML+=   '</SignedInfo>'
-      cXML+=   '<SignatureValue></SignatureValue>'
-      cXML+=   '<KeyInfo>'
-      cXML+=      '<X509Data>'
-      cXML+=         '<X509Certificate></X509Certificate>'
-      cXML+=      '</X509Data>'
-      cXML+=   '</KeyInfo>'
-      cXML+='</Signature>'
-      cXML+='</eventoMDFe>'
+      cXML += SefazSignatureNode( "#ID" + ::URIId )
+      cXML += "</eventoMDFe>"
    ENDIF
 
    // Inicializa o objeto do DOMDocument

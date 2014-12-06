@@ -94,7 +94,7 @@ METHOD Execute() CLASS hbNFeAssina
       ENDIF
       URI := Substr( cXml, I + 1, J - I - 1 )
 
-      cXml := Substr( cXml, 1, At( cXmlTagFinal, cXml ) - 1 ) + SignatureNode( URI, lIsLibCurl ) + cXmlTagFinal
+      cXml := Substr( cXml, 1, At( cXmlTagFinal, cXml ) - 1 ) + SefazSignatureNode( URI, lIsLibCurl ) + cXmlTagFinal
   ENDIF
 
   IF ::ohbNFe:nSOAP = HBNFE_CURL
@@ -299,7 +299,7 @@ METHOD Execute() CLASS hbNFeAssina
    RETURN aRetorno
 
 
-FUNCTION SignatureNode( cURI, lIsLibCurl )
+FUNCTION SefazSignatureNode( cURI, lIsLibCurl )
    LOCAL cXml := ""
 
    lIsLibCurl := iif( lIsLibCurl == NIL, .F., lIsLibCurl )
