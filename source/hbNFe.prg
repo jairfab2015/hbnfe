@@ -71,7 +71,17 @@ CLASS hbNFe
    METHOD pegaPropriedadesCertificado()
    METHOD UAC(nValue)
    METHOD erroCurl(nError)
+   METHOD SetSefaz( oSefaz )
 ENDCLASS
+
+
+METHOD SetSefaz( oSefaz )
+   oSefaz:cAmbiente    := ::tpAmb
+   oSefaz:cProjeto     := "nfe"
+   oSefaz:cUf          := ::cUfWs
+   oSefaz:cCertificado := ::ohbNFe:pegaCNCertificado( ::ohbNFe:cSerialCert )
+   RETURN NIL
+
 
 METHOD escolheCertificado(lTentaRegistrar) CLASS hbNFe
 ******************************************************************************
@@ -93,9 +103,9 @@ LOCAL oCertSelecao, oCertificados, oStore, cMsgErro := "", aRetorno := hash()
 
    CATCH
       IF lTentaRegistrar
-         IF SN('Esta faltando arquivos para funcionamento da NF-e, deseja baixar agora ?')
-            MYRUN2(CAMINHO_EXE()+'\instala_nfe.bat')
-         ENDIF
+         //IF SN('Esta faltando arquivos para funcionamento da NF-e, deseja baixar agora ?')
+         //   MYRUN2(CAMINHO_EXE()+'\instala_nfe.bat')
+         //ENDIF
   	   ENDIF
       aRetorno['OK']       := .F.
       aRetorno['MsgErro']  := IF(EMPTY(cMsgErro),"Registrado CAPICOM tente novamente",cMsgErro)
@@ -591,3 +601,4 @@ RETURN(cCode[ALLTRIM(STR(nError))])
 	   hb_retnl( lReturn );
 	}
 #pragma ENDDUMP
+

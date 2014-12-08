@@ -1,13 +1,12 @@
 # Atencao
 # Criado pra teste
-# Nao serve pra gerar a LIB
-#
 
 -ohbnfe
 hbini.prg
 hbMDFe.prg
 hbNFe.prg
 hbNFeAssina.prg
+hbNFeAssinaOld.prg
 hbNFeCancela.prg
 hbNFeCCe.prg
 hbNFeConsulta.prg
@@ -27,15 +26,16 @@ hbNFeRetornoRecepcao.prg
 hbNFeSemCurl.prg
 hbNFeStatus.prg
 hbNFeValida.prg
-hbnfeSpedSefazClass.prg
+hbNFeSefaz.prg
 xxharbour.prg
-hbnfeXmlFun.prg
+hbNFeXmlFun.prg
 
 hbwin.hbc
 hbhpdf.hbc
 hbzebra.hbc
 hbcurl.hbc
 
+-m
 -w3
 -es2
 -inc
