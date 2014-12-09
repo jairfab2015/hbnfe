@@ -1,5 +1,4 @@
 * w32ole.prg baseada na win32ole.prg v 1.82 2005/04/29 do xharbour
-* Necessaria pra assinatura no xHarbour conforme versao
 
 STATIC bOleInitialized:=.F.
 

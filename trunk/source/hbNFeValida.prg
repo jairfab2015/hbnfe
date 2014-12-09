@@ -4,8 +4,14 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-
+#include "common.ch"
 #include "hbclass.ch"
+#ifndef __XHARBOUR__
+   #include "hbwin.ch"
+   #include "harupdf.ch"
+   #include "hbzebra.ch"
+   #include "hbcompat.ch"
+#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeValida
@@ -64,26 +70,33 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
         ENDIF
      ENDIF
   ENDIF
-
-  oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-
+  
+  #ifdef __XHARBOUR__
+     oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+  #else
+     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+  #endif
   oDOMDoc:async = .F.
   oDOMDoc:resolveExternals := .F.
   oDOMDoc:validateOnParse  = .T.
   oDOMDoc:LoadXML(cXML)
   IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-     cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema" + HB_EOL() + ;
-                 " Linha: "              + STR( oDOMDoc:parseError:line )    + HB_EOL() + ;
-                 " Caractere na linha: " + STR( oDOMDoc:parseError:linepos ) + HB_EOL() + ;
-                 " Causa do erro: "      + oDOMDoc:parseError:reason         + HB_EOL() + ;
-                 " Code: " + Str( oDOMDoc:parseError:errorCode )
+     cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
+                 " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
+                 " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
+                 " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+                 " Code: "+STR(oDOMDoc:parseError:errorCode)
      aRetorno['OK']       := .F.
      aRetorno['nResult']  := 0
      aRetorno['MsgErro']  := cMsgErro
      RETURN(aRetorno)
   ENDIF
-
-  oSchema := win_oleCreateObject( _MSXML2_XMLSchemaCache )
+  
+  #ifdef __XHARBOUR__
+     oSchema := xhb_CreateObject( _MSXML2_XMLSchemaCache )
+  #else
+     oSchema := win_oleCreateObject( _MSXML2_XMLSchemaCache )
+  #endif
 
   IF EMPTY(cPastaSchemas)
      cPastaSchemas := "\"+CURDIR()
@@ -109,15 +122,15 @@ LOCAL I, Tipo, cXML, oDOMDoc, oSchema, cMsgErro, aRetorno := hash(), cPastaSchem
      aRetorno['MsgErro']  := 'Schema não encontrado '+cSchemaFilename
      RETURN(aRetorno)
   ENDIF
-
+  
   TRY
      oSchema:add( "http://www.portalfiscal.inf.br/nfe", cSchemaFilename )
   CATCH oError
-    cMsgErro := "Falha " + HB_EOL() + ;
-            	 "Error: "     + Transform( oError:GenCode, NIL )   + ";" + HB_EOL() + ;
-            	 "SubC: "      + Transform( oError:SubCode, NIL )   + ";" + HB_EOL() + ;
-            	 "OSCode: "    + Transform( oError:OsCode,  NIL )   + ";" + HB_EOL() + ;
-            	 "SubSystem: " + Transform( oError:SubSystem, NIL ) + ";" + HB_EOL() + ;
+    cMsgErro := "Falha "+HB_OsNewLine()+ ;
+            	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
+            	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
+            	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
+            	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
             	 "Mensangem: " + oError:Description
      aRetorno['OK']       := .F.
      aRetorno['nResult']  := 0

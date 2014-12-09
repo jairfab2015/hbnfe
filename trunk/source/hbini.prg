@@ -80,34 +80,15 @@
 
 #include "fileio.ch"
 
-STATIC FUNCTION INILineComment( xValue ) // Elimina GLOBAL e mantém compatibilidade
-   STATIC INILineComment := ";"
-   LOCAL  xOldValue
+   GLOBAL cLineComment := ";"
+   GLOBAL cHalfLineComment := "#"
 
-   xOldValue := INILineComment
-   IF xValue != NIL
-      INILineComment := xValue
-   ENDIF
-   RETURN xOldValue
+PROCEDURE HB_SetIniComment( cLc, cHlc )
 
+   cLineComment := cLc
+   cHalfLineComment := cHlc
 
-STATIC FUNCTION INIHalfLineComment( xValue ) // Elimina GLOBAL e mantém compatibilidade
-   STATIC INIHalfLineComment := "#"
-   LOCAL  xOldValue
-
-   xOldValue := INIHalfLineComment
-   IF xValue != NIL
-      INIHalfLineComment := xValue
-   ENDIF
-   RETURN xOldValue
-
-
-PROCEDURE HB_SetIniComment( cLc, cHlc ) // Mantido pra compatibilidade caso seja de uso externo
-
-   INILineComment( cLc )
-   INIHalfLineComment( cHlc )
    RETURN
-
 
 FUNCTION HB_ReadIni( cFileSpec, bKeyCaseSens, cSplitters, bAutoMain )
 
@@ -123,7 +104,6 @@ FUNCTION HB_ReadIni( cFileSpec, bKeyCaseSens, cSplitters, bAutoMain )
 
    RETURN HB_ReadIni2( hIni, cFileSpec, bKeyCaseSens, cSplitters, bAutoMain )
 
-
 STATIC FUNCTION HB_ReadIni2( aIni, cFileSpec, bKeyCaseSens, cSplitters, bAutoMain )
 
    LOCAL aFiles
@@ -133,8 +113,7 @@ STATIC FUNCTION HB_ReadIni2( aIni, cFileSpec, bKeyCaseSens, cSplitters, bAutoMai
    LOCAL cData, cBuffer, cLine
    LOCAL reComment
 
-   // Ajuste pra INIHalfLineComment() e INILineComment()
-   reComment := hb_regexComp( INIHalfLineComment() + "|^[ \t]*" + INILineComment() ) // usa as fuções estáticas
+   reComment := hb_regexComp( cHalfLineComment + "|^[ \t]*" + cLineComment )
 
    aFiles := hb_regexSplit( ";", cFileSpec )
    IF Empty( aFiles )
@@ -281,12 +260,12 @@ STATIC FUNCTION HB_ReadIni2( aIni, cFileSpec, bKeyCaseSens, cSplitters, bAutoMai
 
    RETURN aIni
 
-
 FUNCTION HB_WriteIni( cFileName, hIni, cCommentBegin, cCommentEnd, bAutoMain )
 
    LOCAL nFileId := 0
    LOCAL cSection
    LOCAL hCurrentSection
+   LOCAL cNewLine := hb_osNewLine()
 
    IF bAutoMain == NIL
       bAutoMain := .T.
@@ -302,7 +281,7 @@ FUNCTION HB_WriteIni( cFileName, hIni, cCommentBegin, cCommentEnd, bAutoMain )
    ENDIF
 
    IF !Empty( cCommentBegin )
-      FWrite( nFileId, cCommentBegin + HB_EOL() )
+      FWrite( nFileId, cCommentBegin + cNewLine )
    ENDIF
 
 // Write toplevel section
@@ -312,14 +291,14 @@ FUNCTION HB_WriteIni( cFileName, hIni, cCommentBegin, cCommentEnd, bAutoMain )
       hCurrentSection = hIni[ "MAIN" ]
 
       HEval( hCurrentSection, ;
-         { | cKey, xVal |  FWrite( nFileId, Cstr( cKey ) + " = " + CStr( xVal ) + HB_EOL() ) };
+         { | cKey, xVal |  FWrite( nFileId, Cstr( cKey ) + " = " + CStr( xVal ) + cNewLine ) };
          )
    ELSE
       // When automain is off, just write all the toplevel variables.
       HEval( hIni, ;
          { | cKey, xVal | ;
          iif( .NOT. HB_ISHASH( xVal ), ;
-         FWrite( nFileId, Cstr( cKey ) + " = " + CStr( xVal ) + HB_EOL() ), /* nothing */ ) };
+         FWrite( nFileId, Cstr( cKey ) + " = " + CStr( xVal ) + cNewLine ), /* nothing */ ) };
          )
    ENDIF
 
@@ -341,17 +320,17 @@ FUNCTION HB_WriteIni( cFileName, hIni, cCommentBegin, cCommentEnd, bAutoMain )
          END
       ENDIF
 
-      IF FWrite( nFileId, HB_EOL() + "[" + CStr( cSection ) + "]" + HB_EOL() ) <= 0
+      IF FWrite( nFileId, cNewLine + "[" + CStr( cSection ) + "]" + cNewLine ) <= 0
          RETURN .F.
       ENDIF
 
       HEval( hCurrentSection, ;
-         { | cKey, xVal |  FWrite( nFileId, CStr( cKey ) + "=" + CStr( xVal ) + HB_EOL() ) };
+         { | cKey, xVal |  FWrite( nFileId, CStr( cKey ) + "=" + CStr( xVal ) + cNewLine ) };
          )
    NEXT
 
    IF !Empty( cCommentEnd )
-      IF FWrite( nFileId, cCommentEnd + HB_EOL() ) <= 0
+      IF FWrite( nFileId, cCommentEnd + cNewLine ) <= 0
          RETURN .F.
       ENDIF
    ENDIF

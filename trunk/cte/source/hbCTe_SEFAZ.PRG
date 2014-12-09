@@ -3,12 +3,12 @@
    Mauricio Cruz - 15/07/2013
    - cruz@sygecom.com.br
    - www.sygecom.com.br
-
+   
    Implementado versão 2.00
    Mauricio Cruz - 21/10/2013
 
 
-NOTAS:
+NOTAS:   
    - Schemas XML estão feitos da versão 1.04
    - A v2.00 entra em vigor em Ambiente de Homologação: 01/09/2013 - Ambiente de Produção: 01/11/2013
      O bloco dos documentos muda de posição no XML para a versão 2.00, procurar por v2.00 para ver onde ele deve ficar e v1.04 de onde deve sair
@@ -19,14 +19,14 @@ NOTAS:
    - Atualmente o projeto CTe está compatível apenas com xHarbour
    - Não é compatível para usar nativamente no Linux e Mac
    - Não é necessário nenhuma DLL de terceiro além das DLL mencionadas acima que são de dominio publico e disponibilizadas pela Microsoft
-
+   
 DEPENDENCIAS:
    - BAIXAR E INTEGRAR DO PROJETO hbNFE A CLASSE oFuncoes - https://code.google.com/p/hbnfe/
-   - REGISTRAR AS DLL QUE ESTÁ NA PASTA DLL, PARA ISSO PODE USAR OS .BAT QUE SEGUEM EM ANEXO, PRESTE
+   - REGISTRAR AS DLL QUE ESTÁ NA PASTA DLL, PARA ISSO PODE USAR OS .BAT QUE SEGUEM EM ANEXO, PRESTE 
      ATENÇÃO NA HORA DE EXECUTAR OS .BAT POR QUE AS VEZ O USUÁRIO NÃO TEM PERMISSÃO NAS PASTAS DO WINDOWS PARA COPIAR AS DLL
      PARA SYSTEM32 OU SYSWOW64 AI ACABA POR NÃO REGISTRAR AS DLL, E AS VEZ TEM QUE DESATIVAR O CONTROLE DE USUARIO DO WINDOWS
      CONFORME MOSTRA A IMAGEM DENTRO DA PASTA DLL.
-   - PRECISA REGISTRAR AS DLL(CAPICOM.DLL, MSXML6.DLL E MSXML6R.DLL) UMA VEZ NOS WINDOWS QUE FOR USAR O SISTEMA DE CTE.
+   - PRECISA REGISTRAR AS DLL(CAPICOM.DLL, MSXML6.DLL E MSXML6R.DLL) UMA VEZ NOS WINDOWS QUE FOR USAR O SISTEMA DE CTE.   
    - ATUALMENTE TEMOS IMPRESSÃO DO DACTE APENAS COM FASTREPORT:  SAGI.FR3
 */
 
@@ -53,10 +53,10 @@ Class oCTe_SEFAZ
    DATA cCte_CEP
    DATA cCte_FONE
    DATA cCte_Chave
-
+   
    DATA cCte_DACTE     READONLY  INIT 'dacte.fr3' // CAMINHO DO ARQUIVO FR3 DO DACTE
    DATA cCte_FAST_LANG READONLY  INIT 'res\brazil.xml'            // CAMINHO DO ARQUIVO DE LINGUA PARA O FASTREPORT
-
+   
    DATA tpEmis
    DATA tpAmb
    DATA cCte_DV     READONLY     // DIGITO DV DA CHAVE DA CTE
@@ -71,44 +71,44 @@ Class oCTe_SEFAZ
    DATA cCancelada   // Luca Monticelli - 08/08/2013           cte cancelada
 
    DATA xml_numerodacte
-   DATA xml_cfop_id
-   DATA xml_formapagamento
-   DATA xml_modelo
-   DATA xml_serie
+   DATA xml_cfop_id                         
+   DATA xml_formapagamento              
+   DATA xml_modelo                      
+   DATA xml_serie  
    DATA xml_tpCTe
-   DATA xml_dataemissao
-   DATA xml_horaemissao
-   DATA xml_ibgeorigemprestacao
-   DATA xml_ibgedestinoprestacao
-   DATA xml_tomadorservico
-   DATA xml_CNP_remetente
-   DATA xml_IERG_remetente
-   DATA xml_nome_remetente
-   DATA xml_fantasia_rementente
-   DATA xml_fone_rementente
-   DATA xml_endereco_rementente
-   DATA xml_numero_rementente
-   DATA xml_bairro_rementente
-   DATA xml_cidade_rementente
-   DATA xml_cep_rementente
-   DATA xml_uf_rementente
-   DATA xml_pais_rementente
-   DATA xml_email_rementente
-   DATA xml_outrascaracter
-   DATA xml_observacao
-   DATA xml_obs_fisco
-   DATA xml_CNP_destinatario
-   DATA xml_IERG_destinatario
-   DATA xml_nome_destinatario
-   DATA xml_fone_destinatario
-   DATA xml_endereco_destinatario
-   DATA xml_numero_destinatario
-   DATA xml_bairro_destinatario
-   DATA xml_cidade_destinatario
-   DATA xml_cep_destinatario
-   DATA xml_uf_destinatario
-   DATA xml_pais_destinatario
-   DATA xml_email_destinatario
+   DATA xml_dataemissao                 
+   DATA xml_horaemissao                 
+   DATA xml_ibgeorigemprestacao         
+   DATA xml_ibgedestinoprestacao        
+   DATA xml_tomadorservico              
+   DATA xml_CNP_remetente               
+   DATA xml_IERG_remetente              
+   DATA xml_nome_remetente              
+   DATA xml_fantasia_rementente         
+   DATA xml_fone_rementente             
+   DATA xml_endereco_rementente         
+   DATA xml_numero_rementente           
+   DATA xml_bairro_rementente           
+   DATA xml_cidade_rementente           
+   DATA xml_cep_rementente              
+   DATA xml_uf_rementente               
+   DATA xml_pais_rementente             
+   DATA xml_email_rementente            
+   DATA xml_outrascaracter              
+   DATA xml_observacao                  
+   DATA xml_obs_fisco                   
+   DATA xml_CNP_destinatario            
+   DATA xml_IERG_destinatario           
+   DATA xml_nome_destinatario           
+   DATA xml_fone_destinatario           
+   DATA xml_endereco_destinatario       
+   DATA xml_numero_destinatario         
+   DATA xml_bairro_destinatario         
+   DATA xml_cidade_destinatario         
+   DATA xml_cep_destinatario            
+   DATA xml_uf_destinatario             
+   DATA xml_pais_destinatario           
+   DATA xml_email_destinatario          
    DATA xml_CNP_expedidor
    DATA xml_IERG_expedidor
    DATA xml_nome_expedidor
@@ -133,30 +133,30 @@ Class oCTe_SEFAZ
    DATA xml_uf_recebedor
    DATA xml_pais_recebedor
    DATA xml_email_recebedor
-   DATA xml_valorservico
-   DATA xml_valorreceber
-   DATA xml_imposto
-   DATA xml_icmsbasecalc
-   DATA xml_icmsaliq
-   DATA xml_icmsvalor
-   DATA xml_icmsreducaobc
-   DATA xml_vbcstret
-   DATA xml_vicmsstret
-   DATA xml_picmsstret
-   DATA xml_vcred
-   DATA xml_vbc
-   DATA xml_predbcoutrauf
-   DATA xml_vbcoutrauf
-   DATA xml_picmsoutrauf
-   DATA xml_vicmsoutrauf
-   DATA xml_valortotalmercad
-   DATA xml_descricaopredominante
-   //DATA xml_volumes
-   DATA xml_responsavel_seguro
-   DATA xml_seguradora
-   DATA xml_apolice_seguro
-   DATA xml_averbacao_seguro
-   DATA xml_valorcarga_averbacao
+   DATA xml_valorservico                
+   DATA xml_valorreceber                
+   DATA xml_imposto                     
+   DATA xml_icmsbasecalc                
+   DATA xml_icmsaliq                    
+   DATA xml_icmsvalor                   
+   DATA xml_icmsreducaobc               
+   DATA xml_vbcstret                    
+   DATA xml_vicmsstret                  
+   DATA xml_picmsstret                  
+   DATA xml_vcred                       
+   DATA xml_vbc                         
+   DATA xml_predbcoutrauf               
+   DATA xml_vbcoutrauf                  
+   DATA xml_picmsoutrauf                
+   DATA xml_vicmsoutrauf                
+   DATA xml_valortotalmercad            
+   DATA xml_descricaopredominante       
+   //DATA xml_volumes                     
+   DATA xml_responsavel_seguro          
+   DATA xml_seguradora                      
+   DATA xml_apolice_seguro              
+   DATA xml_averbacao_seguro            
+   DATA xml_valorcarga_averbacao        
    DATA xml_peso_bruto
    DATA xml_Tipo_Servico
    DATA xml_unidade
@@ -172,21 +172,21 @@ Class oCTe_SEFAZ
 
    DATA xml_VEICULOS
    DATA xml_pedagio
-
+   
    DATA aCte_INUTILIZAR  //{NUMERO,SERIE,MODELO}
    DATA cCte_MOTIVO
    DATA cCte_PROTOCOLO
-
+   
    DATA lCte_Emulador
-
+   
    DATA tpEvento
    DATA nSeqEvento
-
+   
    DATA cUTC
-
+   
    DATA aCartaCorrecao
-
-
+   
+   
    Method ctXMLGeral()
    Method ctXMLRodoviario()
    Method ctValidaXML(cXML)
@@ -229,10 +229,10 @@ aRET['STATUS']:=.F.
 ::cCte_CNPJ:=STRTRAN(STRTRAN(STRTRAN(::cCte_CNPJ,'/'),'-'),'.')
 ::cCte_Chave:=ALLTRIM(STR(::oCTe_GERAIS:rgRetorna_uf(::cCte_Estado,2)))+;                          // CODIGO DA UF DE EMISSAO
               RIGHT(ALLTRIM(STR(YEAR(::xml_dataemissao))),2)+STRZERO(MONTH(::xml_dataemissao),2)+; // AAMM ANO E MES DA EMISSAO
-              ::cCte_CNPJ+;                                                                        // CNPJ DO EMISSOR
+              ::cCte_CNPJ+;                                                                        // CNPJ DO EMISSOR 
               STRZERO(::xml_modelo,2)+;                                                            // MODELO DA CTE
               STRZERO(::xml_serie,3)+;                                                             // SERIE DA CTE
-              STRZERO(::nCte_NUMERO,9)+;                                                           // NUMERO DA CTE
+              STRZERO(::nCte_NUMERO,9)+;                                                           // NUMERO DA CTE     
               ::tpEmis+;                                                                           // FORMA DE EMISSAO
               STRZERO(::nCte_NUMERO,8)                                                             // CODIGO SEQUENCIAL (USADO O MESMO NUMERO DA CTE)
 
@@ -271,7 +271,7 @@ cXML+=   '<modal>01</modal>'   // FIXO 01-RODOVIARIO, PRESISA SER IMPLEMETADO OS
 cXML+=   '<tpServ>'+ALLTRIM(STR(::xml_Tipo_Servico))+'</tpServ>'
 cXML+=   '<cMunIni>'+ALLTRIM(STR(::xml_ibgeorigemprestacao))+'</cMunIni>'
 cXML+=   '<xMunIni>'+ALLTRIM(::oCTe_GERAIS:rgRetorna_municipio(::xml_ibgeorigemprestacao,1))+'</xMunIni>'
-cXML+=   '<UFIni>'+::oCTe_GERAIS:rgRetorna_uf(VAL(LEFT(ALLTRIM(STR(::xml_ibgeorigemprestacao)),2)),1)+'</UFIni>'
+cXML+=   '<UFIni>'+::oCTe_GERAIS:rgRetorna_uf(VAL(LEFT(ALLTRIM(STR(::xml_ibgeorigemprestacao)),2)),1)+'</UFIni>'   
 cXML+=   '<cMunFim>'+ALLTRIM(STR(::xml_ibgedestinoprestacao))+'</cMunFim>'
 cXML+=   '<xMunFim>'+ALLTRIM(::oCTe_GERAIS:rgRetorna_municipio(::xml_ibgedestinoprestacao,1))+'</xMunFim>'
 cXML+=   '<UFFim>'+::oCTe_GERAIS:rgRetorna_uf(VAL(LEFT(ALLTRIM(STR(::xml_ibgedestinoprestacao)),2)),1)+'</UFFim>'
@@ -425,7 +425,7 @@ IF ::cVersao_CTe='1.04'
          cXML+='</infOutros>'
       ENDIF
    NEXT
-ENDIF
+ENDIF   
 cXML+='</rem>'
 
 
@@ -434,7 +434,7 @@ TRY
    cXMLexp:='<exped>'
    IF LEN(ALLTRIM(::xml_CNP_expedidor))>11
       cXMLexp+='<CNPJ>'+ALLTRIM(::xml_CNP_expedidor)+'</CNPJ>'
-   ELSE
+   ELSE   
       cXMLexp+='<CPF>'+ALLTRIM(::xml_CNP_expedidor)+'</CPF>'
    ENDIF
    cXMLexp+=   '<IE>'+ALLTRIM(::xml_IERG_expedidor)+'</IE>'
@@ -465,7 +465,7 @@ TRY
    cXML+='<receb>'
    IF LEN(ALLTRIM(::xml_CNP_recebedor))>11
       cXML+='<CNPJ>'+ALLTRIM(::xml_CNP_recebedor)+'</CNPJ>'
-   ELSE
+   ELSE   
       cXML+='<CPF>'+ALLTRIM(::xml_CNP_recebedor)+'</CPF>'
    ENDIF
    IF !EMPTY(::xml_IERG_recebedor)
@@ -489,13 +489,13 @@ TRY
    ENDIF
    cXML+='</receb>'
 CATCH
-END
+END   
 
 // DESTINATARIO
 cXML+='<dest>'
 IF LEN(ALLTRIM(::xml_CNP_destinatario))>11
    cXML+='<CNPJ>'+ALLTRIM(::xml_CNP_destinatario)+'</CNPJ>'
-ELSE
+ELSE   
    cXML+='<CPF>'+ALLTRIM(::xml_CNP_destinatario)+'</CPF>'
 ENDIF
 IF !EMPTY(::xml_IERG_destinatario)
@@ -531,7 +531,7 @@ FOR mI:=1 TO LEN(::xml_SERVICOS)
    cXML+=   '<vComp>'+ALLTRIM(STR(ROUND(::xml_SERVICOS[mI,2],2)))+'</vComp>'
    cXML+='</Comp>'
 NEXT
-
+                
 cXML+='</vPrest>'
 
 // INFO. RELATIVAS AO IMPOSTO
@@ -543,7 +543,7 @@ cXML+=         '<indSN>1</indSN>'
 cXML+=      '</ICMSSN>'
 ELSEIF ::xml_imposto=90 .AND. (::xml_predbcoutrauf>0 .OR. ::xml_vbcoutrauf>0 .OR. ::xml_picmsoutrauf>0 .OR. ::xml_vicmsoutrauf>0)
    cXML+=      '<ICMSOutraUF>'
-   cXML+=         '<CST>90</CST>'
+   cXML+=         '<CST>90</CST>'   
    cXML+=         '<pRedBCOutraUF>'+ALLTRIM(STR(ROUND(::xml_predbcoutrauf,2)))+'</pRedBCOutraUF>'
    cXML+=         '<vBCOutraUF>'+ALLTRIM(STR(ROUND(::xml_vbcoutrauf,2)))+'</vBCOutraUF>'
    cXML+=         '<pICMSOutraUF>'+ALLTRIM(STR(ROUND(::xml_picmsoutrauf,2)))+'</pICMSOutraUF>'
@@ -572,7 +572,7 @@ ELSE
       cXML+=      '<vCred>'+ALLTRIM(STR(ROUND(::xml_vcred,2)))+'</vCred>'
    ELSEIF ::xml_imposto=90
       cXML+=      '<CST>90</CST>'
-      IF ::xml_icmsreducaobc>0
+      IF ::xml_icmsreducaobc>0 
          cXML+=      '<pRedBC>'+ALLTRIM(STR(ROUND(::xml_icmsreducaobc,2)))+'</pRedBC>'
       ENDIF
       cXML+=      '<vBC>'+ALLTRIM(STR(ROUND(::xml_icmsbasecalc,2)))+'</vBC>'
@@ -747,7 +747,7 @@ aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
 
 TRY
-   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+   oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument ) 
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o MSXML para validação do XML.'
    RETURN(aRETORNO)
@@ -761,7 +761,7 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o arquivo XML para a validação.'
    RETURN(aRETORNO)
-END
+END   
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
    aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
                     'Linha: '+STR(oDOMDoc:parseError:line)                                        +HB_OsNewLine()+;
@@ -854,7 +854,26 @@ LOCAL aRETORNO:=HASH()
 aRETORNO['STATUS']:=.F.
 aRETORNO['MSG']:=''
 
-cXML:=STRTRAN(cXML,'<Signature></Signature>', SefazSignatureNode( "#' + cURI + cID ) )
+cXML:=STRTRAN(cXML,'<Signature></Signature>','<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">'+;
+                                                '<SignedInfo>'+;
+                                                   '<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'+;
+                                                   '<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>'+;
+                                                   '<Reference URI="#'+cURI+cID+'">'+;
+                                                      '<Transforms>'+;
+                                                         '<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>'+;
+                                                         '<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>'+;
+                                                      '</Transforms>'+;
+                                                      '<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>'+;
+                                                      '<DigestValue></DigestValue>'+;
+                                                   '</Reference>'+;
+                                                '</SignedInfo>'+;
+                                                '<SignatureValue></SignatureValue>'+;
+                                                '<KeyInfo>'+;
+                                                   '<X509Data>'+;
+                                                   '<X509Certificate></X509Certificate>'+;
+                                                   '</X509Data>'+;
+                                                '</KeyInfo>'+;
+                                             '</Signature>')
 
 IF ::lCte_Emulador
    aRETORNO['STATUS']:=.T.
@@ -955,7 +974,7 @@ TRY
    dsigKey:=oXmldsig:createKeyFromCSP(oCert:PrivateKey:ProviderType, oCert:PrivateKey:ProviderName, oCert:PrivateKey:ContainerName, 0)
 CATCH
    aRETORNO['MSG']:='Erro ao criar a chave do CSP, talvez o certificado não esteja instalado corretamente.'
-   RETURN(aRETORNO)
+   RETURN(aRETORNO)          
 END
 IF (dsigKey = nil)
    aRETORNO['MSG']:='Erro ao criar a chave do CSP.'
@@ -1006,7 +1025,7 @@ METHOD ctPegaObjetoCertificado() Class oCTe_SEFAZ
 */
 LOCAL oStore, oCertificados, oResult, nI
 LOCAL SubjectName:=''
-
+   
 TRY
    #ifdef __XHARBOUR__
       oStore := xhb_CreateObject( "CAPICOM.Store" )
@@ -1019,7 +1038,7 @@ END
 
 oStore:open(_CAPICOM_CURRENT_USER_STORE,'My',_CAPICOM_STORE_OPEN_MAXIMUM_ALLOWED)
 oCertificados:=oStore:Certificates()
-
+   
 FOR nI=1 TO oCertificados:Count()
    IF !EMPTY( ::cSerialCert )
       IF oCertificados:Item(nI):SerialNumber == ::cSerialCert
@@ -1101,7 +1120,7 @@ TRY
 CATCH
    aRETORNO['MSG']:='Não foi possível carregar o documento XML'
    RETURN(aRETORNO)
-END
+END   
 IF oDOMDoc:parseError:errorCode <> 0
    aRETORNO['MSG']:='Não foi possível carregar o documento pois ele não corresponde ao seu Schema'+HB_OsNewLine()+;
                     ' Linha: '+STR(oDOMDoc:parseError:line)                                       +HB_OsNewLine()+;
@@ -1205,7 +1224,7 @@ IF ::tpEmis='7' .OR. ::cCte_Estado='AC' .OR. ::cCte_Estado='AL'.OR. ::cCte_Estad
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteinutilizacao/cteinutilizacao.asmx'    ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteinutilizacao/cteinutilizacao.asmx'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'            ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'  ,'https://homologacao.cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx','https://homologacao.cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx'})
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx','https://homologacao.cte.sefaz.rs.gov.br/ws/CteRecepcaoEvento/CteRecepcaoEvento.asmx'})         
 */
 ELSEIF ::tpEmis='8' .OR. ::cCte_Estado='AP' .OR. ::cCte_Estado='PE' .OR. ::cCte_Estado='RR'  // SVSP
    EXECUTA_SQL('select servico, '+;
@@ -1235,11 +1254,11 @@ ELSE
 ELSEIF ::cCte_Estado='MT'
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteRecepcao'      ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteRecepcao'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteRetRecepcao'   ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteRetRecepcao'})
-   AADD(aWEB,{'CteCancelamento'      ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteCancelamento'  ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteCancelamento'})
+   AADD(aWEB,{'CteCancelamento'      ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteCancelamento'  ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteCancelamento'})   
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteInutilizacao'  ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteInutilizacao'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteConsulta'      ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteConsulta'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/CteStatusServico' ,'https://homologacao.sefaz.mt.gov.br/ctews/services/CteStatusServico'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/cteRecepcaoEvento','https://homologacao.sefaz.mt.gov.br/ctews/services/cteRecepcaoEvento'})
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.mt.gov.br/ctews/services/cteRecepcaoEvento','https://homologacao.sefaz.mt.gov.br/ctews/services/cteRecepcaoEvento'})   
 ELSEIF ::cCte_Estado='MS'
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://producao.cte.ms.gov.br/cteWEB/CteRecepcao.asmx'      ,'https://homologacao.cte.ms.gov.br/cteWEB/CteRecepcao.asmx'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://producao.cte.ms.gov.br/cteWEB/CteRetRecepcao.asmx'   ,'https://homologacao.cte.ms.gov.br/cteWEB/CteRetRecepcao.asmx'})
@@ -1247,7 +1266,7 @@ ELSEIF ::cCte_Estado='MS'
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://producao.cte.ms.gov.br/cteWEB/CteInutilizacao.asmx'  ,'https://homologacao.cte.ms.gov.br/cteWEB/CteInutilizacao.asmx'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://producao.cte.ms.gov.br/cteWEB/CteConsulta.asmx'      ,'https://homologacao.cte.ms.gov.br/cteWEB/CteConsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://producao.cte.ms.gov.br/cteWEB/CteStatusServico.asmx' ,'https://homologacao.cte.ms.gov.br/cteWEB/CteStatusServico.asmx'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://producao.cte.ms.gov.br/cteWEB/cteRecepcaoEvento.asmx','https://homologacao.cte.ms.gov.br/cteWEB/cteRecepcaoEvento.asmx'})
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://producao.cte.ms.gov.br/cteWEB/cteRecepcaoEvento.asmx','https://homologacao.cte.ms.gov.br/cteWEB/cteRecepcaoEvento.asmx'})   
 ELSEIF ::cCte_Estado='MG'
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://cte.fazenda.mg.gov.br/cte/services/CteRecepcao'      ,'https://hcte.fazenda.mg.gov.br/cte/services/CteRecepcao'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://cte.fazenda.mg.gov.br/cte/services/CteRetRecepcao'   ,'https://hcte.fazenda.mg.gov.br/cte/services/CteRetRecepcao'})
@@ -1263,7 +1282,7 @@ ELSEIF ::cCte_Estado='PR'
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://cte.fazenda.pr.gov.br/cte/CteInutilizacao'       ,'https://homologacao.cte.fazenda.pr.gov.br/cte/CteInutilizacao'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://cte.fazenda.pr.gov.br/cte/CteConsulta'           ,'https://homologacao.cte.fazenda.pr.gov.br/cte/CteConsulta'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://cte.fazenda.pr.gov.br/cte/CteStatusServico'      ,'https://homologacao.cte.fazenda.pr.gov.br/cte/CteStatusServico'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.fazenda.pr.gov.br/cte/cteRecepcaoEvento?wsdl','https://homologacao.cte.fazenda.pr.gov.br/cte/cteRecepcaoEvento?wsdl'})
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.fazenda.pr.gov.br/cte/cteRecepcaoEvento?wsdl','https://homologacao.cte.fazenda.pr.gov.br/cte/cteRecepcaoEvento?wsdl'})   
 ELSEIF ::cCte_Estado='RS'
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://cte.sefaz.rs.gov.br/ws/cterecepcao/CteRecepcao.asmx'             ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cterecepcao/CteRecepcao.asmx'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteretrecepcao/CteRetRecepcao.asmx'       ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteretrecepcao/CteRetRecepcao.asmx'})
@@ -1271,16 +1290,16 @@ ELSEIF ::cCte_Estado='RS'
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteinutilizacao/cteinutilizacao.asmx'     ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteinutilizacao/cteinutilizacao.asmx'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'             ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteconsulta/cteconsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'   ,'https://homologacao.cte.sefaz.rs.gov.br/ws/ctestatusservico/ctestatusservico.asmx'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteRecepcaoEvento/cteRecepcaoEvento.asmx' ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteRecepcaoEvento/cteRecepcaoEvento.asmx'})
-ELSEIF ::cCte_Estado='SP'
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://cte.sefaz.rs.gov.br/ws/cteRecepcaoEvento/cteRecepcaoEvento.asmx' ,'https://homologacao.cte.sefaz.rs.gov.br/ws/cteRecepcaoEvento/cteRecepcaoEvento.asmx'})   
+ELSEIF ::cCte_Estado='SP'   
    AADD(aWEB,{'CteRecepcao'          ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcao.asmx'      ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcao.asmx'})
    AADD(aWEB,{'CteRetRecepcao'       ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRetRecepcao.asmx'   ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteRetRecepcao.asmx'})
    AADD(aWEB,{'CteCancelamento'      ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteCancelamento.asmx'  ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteCancelamento.asm'})
    AADD(aWEB,{'CteInutilizacao'      ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteInutilizacao.asmx'  ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteInutilizacao.asmx'})
    AADD(aWEB,{'CteConsultaProtocolo' ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteConsulta.asmx'      ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteConsulta.asmx'})
    AADD(aWEB,{'CteStatusServico'     ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteStatusServico.asmx' ,'https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteStatusServico.asmx'})
-   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx','https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx'})
-*/
+   AADD(aWEB,{'cteRecepcaoEvento'    ,'1.00','https://nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx','https://homologacao.nfe.fazenda.sp.gov.br/cteWEB/services/cteRecepcaoEvento.asmx'})   
+*/   
 ENDIF
 
 nSCAN:=ASCAN(aWEB,{|x| x[1]=cServ})
@@ -1322,7 +1341,7 @@ LOCAL aRETORNO:=HASH()
 
 IF 'cteRecepcaoLoteResult'$cXML
    cXML:=::oFuncoes:pegaTag(cXML,'retEnviCte')
-   aRETORNO['tpAmb']    := ::oFuncoes:pegaTag(cXML,'tpAmb')
+   aRETORNO['tpAmb']    := ::oFuncoes:pegaTag(cXML,'tpAmb')   
    aRETORNO['cUF']      := ::oFuncoes:pegaTag(cXML,'cUF')
    aRETORNO['verAplic'] := ::oFuncoes:pegaTag(cXML,'verAplic')
    aRETORNO['cStat']    := ::oFuncoes:pegaTag(cXML,'cStat')
@@ -1352,7 +1371,7 @@ ELSEIF 'cteRetRecepcaoResult'$cXML
    aRETORNO['digVal']       := ::oFuncoes:pegaTag(cXML,'digVal')
    aRETORNO['cStat_cte']    := ::oFuncoes:pegaTag(cXML,'cStat')
    aRETORNO['xMotivo_cte']  := ::oFuncoes:pegaTag(cXML,'xMotivo')
-ELSEIF 'cteInutilizacaoCTResult'$cXML
+ELSEIF 'cteInutilizacaoCTResult'$cXML   
    cXML:=::oFuncoes:pegaTag(cXML,'infInut')
    aRETORNO['infInut']    := '<infInut '+cXML+'</infInut>'
    IF '<infInut <tpAmb>'$aRETORNO['infInut']
@@ -1371,7 +1390,7 @@ ELSEIF 'cteInutilizacaoCTResult'$cXML
    aRETORNO['CTFin']    := ::oFuncoes:pegaTag(cXML,'CTFin')
    aRETORNO['dhRecbto'] := ::oFuncoes:pegaTag(cXML,'dhRecbto')
    aRETORNO['nProt']    := ::oFuncoes:pegaTag(cXML,'nProt')
-ELSEIF 'cteCancelamentoCTResult'$cXML
+ELSEIF 'cteCancelamentoCTResult'$cXML   
    cXML:=::oFuncoes:pegaTag(cXML,'infCanc')
    aRETORNO['infCanc']  := '<infCanc '+cXML+'</infCanc>'
    IF '<infCanc <tpAmb>'$aRETORNO['infCanc']
@@ -1403,7 +1422,7 @@ ELSEIF 'cteConsultaCTResult'$cXML
       cXML:=::oFuncoes:pegaTag(aRETORNO['infCanc'],'infCanc')
       aRETORNO['nProt']    := ::oFuncoes:pegaTag(cXML,'nProt')
    ELSEIF 'retEventoCTe'$cXML
-      cXML:=::oFuncoes:pegaTag(cXML,'retEventoCTe')
+      cXML:=::oFuncoes:pegaTag(cXML,'retEventoCTe')  
       cXML:='<infEvento '+::oFuncoes:pegaTag(cXML,'infEvento')+'</infEvento>'
       aRETORNO['infEvento'] := cXML
       aRETORNO['tpAmb'] := ::oFuncoes:pegaTag(cXML,'tpAmb')
@@ -1482,7 +1501,7 @@ ELSE
    cXMLret:='<?xml version="1.0" encoding="utf-8"?><soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema"><soap:Header><cteCabecMsg xmlns="http://www.portalfiscal.inf.br/cte/wsdl/CteRetRecepcao"><cUF>50</cUF><versaoDados>'+::cVersao_CTe+'</versaoDados></cteCabecMsg></soap:Header><soap:Body><cteRetRecepcaoResult xmlns="http://www.portalfiscal.inf.br/cte/wsdl/CteRetRecepcao"><retConsReciCTe xmlns="http://www.portalfiscal.inf.br/cte" versao="'+::cVersao_CTe+'"><tpAmb>2</tpAmb><verAplic>MS_PL_CTe_104</verAplic><nRec>EMULACAO</nRec><cStat>104</cStat><xMotivo>Lote processado</xMotivo><cUF>50</cUF><protCTe versao="'+::cVersao_CTe+'"><infProt><tpAmb>2</tpAmb><verAplic>MS_PL_CTe_104</verAplic><chCTe>EMULACAO</chCTe><dhRecbto>2013-08-23T10:19:53</dhRecbto><nProt>EMULACAO</nProt><digVal>NcKKD+slBx42yyYfdpU5W6Wu4/w=</digVal><cStat>100</cStat><xMotivo>Autorizado o uso do CT-e</xMotivo></infProt></protCTe></retConsReciCTe></cteRetRecepcaoResult></soap:Body></soap:Envelope>'
 ENDIF
 
-IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"
+IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"         
    SHOWMSG_EDIT(cXMLret,'RETORNO DE RECEPCAO')
 ENDIF
 
@@ -1494,7 +1513,7 @@ TRY   // RESPONDEU SEM NADA NO XML
 CATCH
    aRETORNO['MSG']:='O SEFAZ não respondeu ao pedido da CT-e. Favor retentar o envio.'
    lERRO:=.T.
-END
+END   
 IF lERRO
    RETURN(aRETORNO)
 ENDIF
@@ -1517,7 +1536,7 @@ IF VAL(aRET['cStat_cte'])=204 .OR. VAL(aRET['cStat_cte'])=539   // duplicidade d
    ENDIF
 
    cRECIBO:=ALLTRIM(SUBSTR(aRET['xMotivo_cte'],AT('nRec:',aRET['xMotivo_cte'])+5,AT(']',SUBSTR(aRET['xMotivo_cte'],AT('nRec:',aRET['xMotivo_cte'])+5,LEN(aRET['xMotivo_cte'])))-1))
-   WHILE cRECIBO='999999999999999'
+   WHILE cRECIBO='999999999999999' 
       cMOT2:=SUBSTR(aRET['xMotivo_cte'],AT('nRec:'+cRECIBO,aRET['xMotivo_cte'])+15,LEN(aRET['xMotivo_cte']))
       cRECIBO:=ALLTRIM(SUBSTR(cMOT2,AT('nRec:',cMOT2)+5,AT(']',SUBSTR(cMOT2,AT('nRec:',cMOT2)+5,LEN(cMOT2)))-1))
    ENDDO
@@ -1671,7 +1690,7 @@ AADD(aREL,{'ide.UFIni',''})
 AADD(aREL,{'ide.xMunIni',''})
 AADD(aREL,{'ide.UFFim',''})
 AADD(aREL,{'ide.cMunFim',''})
-AADD(aREL,{'ide.xMunFim',''})
+AADD(aREL,{'ide.xMunFim',''})   
 AADD(aREL,{'ide.cCancelada', IF(lCANC,'S','N')})   //QQQ ARRUMAR ISSO
 
 AADD(aREL,{'toma03.toma',''})
@@ -1808,7 +1827,7 @@ AADD(aREL,{'ObsFisco.xCampo',''})
 AADD(aREL,{'ObsFisco.xTexto',''})
 
 AADD(aREL,{'infProt.chCTe',''})
-AADD(aREL,{'infProt.nProt',''})
+AADD(aREL,{'infProt.nProt',''}) 
 
 aXML:=::oFuncoes:XMLnaArray(cArqXml,'cteProc')
 
@@ -1838,7 +1857,7 @@ FOR mI:=1 TO LEN(aXML)
    IF nSCAN>0
       aREL[nSCAN,2]:=aXML[mI,2]
    ENDIF
-
+   
    // Componentes do valor da prestação
    IF 'CTe.infCte.vPrest.Comp' $ aXML[mI,3] .AND. aXML[mI,4]='vPrest'
       nDetComp++
@@ -1856,9 +1875,9 @@ FOR mI:=1 TO LEN(aXML)
    ENDIF
 
    // Documentos Originários
-
-
-   IF (cVERSAO='2.00' .AND. 'CTe.infCte.infCTeNorm' $ aXML[mI,3] .AND. aXML[mI,4]='infDoc') .OR.;
+   
+   
+   IF (cVERSAO='2.00' .AND. 'CTe.infCte.infCTeNorm' $ aXML[mI,3] .AND. aXML[mI,4]='infDoc') .OR.; 
       (cVERSAO='1.04' .AND. 'CTe.infCte.rem.infNF' $ aXML[mI,3] .AND. aXML[mI,4]='rem')
       nDetInfNF++
       AADD(aInfNF,{nDetInfNF,'','','','','','','','','','','','','','','',''})
@@ -1902,14 +1921,14 @@ FOR mI:=1 TO LEN(aXML)
          ENDIF
       ENDIF
    ENDIF
-
+   
    // Identificação do Conjunto Transportador
    IF 'CTe.infCte.infCTeNorm.infModal.rodo.veic' $ aXML[mI,3] .AND. aXML[mI,4]='rodo'
       nDetVeic++
       AADD(aVeic,{nDetVeic,'','','','','','','','','','','','','','','','','',''})
       //               1   2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19
    ENDIF
-
+   
    nSCAN:=ASCAN(aVeic,{|x| x[1]=nDetVeic  })
    IF nSCAN>0
       IF aXML[mI,4]='veic'
@@ -2028,9 +2047,9 @@ FOR mI:=1 TO LEN(aXML)
 NEXT
 
 IF nTotPed>0
-   AADD(aREL,{'valePed.nTotPed',STR(nTotPed)})
+   AADD(aREL,{'valePed.nTotPed',STR(nTotPed)}) 
 ELSE
-   AADD(aREL,{'valePed.nTotPed',''})
+   AADD(aREL,{'valePed.nTotPed',''}) 
 ENDIF
 
 oFrPrn:=frReportManager():new()
@@ -2079,7 +2098,7 @@ ELSE
    ELSE
       oFrPrn:PreviewOptions:SetZoomMode(2)
       oFrPrn:ShowReport()
-   ENDIF
+   ENDIF   
 ENDIF
 oFrPrn:DestroyFR()
 oFrPrn:=NIL
@@ -2205,7 +2224,7 @@ IF !aRET['STATUS']
    RETURN(aRET)
 ENDIF
 cXML:=aRET['XML']
-
+ 
 // valida o XML de cancelamento
 aRET:=::ctValidaXML(cXML)
 IF !aRET['STATUS']
@@ -2213,7 +2232,7 @@ IF !aRET['STATUS']
 ENDIF
 cXMLenv:=cXML
 
-IF !::lCte_Emulador
+IF !::lCte_Emulador   
    // empacota no SOAP ACTION
    cXML:=::ctSoapAction(cXML,'CteCancelamento')
 
@@ -2229,7 +2248,7 @@ ENDIF
 // le a resposta
 aRET:=::ctPegaRetornoSEFAZ(aRET['XML'])
 IF VAL(aRET['cStat'])=218  // trata duplicidade
-   aRET:=::ctConsultaProtocolo()
+   aRET:=::ctConsultaProtocolo()   
    aRET:=::ctPegaRetornoSEFAZ(aRET['infCanc'])
 ENDIF
 IF VAL(aRET['cStat'])>=200
@@ -2282,7 +2301,7 @@ cXML+=      '<cOrgao>'+ALLTRIM(STR(::oCTe_GERAIS:rgRetorna_uf(::cCte_Estado,2)))
 cXML+=      '<tpAmb>'+::tpAmb+'</tpAmb>'
 cXML+=      '<CNPJ>'+::cCte_CNPJ+'</CNPJ>'
 cXML+=      '<chCTe>'+::cCte_Chave+'</chCTe>'
-cXML+=      '<dhEvento>'+::oFuncoes:FormatDate(DATE(),'YYYY-MM-DD','-')+'T'+TIME()+'</dhEvento>'
+cXML+=      '<dhEvento>'+::oFuncoes:FormatDate(DATE(),'YYYY-MM-DD','-')+'T'+TIME()+'</dhEvento>' 
 cXML+=      '<tpEvento>'+::tpEvento+'</tpEvento>'
 cXML+=      '<nSeqEvento>'+STRZERO(::nSeqEvento,2)+'</nSeqEvento>'
 cXML+=      '<detEvento versaoEvento="'+::cVersao_CTe+'">'
@@ -2356,7 +2375,7 @@ IF !aRET['STATUS']
    RETURN(aRET)
 ENDIF
 
-IF !::lCte_Emulador
+IF !::lCte_Emulador  
    // executa o registro de evento
    aRET:=::ctEventos(cXML)
    IF !aRET['STATUS']
@@ -2369,9 +2388,9 @@ ELSE
    aRET['infEvento']:='EMULACAO DE CACELAMENTO'
 ENDIF
 
-IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"
+IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"         
    SHOWMSG_EDIT(aRET['XML'])
-ENDIF
+ENDIF   
 
 // le a resposta
 aRET:=::ctPegaRetornoSEFAZ(aRET['XML'])
@@ -2380,9 +2399,9 @@ IF VAL(aRET['cStat'])<>135 .AND. VAL(aRET['cStat'])<>631
    aRET['MSG']:=aRET['cStat']+'-'+aRET['xMotivo']
    RETURN(aRET)
 ENDIF
-
+   
 IF VAL(aRET['cStat'])=631
-   IF !::lCte_Emulador
+   IF !::lCte_Emulador  
       aRET:=::ctConsultaProtocolo()
       IF !aRET['STATUS']
          RETURN(aRET)
@@ -2455,7 +2474,7 @@ IF !aRET['STATUS']
    RETURN(aRET)
 ENDIF
 
-IF !::lCte_Emulador
+IF !::lCte_Emulador  
    // executa o registro de evento
    aRET:=::ctEventos(cXML)
    IF !aRET['STATUS']
@@ -2468,9 +2487,9 @@ ELSE
    aRET['infEvento']:='EMULACAO DE CARTA DE CORRECAO'
 ENDIF
 
-IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"
+IF GET_PARAMETRO('MOTRA_XML')  // SOMENTE PARA SYGECOM, DEMAIS PODEM REMOVER TODO O "IF"         
    SHOWMSG_EDIT(aRET['XML'])
-ENDIF
+ENDIF   
 
 // le a resposta
 aRET:=::ctPegaRetornoSEFAZ(aRET['XML'])

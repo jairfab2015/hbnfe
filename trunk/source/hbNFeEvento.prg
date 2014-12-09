@@ -3,7 +3,14 @@
    Mauricio Cruz - 09/10/2012 - cruz@sygecom.com.br
    Projeto principal: hbNfe de Fernando Athayde
 */
+#include "common.ch"
 #include "hbclass.ch"
+#ifndef __XHARBOUR__
+   #include "hbwin.ch"
+   #include "harupdf.ch"
+   #include "hbzebra.ch"
+   #include "hbcompat.ch"
+#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeEvento
@@ -33,9 +40,8 @@ ENDCLASS
 METHOD execute() CLASS hbNFeEvento
 LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(),;
       oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/RecepcaoEvento',;
-      oError, cXMLDadosMsg,;
+      oError, nI2, xXMLSai, cProtNFe, cXMLSai, cXMLFile, cXMLDadosMsg,;
       cId, cCondUso, cXMLResp2, cXMLResp3, cXMLResp4, oAssina, aRetornoAss, oValida, aRetornoVal, nPos
-LOCAL nI, cXmlDadosMsg2, cSeq
 
 aRetorno['cStat_1']:=''
 
@@ -55,7 +61,7 @@ IF ::cTIPevento=NIL
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Tipo de evento não informado'
    RETURN(aRetorno)
-ENDIF
+ENDIF   
 IF ::cIDevento=NIL
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'ID do evento não informado'
@@ -79,16 +85,16 @@ CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Não foi possível carregar as informação do certicado digital'
    RETURN(aRetorno)
-END
+END   
 TRY
    cUrlWS := ::ohbNFe:getURLWS( IF(::nTipoEvento=_RECPEVENTO,_RECPEVENTO,_EVENTO))
 CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Não foi possível carregar o link do webservice de eventos'
    RETURN(aRetorno)
-END
+END   
 if cUrlWS = nil
-    cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
+    cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
                 "Serviço solicitado : EVENTO"
     aRetorno['OK']       := .F.
     aRetorno['MsgErro']  := cMsgErro
@@ -96,11 +102,13 @@ if cUrlWS = nil
 endif
 
 TRY
-
-   oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-
+   #ifdef __XHARBOUR__
+      oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
+   #else
+      oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+   #endif
 CATCH
-   cMsgErro := "Serviço não mapeado"+ HB_EOL()+;
+   cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
                "Serviço solicitado : EVENTO"
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -181,7 +189,7 @@ FOR nI = 1 TO ::nEvento
 NEXT
 cXMLDadosMsg += +'</envEvento>'
 
-hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-ped-evento.xml", cXMLDadosMsg )
+MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-evento.xml",cXMLDadosMsg,.F.)
 
 TRY
    oValida := hbNFeValida()
@@ -193,7 +201,7 @@ CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Não foi possível validar o evento.'
    RETURN(aRetorno)
-END
+END   
 IF aRetornoVal['OK'] == .F.
    aRetorno['OK'] := .F.
    aRetorno['MsgErro'] := 'Valida: '+aRetornoVal['MsgErro']
@@ -218,15 +226,18 @@ cXML := cXML +   '</soap12:Body>'
 cXML := cXML +'</soap12:Envelope>'
 
 TRY
-   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-ped-evento.xml", cXMLDadosMsg )
+   MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-evento.xml",cXMLDadosMsg,.F.)
 CATCH
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := 'Problema ao gravar pedido de evento '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-evento.xml"
    RETURN(aRetorno)
 END
 TRY
-   oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-
+   #ifdef __XHARBOUR__
+      oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+   #else
+      oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+   #endif
    oDOMDoc:async = .F.
    oDOMDoc:validateOnParse  = .T.
    oDOMDoc:resolveExternals := .F.
@@ -237,12 +248,12 @@ CATCH
    aRetorno['MsgErro']  := 'Não foi possível validar o documento de evento'
    RETURN(aRetorno)
 END
-
+   
 IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
-   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_EOL() +;
-               " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() +;
-               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() +;
-               " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() +;
+   cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
+               " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
+               " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
+               " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
                "code: "+STR(oDOMDoc:parseError:errorCode)
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := cMsgErro
@@ -252,11 +263,11 @@ ENDIF
 TRY
    oServerWS:send(oDOMDoc:xml)
 CATCH oError
-  cMsgErro := "Falha "+HB_EOL()+ ;
-             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
-             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
-             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
-             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
+  cMsgErro := "Falha "+HB_OsNewLine()+ ;
+             "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
+             "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
+             "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
+             "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
              "Mensangem: " + oError:Description
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := cMsgErro
@@ -269,12 +280,12 @@ ENDDO
 
 cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
 
-TRY
-   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-reps-evento.xml", cXMLResp )
+TRY   
+   MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-reps-evento.xml",cXMLResp,.F.)   
 CATCH
-END
-
-
+END   
+  
+   
 IF VAL(oFuncoes:pegaTag(cXMLResp, "cStat"))<>128
    aRetorno['OK']       := .F.
    aRetorno['MsgErro']  := oFuncoes:pegaTag(cXMLResp, "cStat")+'-'+oFuncoes:pegaTag(cXMLResp, "xMotivo")
@@ -292,7 +303,7 @@ ENDIF
 
 cXMLResp2 := oFuncoes:pegaTag( cXMLResp, 'retEnvEvento' )
 cXMLResp4 := oFuncoes:pegaTag( cXMLResp, 'retEvento' )    // Mauricio Cruz - 13/10/2011
-
+   
 nPos := 1
 nI := 0
 DO WHILE .T.
@@ -320,7 +331,7 @@ DO WHILE .T.
    aRetorno['emailDest_'+cSeq]   := oFuncoes:pegaTag(cXMLResp3, "emailDest")
    aRetorno['dhRegEvento_'+cSeq] := oFuncoes:pegaTag(cXMLResp3, "dhRegEvento")
    aRetorno['nProt_'+cSeq]       := oFuncoes:pegaTag(cXMLResp3, "nProt")
-
+   
    // Mauricio Cruz - 13/10/2011
    IF oFuncoes:pegaTag(cXMLResp3, "cStat")<>'135'
       aRetorno['OK']       := .F.
@@ -340,7 +351,7 @@ cXMLResp := '<?xml version="1.0" encoding="UTF-8" ?>' +;
                 '</retEvento>' +;
               '</ProcEventoNFe>'
 TRY
-   hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-evento.xml", cXMLResp )
+   MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-evento.xml",cXMLResp,.F.)
 CATCH
   aRetorno['OK']       := .F.
   aRetorno['MsgErro']  := 'Problema ao gravar retorno do evento '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-evento.xml"

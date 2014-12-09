@@ -5,27 +5,6 @@
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
 
-// #include "common.ch"      // mas isto nao é default?
-#include "harupdf.ch"        // Saiu da condição xHarbour, porque xHarbour também tem harupdf
-#ifndef __XHARBOUR__         // no Harbour 3.2 também não precisa ao se usar hbc
-   #include "hbwin.ch"
-   #include "hbzebra.ch"
-   #include "hbcompat.ch"    // esta é a única que não faz parte de um hbc
-#endif
-#ifdef __LIBCURL__
-   #include "hbcurl.ch"      // devido aos includes, precisa existir
-#endif
-
-// No Windows 64 bits o registro é diferente e pode precisar desfazer o registro errado anterior
-//
-// \windows\system32\regsvr32 /u msxml5.dll
-// \windows\system32\regsvr32 /u capicom.dll
-//
-// \windows\syswow64\regsvr32 msxml5.dll
-// \windows\syswow64\regsvr32 capicom.dll
-//
-// msxml5r.dll não precisa ser registrada
-
 #define _RECEPCAO             1
 #define _RETRECEPCAO          2
 #define _CANCELAMENTO         3
@@ -54,7 +33,6 @@
 #define HBNFE_EXIGIDA         .T.
 #define HBNFE_NAOEXIGIDA      .F.
 
-
 #define _CAPICOM_STORE_OPEN_READ_ONLY                 0           // Somente Smart Card em Modo de Leitura
 
 #define _CAPICOM_MEMORY_STORE                         0
@@ -76,4 +54,3 @@
 #define _CERT_KEY_SPEC_PROP_ID                        6
 #define _CAPICOM_CERT_INFO_ISSUER_EMAIL_NAME          0
 #define _SIG_KEYINFO                                  2
-
