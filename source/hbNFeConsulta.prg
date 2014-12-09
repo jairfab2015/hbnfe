@@ -4,53 +4,192 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-
+#include "common.ch"
 #include "hbclass.ch"
+#ifndef __XHARBOUR__
+   #include "hbwin.ch"
+   #include "harupdf.ch"
+   #include "hbzebra.ch"
+   #include "hbcompat.ch"
+#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeConsulta
-   DATA   ohbNFe
-   DATA   oSefaz
-   DATA   cNFeFile  //pode ser um xml
-   DATA   cChaveNFe //pode ser uma chave
-   METHOD Execute()
+   DATA ohbNFe
+   DATA cUFWS
+   DATA versaoDados
+   DATA tpAmb
+   DATA cNFeFile  //pode ser um xml
+   DATA cChaveNFe //pode ser uma chave
+
+   METHOD execute()
 ENDCLASS
 
-METHOD Execute() CLASS hbNFeConsulta
-   LOCAL cXMLResp, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cXMLSai, cXMLFile
+METHOD execute() CLASS hbNFeConsulta
+LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(),;
+      oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2',;
+      oError, nI2, xXMLSai, cProtNFe, cXMLSai, cXMLFile, cXMLDadosMsg, oCurl, aHeader, retHTTP
 
-   IF ::oSefaz == NIL
-      ::oSefaz := ::ohbNFe:oSefaz
+   IF ::cUFWS = Nil
+      ::cUFWS := ::ohbNFe:cUFWS
+   ENDIF
+   IF ::versaoDados = Nil
+      ::versaoDados := '2.01'
    ENDIF
 
-   IF .NOT. Empty( ::cNFeFile )
-      IF .NOT. File( ::cNFeFile )
-         aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'Arquivo não encontrado ' + ::cNFeFile
+   IF ::tpAmb = Nil
+      ::tpAmb := ::ohbNFe:tpAmb
+   ENDIF
+
+   IF !EMPTY( ::cNFeFile )
+      IF !FILE( ::cNFeFile )
+         aRetorno['OK']       := .F.
+         aRetorno['MsgErro']  := 'Arquivo não encontrado '+::cNFeFile
          RETURN(aRetorno)
       ENDIF
       TRY
          cXMLFile := MEMOREAD( ::cNFeFile )
       CATCH
-         aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'Erro ao abrir ' + ::cNFeFile
-         RETURN( aRetorno )
+         aRetorno['OK']       := .F.
+         aRetorno['MsgErro']  := 'Erro ao abrir '+::cNFeFile
+         RETURN(aRetorno)
       END
-      ::cChaveNFe := Substr( ::cNFeFile ,AT('-nfe',::cNFeFile)-44 ,44 )
+      ::cChaveNFe := SUBS( ::cNFeFile ,AT('-nfe',::cNFeFile)-44 ,44 )
       IF 'retCancNFe' $ cXMLFile
-         aRetorno[ 'OK' ]       := .F.
-         aRetorno[ 'MsgErro' ]  := 'NFe ' + ::cNFeFile+' cancelada'
-         RETURN aRetorno
+         aRetorno['OK']       := .F.
+         aRetorno['MsgErro']  := 'NFe '+::cNFeFile+' cancelada'
+         RETURN(aRetorno)
       ENDIF
    ENDIF
 
-   ::oSefaz:NfeConsulta( ::cChaveNfe )
-   cXmlResp := ::oSefaz:cXmlResposta
+   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 
-   cXmlResp := oFuncoes:pegaTag( cXmlResp, 'retConsSitNFe' )
+   cUrlWS := ::ohbNFe:getURLWS(_CONSULTAPROTOCOLO)
+   IF cUrlWS = nil
+      cMsgErro := "Serviço não mapeado"+ HB_OSNEWLINE()+;
+                  "Serviço solicitado : CONSULTA PROTOCOLO"
+      aRetorno['OK']       := .F.
+      aRetorno['MsgErro']  := cMsgErro
+      RETURN(aRetorno)
+   ENDIF
+   cXMLDadosMsg := '<consSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="2.01">' +;
+                      '<tpAmb>'+::tpAmb+'</tpAmb>' +;
+                      '<xServ>CONSULTAR</xServ>' +;
+                      '<chNFe>'+::cChaveNFe+'</chNFe>' +;
+                   '</consSitNFe>'
+
+   cXML := '<?xml version="1.0" encoding="utf-8"?>'
+   cXML := cXML + '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+   cXML := cXML +   '<soap12:Header>'
+   cXML := cXML +     '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2">'
+   cXML := cXML +       '<cUF>'+::cUFWS+'</cUF>'
+   cXML := cXML +       '<versaoDados>'+::versaoDados+'</versaoDados>'
+   cXML := cXML +     '</nfeCabecMsg>'
+   cXML := cXML +   '</soap12:Header>'
+   cXML := cXML +   '<soap12:Body>'
+   cXML := cXML +     '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeConsulta2">'
+   cXML := cXML +        cXMLDadosMsg
+   cXML := cXML +     '</nfeDadosMsg>'
+   cXML := cXML +   '</soap12:Body>'
+   cXML := cXML +'</soap12:Envelope>'
+   TRY
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-sit.xml",cXMLDadosMsg,.F.)
+   CATCH
+      aRetorno['OK']       := .F.
+      aRetorno['MsgErro']  := 'Problema ao gravar pedido de consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-ped-sit.xml"
+      RETURN(aRetorno)
+   END
+
+  IF ::ohbNFe:nSOAP = HBNFE_CURL
+     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
+                 'SOAPAction: "NfeConsulta2"',;
+                 'Content-length: '+ALLTRIM(STR(len(cXML))) }
+
+     #ifndef __XHARBOUR__
+       curl_global_init()
+       oCurl = curl_easy_init()
+
+       curl_easy_setopt(oCurl, HB_CURLOPT_URL, cUrlWS)
+       curl_easy_setopt(oCurl, HB_CURLOPT_PORT , 443)
+       curl_easy_setopt(oCurl, HB_CURLOPT_VERBOSE, .F.) // 1
+       curl_easy_setopt(oCurl, HB_CURLOPT_HEADER, 1) //retorna o cabeÃ§alho de resposta
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLVERSION, 3)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub)
+       curl_easy_setopt(oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POST, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POSTFIELDS, cXML)
+       curl_easy_setopt(oCurl, HB_CURLOPT_WRITEFUNCTION, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_DL_BUFF_SETUP )
+       curl_easy_setopt(oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
+       curl_easy_perform(oCurl)
+       retHTTP := curl_easy_getinfo(oCurl,HB_CURLINFO_RESPONSE_CODE) //informaÃ§Ãµes da conexÃ£o
+
+       cXMLResp := ''
+       IF retHTTP = 200 // OK
+          curl_easy_setopt( ocurl, HB_CURLOPT_DL_BUFF_GET, @cXMLResp )
+          cXMLResp := SUBS(cXMLResp,AT('<?xml',cXMLResp))
+       ENDIF
+
+       curl_easy_cleanup(oCurl)
+       curl_global_cleanup()
+     #endif
+  ELSE // MSXML
+     #ifdef __XHARBOUR__
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
+     #else
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+     #endif
+     oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
+     oServerWS:open("POST", cUrlWS, .F.)
+     oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
+     oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
+
+     #ifdef __XHARBOUR__
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+     #else
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+     #endif
+     oDOMDoc:async = .F.
+     oDOMDoc:validateOnParse  = .T.
+     oDOMDoc:resolveExternals := .F.
+     oDOMDoc:preserveWhiteSpace = .T.
+     oDOMDoc:LoadXML(cXML)
+     IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() +;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() +;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() +;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() +;
+                    "code: "+STR(oDOMDoc:parseError:errorCode)
+        aRetorno['OK']       := .F.
+        aRetorno['MsgErro']  := cMsgErro
+        RETURN(aRetorno)
+     ENDIF
+     TRY
+        oServerWS:send(oDOMDoc:xml)
+     CATCH oError
+       cMsgErro := "Falha "+HB_OsNewLine()+ ;
+               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
+               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
+               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+              	 "Mensangem: " + oError:Description
+       aRetorno['OK']       := .F.
+       aRetorno['MsgErro']  := cMsgErro
+       RETURN(aRetorno)
+     END
+     DO WHILE oServerWS:readyState <> 4
+        millisec(500)
+     ENDDO
+     cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
+   ENDIF
+
+   cXMLResp := oFuncoes:pegaTag( cXMLResp, 'retConsSitNFe' )
 
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-sit.xml", cXmlResp )
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml",cXMLResp,.F.)
    CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar retorno da consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml"
@@ -95,13 +234,16 @@ METHOD Execute() CLASS hbNFeConsulta
                  + '<NFe xmlns' + hbNFe_PegaDadosXML('NFe xmlns', cXMLSai, 'NFe' ) + '</NFe>';
                  + aRetorno['protNFe'];
                  + '</nfeProc>'
-*/
+*/                 
          TRY
-            hb_MemoWrit( ::cNFeFile, cXMLSai )
+            MEMOWRIT( ::cNFeFile, cXMLSai, .F. )
          CATCH
             aRetorno['MsgErro']  := 'Erro ao gravar protNFe no arquivo '+::cNFeFile
             RETURN(aRetorno)
          END
       ENDIF
    ENDIF
-   RETURN aRetorno
+
+   oDOMDoc:=Nil
+   oServerWS:=Nil
+RETURN(aRetorno)

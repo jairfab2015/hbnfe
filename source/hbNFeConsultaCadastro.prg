@@ -4,39 +4,171 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-
+#include "common.ch"
 #include "hbclass.ch"
+#ifndef __XHARBOUR__
+   #include "hbwin.ch"
+   #include "harupdf.ch"
+   #include "hbzebra.ch"
+   #include "hbcompat.ch"
+   #include "hbcurl.ch"
+#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeConsultaCadastro
-   DATA   ohbNFe
-   DATA   oSefaz
-   DATA   cCNPJ
+   DATA ohbNFe
+   DATA cUFWS
+   DATA versaoDados
+   DATA cUF
+   DATA cCNPJ
+
    METHOD execute()
 ENDCLASS
 
 METHOD execute() CLASS hbNFeConsultaCadastro
-LOCAL cXMLResp, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cFileEnvRes
+LOCAL cCN, cUrlWS, cXML, oServerWS, oDOMDoc, cXMLResp, cMsgErro, aRetorno := hash(),;
+      oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro2',;
+      cFileEnvRes, oError, cXMLDados, oCurl, aHeader, retHTTP
 
-   IF ::oSefaz = Nil
-      ::oSefaz := ::ohbNFe:oSefaz
+   IF ::cUFWS = Nil
+      ::cUFWS := ::ohbNFe:cUFWS
+   ENDIF
+   IF ::versaoDados = Nil
+      ::versaoDados := ::ohbNFe:versaoDados
    ENDIF
 
-   ::oSefaz:NfeCadastro( ::oSefaz:cUF, ::cCnpj )
+   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
 
+   cUrlWS := ::ohbNFe:getURLWS(_CONSULTACADASTRO)
+   if cUrlWS = nil
+      cMsgErro := "Serviço indisponível na Sefaz" + HB_OSNEWLINE()      +;
+                  "Consulte através do Site do Sintegra"
+      aRetorno['OK']       := .F.
+      aRetorno['MsgErro']  := cMsgErro
+      RETURN(aRetorno)
+   endif
+
+   cXMLDados := '<ConsCad xmlns="http://www.portalfiscal.inf.br/nfe" versao="2.00">';
+                  +'<infCons>';
+                    +'<xServ>CONS-CAD</xServ>';
+                    +'<UF>'+::cUF+'</UF>';
+                    +'<CNPJ>'+::cCNPJ+'</CNPJ>';
+                  +'</infCons>';
+                +'</ConsCad>'
+
+   cXML := '<?xml version="1.0" encoding="utf-8"?>'
+   cXML := cXML + '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+   cXML := cXML +   '<soap12:Header>'
+   cXML := cXML +     '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro2">'
+   cXML := cXML +       '<cUF>'+::cUFWS+'</cUF>'
+   cXML := cXML +       '<versaoDados>'+::versaoDados+'</versaoDados>'
+   cXML := cXML +     '</nfeCabecMsg>'
+   cXML := cXML +   '</soap12:Header>'
+   cXML := cXML +   '<soap12:Body>'
+
+   cXML := cXML +     '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/CadConsultaCadastro2">'
+   cXML := cXML + cXMLDados
+   cXML := cXML +     '</nfeDadosMsg>'
+
+   cXML := cXML +   '</soap12:Body>'
+   cXML := cXML +'</soap12:Envelope>'
    cFileEnvRes := ::cCNPJ+oFuncoes:formatDate( DATE(), "YYMMDD")+SUBS(TIME(),1,2)+SUBS(TIME(),4,2)+SUBS(TIME(),7,2)
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + cFileEnvRes + "-ped-cad.xml", ::oSefaz:cXmlSoap )
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-ped-cad.xml",cXMLDados,.F.)
    CATCH
       aRetorno['OK']       := .T.
       aRetorno['MsgErro']  := 'Problema ao gravar pedido do cadastro '+::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-ped-cad.xml"
       RETURN(aRetorno)
    END
 
-   cXMLResp := HB_ANSITOOEM( ::oSefaz:cXmlResposta )
+  IF ::ohbNFe:nSOAP = HBNFE_CURL
+     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
+                 'SOAPAction: "StatusServico2"',;
+                 'Content-length: '+ALLTRIM(STR(len(cXML))) }
+
+     #ifndef __XHARBOUR__
+       curl_global_init()
+       oCurl = curl_easy_init()
+
+       curl_easy_setopt(oCurl, HB_CURLOPT_URL, cUrlWS)
+       curl_easy_setopt(oCurl, HB_CURLOPT_PORT , 443)
+       curl_easy_setopt(oCurl, HB_CURLOPT_VERBOSE, .F.) // 1
+       curl_easy_setopt(oCurl, HB_CURLOPT_HEADER, 1) //retorna o cabeÃ§alho de resposta
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLVERSION, 3)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub)
+       curl_easy_setopt(oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POST, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POSTFIELDS, cXML)
+       curl_easy_setopt(oCurl, HB_CURLOPT_WRITEFUNCTION, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_DL_BUFF_SETUP )
+       curl_easy_setopt(oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
+       curl_easy_perform(oCurl)
+       retHTTP := curl_easy_getinfo(oCurl,HB_CURLINFO_RESPONSE_CODE) //informaÃ§Ãµes da conexÃ£o
+
+       cXMLResp := ''
+       IF retHTTP = 200 // OK
+          curl_easy_setopt( ocurl, HB_CURLOPT_DL_BUFF_GET, @cXMLResp )
+          cXMLResp := SUBS(cXMLResp,AT('<?xml',cXMLResp))
+       ENDIF
+
+       curl_easy_cleanup(oCurl)
+       curl_global_cleanup()
+     #endif
+  ELSE // MSXML
+     #ifdef __XHARBOUR__
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
+     #else
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+     #endif
+     oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
+     oServerWS:open("POST", cUrlWS, .F.)
+     oServerWS:setRequestHeader("SOAPAction", cSOAPAction)
+     oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
+  
+     #ifdef __XHARBOUR__
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+     #else
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+     #endif
+     oDOMDoc:async = .F.
+     oDOMDoc:validateOnParse  = .T.
+     oDOMDoc:resolveExternals := .F.
+     oDOMDoc:preserveWhiteSpace = .T.
+     oDOMDoc:LoadXML(cXML)
+     IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() + ;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() + ;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() + ;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() + ;
+                    " Code: "+STR(oDOMDoc:parseError:errorCode)
+        aRetorno['OK']       := .F.
+        aRetorno['MsgErro']  := cMsgErro
+        RETURN(aRetorno)
+     ENDIF
+     TRY
+        oServerWS:send(oDOMDoc:xml)
+     CATCH oError
+        cMsgErro := "Falha "+HB_OsNewLine()+ ;
+                 	"Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
+                 	"SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
+                 	"OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
+                 	"SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+                 	"Mensangem: " + oError:Description
+        aRetorno['OK']       := .F.
+        aRetorno['MsgErro']  := cMsgErro
+        RETURN(aRetorno)
+     END
+     DO WHILE oServerWS:readyState <> 4
+        millisec(500)
+     ENDDO
+     cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
+   ENDIF
    cXMLResp := oFuncoes:pegaTag( cXMLResp , 'retConsCad' )
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + cFileEnvRes + "-cad.xml", cXMLResp )
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-cad.xml",cXMLResp,.F.)
    CATCH
       aRetorno['OK']       := .T.
       aRetorno['MsgErro']  := 'Problema ao gravar retorno do cadastro '+::ohbNFe:pastaEnvRes+"\"+cFileEnvRes+"-cad.xml"
@@ -83,4 +215,6 @@ LOCAL cXMLResp, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cFileEnvRes
    aRetorno['xMun']       := oFuncoes:pegaTag(cXMLResp, "xMun")
    aRetorno['CEP']        := oFuncoes:pegaTag(cXMLResp, "CEP")
 
-   RETURN aRetorno
+   oDOMDoc:=Nil
+   oServerWS:=Nil
+RETURN(aRetorno)

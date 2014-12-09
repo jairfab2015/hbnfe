@@ -4,7 +4,6 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-
 #include "common.ch"
 #include "fileio.ch"
 #include "hbclass.ch"
@@ -15,19 +14,21 @@
 
 CLASS hbNFeFuncoes
 *  // Funcoes de Texto
-   METHOD pegaTag(cXML, cTag)
+   METHOD pegaTag(cXMLcXML, cTag)
    METHOD eliminaString(cString,cEliminar)
    METHOD parseEncode( cTexto, lExtendido )
    METHOD parseDecode( cTexto )
-   METHOD strTostrval( cString, nCasas )
+   METHOD strTostrval( cString )
 *  // Funcoes de B.O.
    METHOD validaEAN(cCodigoBarras)
    METHOD validaPlaca(cPlaca)
 *  // Funcoes de Data
-   METHOD FormatDate(dData,cMascara,cSeparador)
+   METHOD FormatDate(dData,cMascara)
    METHOD DesFormatDate(cData)
 *  // Funcoes de Valores
    METHOD ponto(nValor,nTamanho,nDecimais,cTipo,cSigla)
+*  // Funcoes de Diretorios
+   METHOD curDrive()
 *  // Funcoes de Calculos
    METHOD modulo11(cStr,nPeso1,nPeso2)
    METHOD BringToDate(cStr)
@@ -166,6 +167,13 @@ LOCAL cRetorno, nIncPonto, nQuantidadeMaior
   ENDIF
 RETURN(cRetorno)
 
+METHOD curDrive() CLASS hbNFeFuncoes
+#ifdef __XHARBOUR__
+   RETURN( CURDRIVE() )
+#else
+   RETURN( HB_CURDRIVE() )
+#endif
+
 * modulo11 Baseado na função modulo11 do maligno
 METHOD modulo11(cStr,nPeso1,nPeso2) CLASS hbNFeFuncoes  // módulo 11, com pesos nPeso1 (inicial) a nPeso2 (final), que
 LOCAL nTot := 0                                         // serão utilizados no multiplicador dos dígitos, apanhados da
@@ -240,7 +248,7 @@ LOCAL cRetorno
 RETURN(cRetorno)
 
 METHOD validaEAN(cCodigoBarras) CLASS hbNFeFuncoes // função adaptada do Dr_Spock_Two do forum pctoledo
-LOCAL nInd, nUnidade, nDigito, lRetorno   := .f., aPosicao[12], aRetorno := Array(2)
+Local nInd := 0, nUnidade := 0, nDigito := 0, lRetorno   := .f., aPosicao[12], aRetorno
    IF STRZERO(LEN(TRIM(cCodigoBarras)), 2,0) $ "08 13 14"
       IF LEN(TRIM(cCodigoBarras)) == 8
          cCodigoBarras := STRZERO(LEN(ALLTRIM(cCodigoBarras)), 13, 0)
@@ -255,19 +263,19 @@ LOCAL nInd, nUnidade, nDigito, lRetorno   := .f., aPosicao[12], aRetorno := Arra
       lRetorno := nDigito = VAL(RIGHT(ALLTRIM(cCodigoBarras), 1))
       IF !lRetorno
          aRetorno[2] := "O digito verificador esta incorreto !"
-      ENDIF
+      ENDIF   
    ELSE
       IF LEN( TRIM ( cCodigoBarras ) ) = 0
          lRetorno := .T.
-      ELSE
+      ELSE   
          aRetorno[2] := "O tamanho do campo devera conter 8, 13 ou 14 digitos !"
-      ENDIF
+      ENDIF   
    ENDIF
    aRetorno[1] := lRetorno
-RETURN aRetorno
+RETURN (aRetorno)
 
 METHOD validaPlaca(cPlaca) CLASS hbNFeFuncoes
-   LOCAL lRetorno := .T., nI
+LOCAL lRetorno := .T., nI
    IF LEN(cPlaca) = 7
       FOR nI = 1 TO LEN(cPlaca)
          IF nI <= 3 // letras
@@ -283,7 +291,7 @@ METHOD validaPlaca(cPlaca) CLASS hbNFeFuncoes
    ELSE
       lRetorno := .F.
    ENDIF
-   RETURN lRetorno
+RETURN (lRetorno)
 
 
 
@@ -350,17 +358,19 @@ return(cText)
 
 
 
+METHOD DesFormatDate(cData) CLASS hbNFeFuncoes
 /*
    Recebe a data no formato 'yyyy-mm-ddThh:mm:ss' e retorna uma data xBase
    Mauricio Cruz - 23/05/2013
 */
-METHOD DesFormatDate( cData ) CLASS hbNFeFuncoes
-   LOCAL dRet
-   IF At( 'T', cData ) > 0
-      cData := Left( cData, At( 'T', cData ) - 1 )
-   ENDIF
-   dRet := Ctod( Right( cData, 2 ) + '/' + Substr( cData, 6, 2 ) + '/' + Left( cData, 4 ) )
-   RETURN dRet
+LOCAL dRet:=CTOD('')
+IF AT('T',cData)>0
+   cData:=LEFT(cData,AT('T',cData)-1)
+ENDIF
+
+dRet := CTOD( RIGHT(cData,2)+'/'+SUBSTR(cData,6,2)+'/'+LEFT(cData,4) )
+
+Return(dRet)
 
 
 
@@ -374,11 +384,9 @@ Method XMLnaArray(cXml,cFirst) CLASS hbNFeFuncoes
 */
 LOCAL oXmlDoc := TXmlDocument():new()
 LOCAL oXmlNode, oXmlIter
-LOCAL aRetorno:={}, aTOK
-LOCAL cPath
+LOCAL aRetorno:={}, aTOK:={}
+LOCAL cPath:=''
 LOCAL CTe_GERAIS:=oCTe_GERAIS()
-LOCAL cNod
-
 HB_GCAll(.T.)
 
 cXml:=Memoread( cXml )
@@ -450,7 +458,7 @@ HB_FUNC( HBNFE_CONSISTEINSCRICAOESTADUAL )
 *************************
 FUNCTION HBNFE_CNPJ(FCGC)
 *************************
-LOCAL T :=0,  TT
+LOCAL T :=0,  TT := 0,  TTT :=  0
 LOCAL CCNPJ := SPACE(18)
 
 LOCAL PARTEA1 := SUBS(FCGC,1,2)  //   Divide a
@@ -459,11 +467,11 @@ LOCAL PARTEA3 := SUBS(FCGC,6,3)  //     em 5
 LOCAL PARTEA4 := SUBS(FCGC,9,4) //    partes
 LOCAL PARTEA5 := SUBS(FCGC,13,2) //    partes
 
-LOCAL PARTE1
-LOCAL PARTE2
-LOCAL PARTE3
-LOCAL PARTE4
-LOCAL PARTE5
+LOCAL PARTE1 := ''
+LOCAL PARTE2 := ''
+LOCAL PARTE3 := ''
+LOCAL PARTE4 := ''
+LOCAL PARTE5 := ''
 
 CCNPJ = PARTEa1+PARTEa2+PARTEa3+PARTEa4 // Junta as 4 partes
 
@@ -511,13 +519,13 @@ RETURN .T.
 ************************
 FUNCTION HBNFE_CPF(FCPF)
 ************************
-LOCAL T :=0,  TT
+LOCAL T :=0,  TT :=0,  TTT :=  0
 LOCAL CCPF :=  SPACE(11)
 
-LOCAL PARTE1
-LOCAL PARTE2
-LOCAL PARTE3
-LOCAL PARTE4
+LOCAL PARTE1 := ''
+LOCAL PARTE2 := ''
+LOCAL PARTE3 := ''
+LOCAL PARTE4 := ''
 
 LOCAL PARTEA1 := SUBS(FCPF,1,3)  //    Divide a variavel
 LOCAL PARTEA2 := SUBS(FCPF,4,3)  //          em 3
@@ -560,99 +568,100 @@ IF CCPF !=PARTEA1+PARTEA2+PARTEA3+PARTEA4
 ENDIF
 RETURN .T.
 
+FUNCTION CODIGO_UF(cEST,nORDRET)
 /*
    retorna o codigo do estado
    Mauricio Cruz - 21/09/2011
 */
-FUNCTION CODIGO_UF( cEST, nORDRET )
-   LOCAL aEST := {}, cRET := "", nBUSCA := 1, nScan
+LOCAL aEST:={},cRET:="", nBUSCA:=1
 
-   nOrdRet := iif( nOrdRet == NIL, 2, nOrdRet )
-   IF nORDRET = 1
-      nBUSCA := 2
-   ELSEIF nORDRET = 2
-      nBUSCA := 1
-   ENDIF
+IF nORDRET=NIL
+   nORDRET:=2
+ENDIF
 
-   //AADD(aEST,{ UF , Código UF , Unidade da Federação , Área (Km2) })
+IF nORDRET=1
+   nBUSCA:=2
+ELSEIF nORDRET=2
+   nBUSCA:=1
+ENDIF
 
-   AADD( aEST, { 'RO', '11', 'Rondônia',            '237576167'  } )
-   AADD( aEST, { 'AC', '12', 'Acre',                '152581388'  } )
-   AADD( aEST, { 'AM', '13', 'Amazonas',            '1570745680' } )
-   AADD( aEST, { 'RR', '14', 'Roraima',             '224298980'  } )
-   AADD( aEST, { 'PA', '15', 'Pará',                '1247689515' } )
-   AADD( aEST, { 'AP', '16', 'Amapá',               '142814585'  } )
-   AADD( aEST, { 'TO', '17', 'Tocantins',           '277620914'  } )
-   AADD( aEST, { 'MA', '21', 'Maranhão',            '331983293'  } )
-   AADD( aEST, { 'PI', '22', 'Piauí',               '251529186'  } )
-   AADD( aEST, { 'CE', '23', 'Ceará',               '148825602'  } )
-   AADD( aEST, { 'RN', '24', 'Rio Grande do Norte', '52796791'   } )
-   AADD( aEST, { 'PB', '25', 'Paraíba',             '56439838'   } )
-   AADD( aEST, { 'PE', '26', 'Pernambuco',          '98311616'   } )
-   AADD( aEST, { 'AL', '27', 'Alagoas',             '27767661'   } )
-   AADD( aEST, { 'SE', '28', 'Sergipe',             '21910348'   } )
-   AADD( aEST, { 'BA', '29', 'Bahia',               '564692669'  } )
-   AADD( aEST, { 'MG', '31', 'Minas Gerais',        '586528293'  } )
-   AADD( aEST, { 'ES', '32', 'Espírito Santo',      '46077519'   } )
-   AADD( aEST, { 'RJ', '33', 'Rio de Janeiro',      '43696054'   } )
-   AADD( aEST, { 'SP', '35', 'São Paulo',           '248209426'  } )
-   AADD( aEST, { 'PR', '41', 'Paraná',              '199314850'  } )
-   AADD( aEST, { 'SC', '42', 'Santa Catarina',      '95346181'   } )
-   AADD( aEST, { 'RS', '43', 'Rio Grande do Sul',   '281748538'  } )
-   AADD( aEST, { 'MS', '50', 'Mato Grosso do Sul',  '357124962'  } )
-   AADD( aEST, { 'MT', '51', 'Mato Grosso',         '903357908'  } )
-   AADD( aEST, { 'GO', '52', 'Goiás',               '340086698'  } )
-   AADD( aEST, { 'DF', '53', 'Distrito Federal',    '5801937'    } )
+//AADD(aEST,{ UF , Código UF , Unidade da Federação , Área (Km2) })
 
-   nSCAN := ASCAN( aEST, { | x | Upper( Alltrim( x[ nBUSCA ] ) ) = Upper( Alltrim( cEST ) ) } )
-   IF nSCAN > 0
-      cRET := aEST[ nSCAN, nORDRET ]
-   ENDIF
-   RETURN cRET
+AADD(aEST,{'RO','11','Rondônia','237576167' })
+AADD(aEST,{'AC','12','Acre','152581388'})
+AADD(aEST,{'AM','13','Amazonas','1570745680'})
+AADD(aEST,{'RR','14','Roraima','224298980'})
+AADD(aEST,{'PA','15','Pará','1247689515'})
+AADD(aEST,{'AP','16','Amapá','142814585'})
+AADD(aEST,{'TO','17','Tocantins','277620914'})
+AADD(aEST,{'MA','21','Maranhão','331983293'})
+AADD(aEST,{'PI','22','Piauí','251529186'})
+AADD(aEST,{'CE','23','Ceará','148825602'})
+AADD(aEST,{'RN','24','Rio Grande do Norte','52796791'})
+AADD(aEST,{'PB','25','Paraíba','56439838'})
+AADD(aEST,{'PE','26','Pernambuco','98311616'})
+AADD(aEST,{'AL','27','Alagoas','27767661'})
+AADD(aEST,{'SE','28','Sergipe','21910348'})
+AADD(aEST,{'BA','29','Bahia','564692669'})
+AADD(aEST,{'MG','31','Minas Gerais','586528293'})
+AADD(aEST,{'ES','32','Espírito Santo','46077519'})
+AADD(aEST,{'RJ','33','Rio de Janeiro','43696054'})
+AADD(aEST,{'SP','35','São Paulo','248209426'})
+AADD(aEST,{'PR','41','Paraná','199314850'})
+AADD(aEST,{'SC','42','Santa Catarina','95346181'})
+AADD(aEST,{'RS','43','Rio Grande do Sul','281748538'})
+AADD(aEST,{'MS','50','Mato Grosso do Sul','357124962'})
+AADD(aEST,{'MT','51','Mato Grosso','903357908'})
+AADD(aEST,{'GO','52','Goiás','340086698'})
+AADD(aEST,{'DF','53','Distrito Federal','5801937'})
 
+nSCAN:=ASCAN(aEST,{|x| Upper(Alltrim(x[nBUSCA]))=Upper(Alltrim(cEST)) })
+IF nSCAN>0
+   cRET:=aEST[nSCAN,nORDRET]
+ENDIF
 
+RETURN(cRET)
+
+FUNCTION LIMPA_STR_XML_HTML(cXML)
 /*
    Remove conjuntos de caracteres em HTML que não pode ser convertido para não dar problema na leitura do XML
    Mauricio Cruz - 13/02/2014
 */
-FUNCTION LIMPA_STR_XML_HTML( cXML )
-   cXML := STRTRAN( cXML, '&gt;' )
-   cXML := STRTRAN( cXML, '&lt;' )
-   RETURN cXML
+cXML:=STRTRAN(cXML,'&gt;')
+cXML:=STRTRAN(cXML,'&lt;')
+RETURN(cXML)
 
+FUNCTION LIMPA_STR_XML(cXML)
 /*
    Remove e corrige caracteres para a leitura do XML
    Mauricio Cruz - 13/02/2014
 */
-FUNCTION LIMPA_STR_XML(cXML)
-   cXML := STRTRAN( cXML, ' >', '>' )
-   cXML := STRTRAN( cXML, 'infA dic', 'infAdic' )
-   cXML := STRTRAN( cXML, 'Sig natureValue', 'SignatureValue' )
-   cXML := STRTRAN( cXML, '<BR>', ';' )
-   cXML := STRTRAN( cXML, '<Br>', ';' )
-   cXML := STRTRAN( cXML, '<br>', ';' )
-   cXML := STRTRAN( cXML, '<bR>', ';' )
-   cXML := STRTRAN( cXML, '<bR>', ';' )
-   cXML := STRTRAN( cXML, CHR(10), ';' )
-   cXML := STRTRAN( cXML, CHR(13), ';' )
-   cXML := STRTRAN( cXML, CHR(10) + CHR(13),';' )
-   cXML := STRTRAN( cXML, CHR(13) + CHR(10),';' )
-   cXML := STRTRAN( cXML, '"2.00"xmlns', '"2.00" xmlns' )
-   cXML := STRTRAN( cXML, 'NFexmlns', 'NFe xmlns' )
-   cXML := STRTRAN( cXML, 'infNFeId', 'infNFe Id' )
-   cXML := STRTRAN( cXML, '"versao="2.00"', '" versao="2.00"' )
-   cXML := STRTRAN( cXML, 'detnItem', 'det nItem' )
-   cXML := STRTRAN( cXML, 'CanonicalizationMethodAlgorithm', 'CanonicalizationMethod Algorithm' )
-   cXML := STRTRAN( cXML, 'ReferenceURI', 'Reference URI' )
-   cXML := STRTRAN( cXML, 'TransformAlgorithm', 'Transform Algorithm' )
-   cXML := STRTRAN( cXML, 'DigestMethodAlgorithm', 'DigestMethod Algorithm' )
-   cXML := STRTRAN( cXML, 'ReferenceURI', 'Reference URI' )
-   cXML := STRTRAN( cXML, 'Signaturexmlns', 'Signature xmlns' )
-   cXML := STRTRAN( cXML, 'protNFexmlns', 'protNFe xmlns' )
-   cXML := STRTRAN( cXML, 'infProtId', 'infProt Id' )
-   cXML := STRTRAN( cXML, 'SignedIn fo', 'SignedInfo' )
-   cXML := STRTRAN( cXML, 'ƒ' )
-   cXML := STRTRAN( cXML, '/ xNome','/xNome' )
-   RETURN cXML
-
-
+cXML:=STRTRAN(cXML,' >','>')
+cXML:=STRTRAN(cXML,'infA dic','infAdic')
+cXML:=STRTRAN(cXML,'Sig natureValue','SignatureValue')
+cXML:=STRTRAN(cXML,'<BR>',';')
+cXML:=STRTRAN(cXML,'<Br>',';')
+cXML:=STRTRAN(cXML,'<br>',';')
+cXML:=STRTRAN(cXML,'<bR>',';')
+cXML:=STRTRAN(cXML,'<bR>',';')
+cXML:=STRTRAN(cXML,CHR(10),';')
+cXML:=STRTRAN(cXML,CHR(13),';')
+cXML:=STRTRAN(cXML,CHR(10)+CHR(13),';')
+cXML:=STRTRAN(cXML,CHR(13)+CHR(10),';')
+cXML:=STRTRAN(cXML,'"2.00"xmlns','"2.00" xmlns')
+cXML:=STRTRAN(cXML,'NFexmlns','NFe xmlns')
+cXML:=STRTRAN(cXML,'infNFeId','infNFe Id')
+cXML:=STRTRAN(cXML,'"versao="2.00"','" versao="2.00"')
+cXML:=STRTRAN(cXML,'detnItem','det nItem')
+cXML:=STRTRAN(cXML,'CanonicalizationMethodAlgorithm','CanonicalizationMethod Algorithm')
+cXML:=STRTRAN(cXML,'ReferenceURI','Reference URI')
+cXML:=STRTRAN(cXML,'TransformAlgorithm','Transform Algorithm')
+cXML:=STRTRAN(cXML,'DigestMethodAlgorithm','DigestMethod Algorithm')
+cXML:=STRTRAN(cXML,'ReferenceURI','Reference URI')
+cXML:=STRTRAN(cXML,'Signaturexmlns','Signature xmlns')
+cXML:=STRTRAN(cXML,'protNFexmlns','protNFe xmlns')
+cXML:=STRTRAN(cXML,'infProtId','infProt Id')
+cXML:=STRTRAN(cXML,'SignedIn fo','SignedInfo')
+cXML:=STRTRAN(cXML,'ƒ')
+cXML:=STRTRAN(cXML,'/ xNome','/xNome')
+RETURN(cXML)

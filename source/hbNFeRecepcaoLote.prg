@@ -4,39 +4,50 @@
 * Qualquer modificação deve ser reportada para Fernando Athayde para manter a sincronia do projeto *
 * Fernando Athayde 28/08/2011 fernando_athayde@yahoo.com.br                                        *
 ****************************************************************************************************
-
+#include "common.ch"
 #include "hbclass.ch"
+#ifndef __XHARBOUR__
+   #include "hbwin.ch"
+   #include "harupdf.ch"
+   #include "hbzebra.ch"
+   #include "hbcompat.ch"
+#endif
 #include "hbnfe.ch"
 
 CLASS hbNFeRecepcaoLote
    DATA ohbNFe
-   DATA oSefaz
+   DATA cUFWS
+   DATA versaoDados
    DATA idLote
    DATA aXMLDados
-   //DATA lAguardaRetorno
-   //DATA nTempoAguardaRetorno             //  Anderson Camilo  10/11/2011
-   //DATA nVezesTentaRetorno               //  Anderson Camilo  10/11/2011
+   DATA lAguardaRetorno
+   DATA nTempoAguardaRetorno             //  Anderson Camilo  10/11/2011
+   DATA nVezesTentaRetorno               //  Anderson Camilo  10/11/2011
 
-   METHOD Execute()
+   METHOD execute()
 ENDCLASS
 
-METHOD Execute() CLASS hbNFeRecepcaoLote
-   LOCAL cXMLDadosMsg, cXMLResp, nI, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), ;
-      cXMLSai, nI2, aRetornoRet, oRetornoNFe
+METHOD execute() CLASS hbNFeRecepcaoLote
+LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, nI,;
+      aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2',;
+      cXMLSai, nI2, aRetornoRet, oRetornoNFe, oError, oCurl, aHeader, retHTTP, nVezesRet
 
-   IF ::oSefaz == NIL
-      ::oSefaz := ::ohbNFe:oSefaz
+   IF ::cUFWS = Nil
+      ::cUFWS := ::ohbNFe:cUFWS
    ENDIF
-   //IF ::nTempoAguardaRetorno = Nil         // Anderson Camilo 10/11/2011
-   //   ::nTempoAguardaRetorno := 15
-   //ENDIF
+   IF ::versaoDados = Nil
+      ::versaoDados := ::ohbNFe:versaoDados
+   ENDIF
+   IF ::nTempoAguardaRetorno = Nil         // Anderson Camilo 10/11/2011
+      ::nTempoAguardaRetorno := 15
+   ENDIF
 
-   //IF ::nVezesTentaRetorno = Nil            // Anderson Camilo 10/11/2011
-   //   ::nVezesTentaRetorno := 1
-   //ENDIF
+   IF ::nVezesTentaRetorno = Nil            // Anderson Camilo 10/11/2011
+      ::nVezesTentaRetorno := 1
+   ENDIF
 
-   cXMLDadosMsg := ""
-   FOR nI = 1 TO LEN( ::aXMLDados )
+   cXMLDadosMsg := '<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="2.00"><idLote>'+::idLote+'</idLote>'
+   FOR nI=1 TO LEN(::aXMLDados)
       TRY
          cXMLDadosMsg += MEMOREAD( ::aXMLDados[nI] )
       CATCH
@@ -45,21 +56,131 @@ METHOD Execute() CLASS hbNFeRecepcaoLote
          RETURN(aRetorno)
       END
    NEXT
+   cXMLDadosMsg += '</enviNFe>'
 
-   ::oSefaz:cXml         := cXmlDadosMsg
-   ::oSefaz:NfeLoteEnvia()
+   cXML := '<?xml version="1.0" encoding="utf-8"?>'
+   cXML := cXML + '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
+   cXML := cXML +   '<soap12:Header>'
+   cXML := cXML +     '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2">'
+   cXML := cXML +       '<cUF>'+::cUFWS+'</cUF>'
+   cXML := cXML +       '<versaoDados>'+::versaoDados+'</versaoDados>'
+   cXML := cXML +     '</nfeCabecMsg>'
+   cXML := cXML +   '</soap12:Header>'
+   cXML := cXML +   '<soap12:Body>'
+   cXML := cXML +     '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2">'
+   cXML := cXML + cXMLDadosMsg
+   cXML := cXML +     '</nfeDadosMsg>'
+   cXML := cXML +   '</soap12:Body>'
+   cXML := cXML +'</soap12:Envelope>'
 
-   cXMLResp := HB_ANSITOOEM( ::oSefaz:cXmlResposta )
-
+   
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\debug-rec.xml", ::cXMLResp )
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::idLote+"-env-lot.xml",cXMLDadosMsg,.F.)
+   CATCH
+      aRetorno['OK']       := .F.
+      aRetorno['MsgErro']  := 'Problema ao gravar envio do lote '+::ohbNFe:pastaEnvRes+"\"+::idLote+"-env-lot.xml"
+      RETURN(aRetorno)
+   END
+
+   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
+   cUrlWS := ::ohbNFe:getURLWS(_RECEPCAO)
+   
+//ShowMsg_Edit(cUrlWS)
+   
+  IF ::ohbNFe:nSOAP = HBNFE_CURL
+     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
+                 'SOAPAction: "NfeRecepcao2"',;
+                 'Content-length: '+ALLTRIM(STR(len(cXML))) }
+
+     #ifndef __XHARBOUR__
+       curl_global_init()
+       oCurl = curl_easy_init()
+
+       curl_easy_setopt(oCurl, HB_CURLOPT_URL, cUrlWS)
+       curl_easy_setopt(oCurl, HB_CURLOPT_PORT , 443)
+       curl_easy_setopt(oCurl, HB_CURLOPT_VERBOSE, .F.) // 1
+       curl_easy_setopt(oCurl, HB_CURLOPT_HEADER, 1) //retorna o cabeÃ§alho de resposta
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLVERSION, 3)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub)
+       curl_easy_setopt(oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass)
+       curl_easy_setopt(oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POST, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_POSTFIELDS, cXML)
+       curl_easy_setopt(oCurl, HB_CURLOPT_WRITEFUNCTION, 1)
+       curl_easy_setopt(oCurl, HB_CURLOPT_DL_BUFF_SETUP )
+       curl_easy_setopt(oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
+       curl_easy_perform(oCurl)
+       retHTTP := curl_easy_getinfo(oCurl,HB_CURLINFO_RESPONSE_CODE) //informaÃ§Ãµes da conexÃ£o
+
+       cXMLResp := ''
+       IF retHTTP = 200 // OK
+          curl_easy_setopt( ocurl, HB_CURLOPT_DL_BUFF_GET, @cXMLResp )
+          cXMLResp := SUBS(cXMLResp,AT('<?xml',cXMLResp))
+       ENDIF
+
+       curl_easy_cleanup(oCurl)
+       curl_global_cleanup()
+     #endif
+  ELSE // MSXML
+     #ifdef __XHARBOUR__
+        oServerWS := xhb_CreateObject( _MSXML2_ServerXMLHTTP )
+     #else
+        oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
+     #endif
+     oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
+     oServerWS:open("POST", cUrlWS, .F.)
+     oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
+     oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
+  
+     #ifdef __XHARBOUR__
+        oDOMDoc := xhb_CreateObject( _MSXML2_DOMDocument )
+     #else
+        oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
+     #endif
+     oDOMDoc:async = .F.
+     oDOMDoc:validateOnParse  = .T.
+     oDOMDoc:resolveExternals := .F.
+     oDOMDoc:preserveWhiteSpace = .T.
+     oDOMDoc:LoadXML(cXML)
+     IF oDOMDoc:parseError:errorCode <> 0 // XML não carregado
+        cMsgErro := "Não foi possível carregar o documento pois ele não corresponde ao seu Schema"+HB_OsNewLine() + ;
+                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_OsNewLine() + ;
+                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_OsNewLine() + ;
+                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_OsNewLine() + ;
+                    " Code: "+STR(oDOMDoc:parseError:errorCode)
+        aRetorno['OK']       := .F.
+        aRetorno['MsgErro']  := cMSgErro
+        RETURN(aRetorno)
+     ENDIF
+     TRY
+        oServerWS:send(oDOMDoc:xml)
+     CATCH oError
+       cMsgErro := "Falha: "+'Não foi possível conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.' +HB_OsNewLine()+ ;
+               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_OsNewLine()+ ;
+                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_OsNewLine()+ ;
+               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_OsNewLine()+ ;
+               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_OsNewLine()+ ;
+              	 "Mensangem: " + oError:Description
+        aRetorno['OK']       := .F.
+        aRetorno['MsgErro']  := cMSgErro
+        RETURN(aRetorno)
+     END
+     DO WHILE oServerWS:readyState <> 4
+        millisec(500)
+     ENDDO
+     cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
+   ENDIF
+   TRY
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\debug-rec.xml",cXMLResp,.F.)
    CATCH
    END
    //cXMLResp := oFuncoes:pegaTag(cXMLResp, "nfeRecepcaoLote2Result")
    cXMLResp := oFuncoes:pegaTag(cXMLResp, "retEnviNFe")   // ajuste para NFe2 - Mauricio Cruz - 31/10/2012
 
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::idLote + "-rec.xml", cXMLResp )
+      MEMOWRIT(::ohbNFe:pastaEnvRes+"\"+::idLote+"-rec.xml",cXMLResp,.F.)
    CATCH
       aRetorno['OK']       := .T.
       aRetorno['MsgErro']  := 'Problema ao gravar recibo do lote '+::ohbNFe:pastaEnvRes+"\"+::idLote+"-rec.xml"
@@ -85,10 +206,9 @@ METHOD Execute() CLASS hbNFeRecepcaoLote
    aRetorno['dhRecbto'] := oFuncoes:pegaTag(cXMLResp, "dhRecbto")
    aRetorno['nRec']     := oFuncoes:pegaTag(cXMLResp, "nRec")
    aRetorno['tMed']     := oFuncoes:pegaTag(cXMLResp, "tMed")
-
+   
    IF ::lAguardaRetorno
-      // Como tem EXIT antes do NEXT, este FOR/NEXT não serve pra nada
-   	  //FOR nVezesRet = 1 to ::nVezesTentaRetorno              // Anderson Camilo  10/11/2011
+   	  FOR nVezesRet = 1 to ::nVezesTentaRetorno              // Anderson Camilo  10/11/2011
          FOR nI = 1 TO ::nTempoAguardaRetorno              // Anderson Camilo  10/11/2011
             millisec(1000)
          NEXT
@@ -139,7 +259,7 @@ METHOD Execute() CLASS hbNFeRecepcaoLote
                                + aRetorno['NF'+STRZERO(nI,2)+'_protNFe'];
                                + '</nfeProc>'
    */
-                       hb_MemoWrit( ::aXMLDados[nI2], cXMLSai )
+                       MEMOWRIT(::aXMLDados[nI2], cXMLSai, .F. )
                     ENDIF
                   CATCH
                     aRetorno['NF'+STRZERO(nI,2)+'_MsgErro'] := 'Problema ao gravar protocolo no arquivo '+::aXMLDados[nI2]
@@ -148,9 +268,11 @@ METHOD Execute() CLASS hbNFeRecepcaoLote
             NEXT
          ENDIF
 
-         //EXIT
-  	   //NEXT nVezesRet
+         EXIT
+  	   NEXT nVezesRet
 
    ENDIF
-
-RETURN aRetorno
+   
+   oDOMDoc:=Nil
+   oServerWS:=Nil
+RETURN(aRetorno)
