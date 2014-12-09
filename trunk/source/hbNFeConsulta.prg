@@ -10,26 +10,17 @@
 
 CLASS hbNFeConsulta
    DATA   ohbNFe
-   DATA   cUFWS
-   DATA   versaoDados
-   DATA   tpAmb
+   DATA   oSefaz
    DATA   cNFeFile  //pode ser um xml
    DATA   cChaveNFe //pode ser uma chave
    METHOD Execute()
 ENDCLASS
 
 METHOD Execute() CLASS hbNFeConsulta
-   LOCAL cXMLResp, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cXMLSai, cXMLFile, oSefaz
+   LOCAL cXMLResp, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cXMLSai, cXMLFile
 
-   IF ::cUFWS = NIL
-      ::cUFWS := ::ohbNFe:cUFWS
-   ENDIF
-   IF ::versaoDados = Nil
-      ::versaoDados := '2.01'
-   ENDIF
-
-   IF ::tpAmb = NIL
-      ::tpAmb := ::ohbNFe:tpAmb
+   IF ::oSefaz == NIL
+      ::oSefaz := ::ohbNFe:oSefaz
    ENDIF
 
    IF .NOT. Empty( ::cNFeFile )
@@ -53,15 +44,13 @@ METHOD Execute() CLASS hbNFeConsulta
       ENDIF
    ENDIF
 
-   oSefaz := SefazClass():New()
-   ::SetSefaz( oSefaz )
-   oSefaz:NfeConsulta( ::cChaveNfe )
-   cXmlResp := oSefaz:cXmlResposta
+   ::oSefaz:NfeConsulta( ::cChaveNfe )
+   cXmlResp := ::oSefaz:cXmlResposta
 
-   cXMLResp := oFuncoes:pegaTag( cXMLResp, 'retConsSitNFe' )
+   cXmlResp := oFuncoes:pegaTag( cXmlResp, 'retConsSitNFe' )
 
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-sit.xml", cXMLResp )
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::cChaveNFe + "-sit.xml", cXmlResp )
    CATCH
      aRetorno['OK']       := .F.
      aRetorno['MsgErro']  := 'Problema ao gravar retorno da consulta '+::ohbNFe:pastaEnvRes+"\"+::cChaveNFe+"-sit.xml"
@@ -115,5 +104,4 @@ METHOD Execute() CLASS hbNFeConsulta
          END
       ENDIF
    ENDIF
-
    RETURN aRetorno
