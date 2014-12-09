@@ -12,6 +12,7 @@
 
 CLASS hbNFe
    // Parametros Principais hbNFe
+   DATA oSefaz
    DATA cPastaSchemas
    DATA cPastaLogs
    DATA nSOAP        INIT 1
@@ -59,6 +60,7 @@ CLASS hbNFe
    DATA nLogoStyle    // adcionado - Mauricio Cruz - 28/09/2011
    DATA ImprimirHora  // adcionado - Mauricio Cruz - 05/10/2011
 
+   METHOD Init()
    // Metodos Nfe
    METHOD getURLWS(nTipoServico)
    METHOD xUFTocUF(xUF)
@@ -71,15 +73,11 @@ CLASS hbNFe
    METHOD pegaPropriedadesCertificado()
    METHOD UAC(nValue)
    METHOD erroCurl(nError)
-   METHOD SetSefaz( oSefaz )
 ENDCLASS
 
 
-METHOD SetSefaz( oSefaz )
-   oSefaz:cAmbiente    := ::tpAmb
-   oSefaz:cProjeto     := "nfe"
-   oSefaz:cUf          := ::cUfWs
-   oSefaz:cCertificado := ::ohbNFe:pegaCNCertificado( ::ohbNFe:cSerialCert )
+METHOD Init() CLASS hbNFe
+   ::oSefaz := SefazClass():New()
    RETURN NIL
 
 

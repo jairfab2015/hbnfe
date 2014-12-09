@@ -23,7 +23,6 @@ hbNFeInutiliza.prg
 hbNFeManifestacaoDestinatario.prg
 hbNFeRecepcaoLote.prg
 hbNFeRetornoRecepcao.prg
-hbNFeSemCurl.prg
 hbNFeStatus.prg
 hbNFeValida.prg
 hbNFeSefaz.prg
@@ -43,3 +42,4 @@ hbcurl.hbc
 -hblib
 -compr
 -strip
+-jobs=1

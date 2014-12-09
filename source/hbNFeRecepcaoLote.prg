@@ -10,38 +10,33 @@
 
 CLASS hbNFeRecepcaoLote
    DATA ohbNFe
-   DATA cUFWS
-   DATA versaoDados
+   DATA oSefaz
    DATA idLote
    DATA aXMLDados
-   DATA lAguardaRetorno
-   DATA nTempoAguardaRetorno             //  Anderson Camilo  10/11/2011
-   DATA nVezesTentaRetorno               //  Anderson Camilo  10/11/2011
+   //DATA lAguardaRetorno
+   //DATA nTempoAguardaRetorno             //  Anderson Camilo  10/11/2011
+   //DATA nVezesTentaRetorno               //  Anderson Camilo  10/11/2011
 
-   METHOD execute()
+   METHOD Execute()
 ENDCLASS
 
-METHOD execute() CLASS hbNFeRecepcaoLote
-LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, nI,;
-      aRetorno := hash(), oFuncoes := hbNFeFuncoes(), cSOAPAction := 'http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2',;
-      cXMLSai, nI2, aRetornoRet, oRetornoNFe, oError, oCurl, aHeader, retHTTP // , nVezesRet
+METHOD Execute() CLASS hbNFeRecepcaoLote
+   LOCAL cXMLDadosMsg, cXMLResp, nI, aRetorno := hash(), oFuncoes := hbNFeFuncoes(), ;
+      cXMLSai, nI2, aRetornoRet, oRetornoNFe
 
-   IF ::cUFWS = Nil
-      ::cUFWS := ::ohbNFe:cUFWS
+   IF ::oSefaz == NIL
+      ::oSefaz := ::ohbNFe:oSefaz
    ENDIF
-   IF ::versaoDados = Nil
-      ::versaoDados := ::ohbNFe:versaoDados
-   ENDIF
-   IF ::nTempoAguardaRetorno = Nil         // Anderson Camilo 10/11/2011
-      ::nTempoAguardaRetorno := 15
-   ENDIF
+   //IF ::nTempoAguardaRetorno = Nil         // Anderson Camilo 10/11/2011
+   //   ::nTempoAguardaRetorno := 15
+   //ENDIF
 
-   IF ::nVezesTentaRetorno = Nil            // Anderson Camilo 10/11/2011
-      ::nVezesTentaRetorno := 1
-   ENDIF
+   //IF ::nVezesTentaRetorno = Nil            // Anderson Camilo 10/11/2011
+   //   ::nVezesTentaRetorno := 1
+   //ENDIF
 
-   cXMLDadosMsg := '<enviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="2.00"><idLote>'+::idLote+'</idLote>'
-   FOR nI=1 TO LEN(::aXMLDados)
+   cXMLDadosMsg := ""
+   FOR nI = 1 TO LEN( ::aXMLDados )
       TRY
          cXMLDadosMsg += MEMOREAD( ::aXMLDados[nI] )
       CATCH
@@ -50,119 +45,14 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
          RETURN(aRetorno)
       END
    NEXT
-   cXMLDadosMsg += '</enviNFe>'
 
-   cXML := '<?xml version="1.0" encoding="utf-8"?>'
-   cXML := cXML + '<soap12:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">'
-   cXML := cXML +   '<soap12:Header>'
-   cXML := cXML +     '<nfeCabecMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2">'
-   cXML := cXML +       '<cUF>'+::cUFWS+'</cUF>'
-   cXML := cXML +       '<versaoDados>'+::versaoDados+'</versaoDados>'
-   cXML := cXML +     '</nfeCabecMsg>'
-   cXML := cXML +   '</soap12:Header>'
-   cXML := cXML +   '<soap12:Body>'
-   cXML := cXML +     '<nfeDadosMsg xmlns="http://www.portalfiscal.inf.br/nfe/wsdl/NfeRecepcao2">'
-   cXML := cXML + cXMLDadosMsg
-   cXML := cXML +     '</nfeDadosMsg>'
-   cXML := cXML +   '</soap12:Body>'
-   cXML := cXML +'</soap12:Envelope>'
+   ::oSefaz:cXml         := cXmlDadosMsg
+   ::oSefaz:NfeLoteEnvia()
 
+   cXMLResp := HB_ANSITOOEM( ::oSefaz:cXmlResposta )
 
    TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\" + ::idLote + "-env-lot.xml", cXMLDadosMsg )
-   CATCH
-      aRetorno['OK']       := .F.
-      aRetorno['MsgErro']  := 'Problema ao gravar envio do lote '+::ohbNFe:pastaEnvRes+"\"+::idLote+"-env-lot.xml"
-      RETURN(aRetorno)
-   END
-
-   cCN := ::ohbNFe:pegaCNCertificado(::ohbNFe:cSerialCert)
-   cUrlWS := ::ohbNFe:getURLWS(_RECEPCAO)
-
-//ShowMsg_Edit(cUrlWS)
-
-  IF ::ohbNFe:nSOAP = HBNFE_CURL
-     aHeader = { 'Content-Type: application/soap+xml;charset=utf-8;action="'+cSoapAction+'"',;
-                 'SOAPAction: "NfeRecepcao2"',;
-                 'Content-length: '+ALLTRIM(STR(len(cXML))) }
-
-     #ifndef __XHARBOUR__
-       curl_global_init()
-       oCurl = curl_easy_init()
-
-       curl_easy_setopt(oCurl, HB_CURLOPT_URL, cUrlWS)
-       curl_easy_setopt(oCurl, HB_CURLOPT_PORT , 443)
-       curl_easy_setopt(oCurl, HB_CURLOPT_VERBOSE, .F.) // 1
-       curl_easy_setopt(oCurl, HB_CURLOPT_HEADER, 1) //retorna o cabe√ßalho de resposta
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLVERSION, 3)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYHOST, 0)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSL_VERIFYPEER, 0)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLCERT, ::ohbNFe:cCertFilePub)
-       curl_easy_setopt(oCurl, HB_CURLOPT_KEYPASSWD, ::ohbNFe:cCertPass)
-       curl_easy_setopt(oCurl, HB_CURLOPT_SSLKEY, ::ohbNFe:cCertFilePriv)
-       curl_easy_setopt(oCurl, HB_CURLOPT_POST, 1)
-       curl_easy_setopt(oCurl, HB_CURLOPT_POSTFIELDS, cXML)
-       curl_easy_setopt(oCurl, HB_CURLOPT_WRITEFUNCTION, 1)
-       curl_easy_setopt(oCurl, HB_CURLOPT_DL_BUFF_SETUP )
-       curl_easy_setopt(oCurl, HB_CURLOPT_HTTPHEADER, aHeader )
-       curl_easy_perform(oCurl)
-       retHTTP := curl_easy_getinfo(oCurl,HB_CURLINFO_RESPONSE_CODE) //informa√ß√µes da conex√£o
-
-       cXMLResp := ''
-       IF retHTTP = 200 // OK
-          curl_easy_setopt( ocurl, HB_CURLOPT_DL_BUFF_GET, @cXMLResp )
-          cXMLResp := SUBS(cXMLResp,AT('<?xml',cXMLResp))
-       ENDIF
-
-       curl_easy_cleanup(oCurl)
-       curl_global_cleanup()
-     #endif
-  ELSE // MSXML
-
-     oServerWS := win_oleCreateObject( _MSXML2_ServerXMLHTTP )
-
-     oServerWS:setOption( 3, "CURRENT_USER\MY\"+cCN )
-     oServerWS:open("POST", cUrlWS, .F.)
-     oServerWS:setRequestHeader("SOAPAction", cSOAPAction )
-     oServerWS:setRequestHeader("Content-Type", "application/soap+xml; charset=utf-8")
-
-     oDOMDoc := win_oleCreateObject( _MSXML2_DOMDocument )
-
-     oDOMDoc:async = .F.
-     oDOMDoc:validateOnParse  = .T.
-     oDOMDoc:resolveExternals := .F.
-     oDOMDoc:preserveWhiteSpace = .T.
-     oDOMDoc:LoadXML(cXML)
-     IF oDOMDoc:parseError:errorCode <> 0 // XML n„o carregado
-        cMsgErro := "N„o foi possÌvel carregar o documento pois ele n„o corresponde ao seu Schema"+HB_EOL() + ;
-                    " Linha: " + STR(oDOMDoc:parseError:line)+HB_EOL() + ;
-                    " Caractere na linha: " + STR(oDOMDoc:parseError:linepos)+HB_EOL() + ;
-                    " Causa do erro: " + oDOMDoc:parseError:reason+HB_EOL() + ;
-                    " Code: "+STR(oDOMDoc:parseError:errorCode)
-        aRetorno['OK']       := .F.
-        aRetorno['MsgErro']  := cMSgErro
-        RETURN(aRetorno)
-     ENDIF
-     TRY
-        oServerWS:send(oDOMDoc:xml)
-     CATCH oError
-       cMsgErro := "Falha: "+'N„o foi possÌvel conectar-se ao servidor do SEFAZ, Servidor inativou ou inoperante.' +HB_EOL()+ ;
-               	 "Error: "  + Transform(oError:GenCode, nil) + ";" +HB_EOL()+ ;
-                	 "SubC: "   + Transform(oError:SubCode, nil) + ";" +HB_EOL()+ ;
-               	 "OSCode: "  + Transform(oError:OsCode,  nil) + ";" +HB_EOL()+ ;
-               	 "SubSystem: " + Transform(oError:SubSystem, nil) + ";" +HB_EOL()+ ;
-              	 "Mensangem: " + oError:Description
-        aRetorno['OK']       := .F.
-        aRetorno['MsgErro']  := cMSgErro
-        RETURN(aRetorno)
-     END
-     DO WHILE oServerWS:readyState <> 4
-        millisec(500)
-     ENDDO
-     cXMLResp := HB_ANSITOOEM(oServerWS:responseText)
-   ENDIF
-   TRY
-      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\debug-rec.xml", cXMLResp )
+      hb_MemoWrit( ::ohbNFe:pastaEnvRes + "\debug-rec.xml", ::cXMLResp )
    CATCH
    END
    //cXMLResp := oFuncoes:pegaTag(cXMLResp, "nfeRecepcaoLote2Result")
@@ -263,6 +153,4 @@ LOCAL cCN, cUrlWS, cXML, cXMLDadosMsg, oServerWS, oDOMDoc, cXMLResp, cMsgErro, n
 
    ENDIF
 
-   oDOMDoc:=Nil
-   oServerWS:=Nil
-RETURN(aRetorno)
+RETURN aRetorno
